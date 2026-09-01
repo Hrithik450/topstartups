@@ -344,6 +344,120 @@ function createBillboardTexture(): THREE.CanvasTexture {
 }
 
 
+function createBrandingPlaceholderTexture(panelNumber: number): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 400;
+  const ctx = canvas.getContext("2d")!;
+
+  // Dark obsidian gradient background
+  const bgGrad = ctx.createLinearGradient(0, 0, 1024, 400);
+  bgGrad.addColorStop(0, "#0b0f19");
+  bgGrad.addColorStop(0.5, "#151b26");
+  bgGrad.addColorStop(1, "#0b0f19");
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, 1024, 400);
+
+  // Subtle tech grid pattern
+  ctx.strokeStyle = "rgba(255, 107, 26, 0.08)";
+  ctx.lineWidth = 1;
+  for (let x = 32; x < 1024; x += 32) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 400);
+    ctx.stroke();
+  }
+  for (let y = 32; y < 400; y += 32) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(1024, y);
+    ctx.stroke();
+  }
+
+  // Outer border with BharatHunt orange glow
+  ctx.strokeStyle = "#ff6b1a";
+  ctx.lineWidth = 6;
+  ctx.strokeRect(8, 8, 1008, 384);
+
+  // Inner dashed framing
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([16, 12]);
+  ctx.strokeRect(28, 28, 968, 344);
+  ctx.setLineDash([]);
+
+  // Corner brackets
+  ctx.strokeStyle = "#ff8c42";
+  ctx.lineWidth = 5;
+  const bSize = 36;
+  // Top-left
+  ctx.beginPath();
+  ctx.moveTo(28, 28 + bSize);
+  ctx.lineTo(28, 28);
+  ctx.lineTo(28 + bSize, 28);
+  ctx.stroke();
+  // Top-right
+  ctx.beginPath();
+  ctx.moveTo(996 - bSize, 28);
+  ctx.lineTo(996, 28);
+  ctx.lineTo(996, 28 + bSize);
+  ctx.stroke();
+  // Bottom-left
+  ctx.beginPath();
+  ctx.moveTo(28, 372 - bSize);
+  ctx.lineTo(28, 372);
+  ctx.lineTo(28 + bSize, 372);
+  ctx.stroke();
+  // Bottom-right
+  ctx.beginPath();
+  ctx.moveTo(996 - bSize, 372);
+  ctx.lineTo(996, 372);
+  ctx.lineTo(996 - bSize, 372);
+  ctx.stroke();
+
+  // Branding Icon badge
+  ctx.fillStyle = "rgba(255, 107, 26, 0.18)";
+  ctx.beginPath();
+  ctx.roundRect(512 - 90, 48, 180, 44, 8);
+  ctx.fill();
+  ctx.strokeStyle = "#ff6b1a";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = "#ff8c42";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "700 20px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.fillText(`BRAND SPOT #${panelNumber}`, 512, 70);
+
+  // Main Title
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "800 48px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.fillText("BRANDING PLACEHOLDER", 512, 150);
+
+  // Subtitle / Prompt
+  ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+  ctx.font = "600 28px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.fillText("Reserved for Sponsor & Partner Showcase", 512, 210);
+
+  // Call-to-action badge
+  ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+  ctx.beginPath();
+  ctx.roundRect(512 - 220, 265, 440, 56, 28);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = "#ff6b1a";
+  ctx.font = "700 22px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.fillText("🖼️ 1024 × 400 High-Res Media Space", 512, 293);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 function createBannerTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 1536;
@@ -428,31 +542,6 @@ function fitModelHeight(scene: THREE.Object3D, targetHeight: number): THREE.Grou
   return wrapper;
 }
 
-// Bounding box helper: fit model to exact target length
-function fitModelLength(scene: THREE.Object3D, targetLength: number, rotateY = 0): THREE.Group {
-  const root = new THREE.Group();
-  root.add(scene);
-  scene.rotation.y = rotateY;
-  const box = new THREE.Box3().setFromObject(root);
-  const size = box.getSize(new THREE.Vector3());
-  const maxDim = Math.max(size.x, size.z);
-  const scale = targetLength / (maxDim || 1);
-  root.scale.setScalar(scale);
-
-  const updatedBox = new THREE.Box3().setFromObject(root);
-  const center = updatedBox.getCenter(new THREE.Vector3());
-  root.position.set(-center.x, -updatedBox.min.y, -center.z);
-
-  const wrapper = new THREE.Group();
-  wrapper.add(root);
-  wrapper.traverse((o) => {
-    if (o instanceof THREE.Mesh) {
-      o.castShadow = true;
-      o.receiveShadow = true;
-    }
-  });
-  return wrapper;
-}
 
 // Procedural Tree Helper
 function makeLowPolyTree(x: number, z: number, scale: number): THREE.Group {
@@ -931,6 +1020,109 @@ function makeJuiceDrinkerCharacter(): {
   return { group, armGroup, glassMesh };
 }
 
+// Procedural Spectator / Tech Entrepreneur looking UP at the high-floor startups
+function makeLookingUpPerson(opts: {
+  suitColor: number;
+  pantColor: number;
+  skinColor: number;
+  hairColor: number;
+  hasPhone?: boolean;
+  isPointing?: boolean;
+  tiltAngle?: number;
+}): { person: THREE.Group; headGroup: THREE.Group } {
+  const person = new THREE.Group();
+  const skinMat = new THREE.MeshStandardMaterial({ color: opts.skinColor, roughness: 0.8 });
+  const suitMat = new THREE.MeshStandardMaterial({ color: opts.suitColor, roughness: 0.55 });
+  const pantMat = new THREE.MeshStandardMaterial({ color: opts.pantColor, roughness: 0.7 });
+  const hairMat = new THREE.MeshStandardMaterial({ color: opts.hairColor, roughness: 0.85 });
+  const shoeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4 });
+
+  // Legs & Shoes
+  for (const lx of [-0.08, 0.08]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.48, 0.1), pantMat);
+    leg.position.set(lx, 0.24, 0);
+    person.add(leg);
+
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.06, 0.16), shoeMat);
+    shoe.position.set(lx, 0.03, 0.02);
+    person.add(shoe);
+  }
+
+  // Torso / Jacket
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.42, 0.2), suitMat);
+  torso.position.set(0, 0.66, 0);
+  person.add(torso);
+
+  // Upper Body / Neck & Head looking UP at the skyscraper
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.1, 8), skinMat);
+  neck.position.set(0, 0.88, 0);
+  person.add(neck);
+
+  const headGroup = new THREE.Group();
+  headGroup.position.set(0, 0.94, 0);
+
+  // Head tilted BACK / UPWARDS (watching the startups at the top!)
+  const tilt = opts.tiltAngle ?? (0.75 + Math.random() * 0.25);
+  headGroup.rotation.x = -tilt;
+
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), skinMat);
+  head.position.set(0, 0.08, 0);
+  headGroup.add(head);
+
+  const hair = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.08, 0.21), hairMat);
+  hair.position.set(0, 0.18, -0.01);
+  headGroup.add(hair);
+
+  person.add(headGroup);
+
+  // Arms
+  if (opts.hasPhone) {
+    // Both arms raised taking photo of the tower with glowing smartphone
+    const phoneMat = new THREE.MeshStandardMaterial({
+      color: 0x111111,
+      emissive: 0x00d2ff,
+      emissiveIntensity: 0.9,
+    });
+    for (const ax of [-0.16, 0.16]) {
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.36, 0.075), suitMat);
+      arm.position.set(ax, 0.72, 0.12);
+      arm.rotation.x = -1.35;
+      person.add(arm);
+    }
+    const phone = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 0.01), phoneMat);
+    phone.position.set(0, 0.88, 0.28);
+    phone.rotation.x = -0.85;
+    person.add(phone);
+  } else if (opts.isPointing) {
+    // Right arm pointing UP at #1 top floor startup
+    const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.44, 0.075), suitMat);
+    rightArm.position.set(0.18, 0.76, 0.14);
+    rightArm.rotation.x = -1.45;
+    rightArm.rotation.z = -0.15;
+    person.add(rightArm);
+
+    const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.38, 0.075), suitMat);
+    leftArm.position.set(-0.18, 0.62, 0);
+    person.add(leftArm);
+  } else {
+    // Natural standing posture gazing up in awe
+    for (const ax of [-0.18, 0.18]) {
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.38, 0.075), suitMat);
+      arm.position.set(ax, 0.62, 0);
+      person.add(arm);
+    }
+  }
+
+  person.scale.setScalar(0.95);
+  person.traverse((o) => {
+    if (o instanceof THREE.Mesh) {
+      o.castShadow = true;
+    }
+  });
+
+  return { person, headGroup };
+}
+
 function createPitchDeckTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 512;
@@ -1267,50 +1459,55 @@ function createMoonTexture(): THREE.CanvasTexture {
   scene.add(podium);
   disposables.push(podiumGeo, podiumMat);
 
-  // Entrance Canopy
-  const canopyGroup = new THREE.Group();
-  const canopyGlass = new THREE.Mesh(
-    new THREE.BoxGeometry(5, 0.06, 2.2),
-    new THREE.MeshStandardMaterial({ color: 0xbbdddd, roughness: 0.5 })
-  );
-  canopyGlass.castShadow = true;
-  canopyGroup.add(canopyGlass);
+  // 4 Rectangular Image Placeholders for Branding (on 4 sides of the basement)
+  const brandingGroup = new THREE.Group();
+  const brandPanelGeo = new THREE.BoxGeometry(6.4, 1.45, 0.08);
+  disposables.push(brandPanelGeo);
+  const brandFrameMat = new THREE.MeshStandardMaterial({
+    color: 0x161b22,
+    roughness: 0.35,
+    metalness: 0.8,
+  });
+  disposables.push(brandFrameMat);
 
-  const canopyFrameMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 });
-  for (const z of [-1.1, 1.1]) {
-    const f = new THREE.Mesh(new THREE.BoxGeometry(5.14, 0.08, 0.08), canopyFrameMat);
-    f.position.set(0, 0, z);
-    canopyGroup.add(f);
-  }
-  for (const x of [-2.53, 2.53]) {
-    const f = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 2.28), canopyFrameMat);
-    f.position.set(x, 0, 0);
-    canopyGroup.add(f);
-  }
-  canopyGroup.position.set(0, 1.9, 7.5);
-  scene.add(canopyGroup);
+  const brandingSides = [
+    // 1. Front Facade (South, +Z)
+    { x: 0, y: 1.22, z: 6.55, rotY: 0, spot: 1 },
+    // 2. Right Facade (East, +X)
+    { x: 6.55, y: 1.22, z: 0, rotY: Math.PI / 2, spot: 2 },
+    // 3. Back Facade (North, -Z)
+    { x: 0, y: 1.22, z: -6.55, rotY: Math.PI, spot: 3 },
+    // 4. Left Facade (West, -X)
+    { x: -6.55, y: 1.22, z: 0, rotY: -Math.PI / 2, spot: 4 },
+  ];
 
-  // Entrance Glass Doors
-  const doorsGroup = new THREE.Group();
-  const doorGlassMat = new THREE.MeshStandardMaterial({ color: 0x9fc9cc, roughness: 0.35, metalness: 0.1 });
-  const doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 });
-  for (const x of [-0.615, 0.615]) {
-    const door = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.85, 0.05), doorGlassMat);
-    door.position.set(x, 0.925, 0);
-    door.castShadow = true;
-    doorsGroup.add(door);
+  for (const bSide of brandingSides) {
+    const brandTex = createBrandingPlaceholderTexture(bSide.spot);
+    disposables.push(brandTex);
+    const brandScreenMat = new THREE.MeshStandardMaterial({
+      map: brandTex,
+      roughness: 0.3,
+      metalness: 0.15,
+    });
+    disposables.push(brandScreenMat);
 
-    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.55, 0.04), doorFrameMat);
-    handle.position.set(x + 0.4 * Math.sign(x), 0.925, 0.05);
-    doorsGroup.add(handle);
+    const panel = new THREE.Mesh(brandPanelGeo, [
+      brandFrameMat,
+      brandFrameMat,
+      brandFrameMat,
+      brandFrameMat,
+      brandScreenMat, // Front display face
+      brandFrameMat,
+    ]);
+    panel.position.set(bSide.x, bSide.y, bSide.z);
+    panel.rotation.y = bSide.rotY;
+    panel.castShadow = true;
+    panel.receiveShadow = true;
+    brandingGroup.add(panel);
   }
-  const centerFrame = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.85, 0.08), doorFrameMat);
-  centerFrame.position.set(0, 0.925, 0);
-  const topFrame = new THREE.Mesh(new THREE.BoxGeometry(2.56, 0.08, 0.08), doorFrameMat);
-  topFrame.position.set(0, 1.85, 0);
-  doorsGroup.add(centerFrame, topFrame);
-  doorsGroup.position.set(0, 0, 6.53);
-  scene.add(doorsGroup);
+  scene.add(brandingGroup);
+
+
 
   // Plaza Trees
   const treeCoords = [
@@ -1728,35 +1925,72 @@ function createMoonTexture(): THREE.CanvasTexture {
     );
   }
 
-  // Ground Plaza Luxury Vehicle Fleet (Front Driveway & Both Sides)
-  const carDefs = [
-    // Front Plaza Driveway
-    { url: "/models/police-car.glb", length: 1.95, x: 0, z: 8.8, rotY: Math.PI },
-    { url: "/models/car.glb", length: 1.95, x: 3.8, z: 8.8, rotY: Math.PI + 0.04 },
-    { url: "/models/range-rover.glb", length: 2.1, x: -3.8, z: 8.8, rotY: Math.PI - 0.04 },
+  // Ground Plaza Crowd Watching Top Floor Companies with Lifted Heads
+  const crowdGroup = new THREE.Group();
+  const crowdHeads: THREE.Group[] = [];
 
-    // Left Plaza Side (Range Rovers / G-Wagons & Luxury Sedans)
-    { url: "/models/range-rover.glb", length: 2.1, x: -8.6, z: 3.2, rotY: -Math.PI / 2 + 0.05 },
-    { url: "/models/car.glb", length: 1.95, x: -8.6, z: 0.0, rotY: -Math.PI / 2 },
-    { url: "/models/range-rover.glb", length: 2.1, x: -8.6, z: -3.2, rotY: -Math.PI / 2 - 0.05 },
+  const crowdSpecs = [
+    // --- 1. Front Plaza Gathering (Watching #1 and Top Startups) ---
+    { x: -3.6, z: 8.8, suit: 0x1f2937, pant: 0x111827, skin: 0xdfa37a, hair: 0x1e1610, hasPhone: true },
+    { x: -2.4, z: 9.4, suit: 0xff6b1a, pant: 0x374151, skin: 0xfcd34d, hair: 0x451a03, isPointing: true },
+    { x: -1.2, z: 8.6, suit: 0x1e3a8a, pant: 0x1f2937, skin: 0xd97706, hair: 0x18181b },
+    { x: 0.2, z: 9.2, suit: 0x047857, pant: 0x111827, skin: 0xfde047, hair: 0x78350f, hasPhone: true },
+    { x: 1.4, z: 8.5, suit: 0x7f1d1d, pant: 0x374151, skin: 0xb45309, hair: 0x09090b, isPointing: true },
+    { x: 2.6, z: 9.4, suit: 0x475569, pant: 0x1e293b, skin: 0xdfa37a, hair: 0x292524 },
+    { x: 3.8, z: 8.8, suit: 0xff8c42, pant: 0x111827, skin: 0xfcd34d, hair: 0x1e1610, hasPhone: true },
+    { x: -2.0, z: 7.8, suit: 0x2563eb, pant: 0x1f2937, skin: 0xd97706, hair: 0x3f3f46 },
+    { x: -0.6, z: 7.6, suit: 0xe2e8f0, pant: 0x111827, skin: 0xdfa37a, hair: 0x1c1917, isPointing: true },
+    { x: 0.8, z: 7.6, suit: 0x5b21b6, pant: 0x374151, skin: 0xfde047, hair: 0x451a03 },
+    { x: 2.2, z: 7.8, suit: 0x059669, pant: 0x111827, skin: 0xb45309, hair: 0x18181b, hasPhone: true },
 
-    // Right Plaza Side (Mercedes / Audi Luxury Sedans & Range Rovers)
-    { url: "/models/car.glb", length: 1.95, x: 8.6, z: 3.2, rotY: Math.PI / 2 - 0.05 },
-    { url: "/models/range-rover.glb", length: 2.1, x: 8.6, z: 0.0, rotY: Math.PI / 2 },
-    { url: "/models/car.glb", length: 1.95, x: 8.6, z: -3.2, rotY: Math.PI / 2 + 0.05 },
+    // --- 2. Left Plaza Walkway (Founders & Spectators Gazing Up) ---
+    { x: -8.8, z: 3.6, suit: 0x1e3a8a, pant: 0x111827, skin: 0xfcd34d, hair: 0x1e1610, hasPhone: true },
+    { x: -8.4, z: 2.0, suit: 0xff6b1a, pant: 0x374151, skin: 0xdfa37a, hair: 0x451a03, isPointing: true },
+    { x: -8.8, z: 0.2, suit: 0x047857, pant: 0x1f2937, skin: 0xd97706, hair: 0x18181b },
+    { x: -8.4, z: -1.6, suit: 0x7f1d1d, pant: 0x111827, skin: 0xfde047, hair: 0x78350f, hasPhone: true },
+    { x: -8.8, z: -3.4, suit: 0x475569, pant: 0x374151, skin: 0xb45309, hair: 0x09090b },
+    { x: -7.5, z: 2.8, suit: 0x2563eb, pant: 0x1e293b, skin: 0xdfa37a, hair: 0x292524, isPointing: true },
+    { x: -7.5, z: -0.6, suit: 0xe2e8f0, pant: 0x111827, skin: 0xfcd34d, hair: 0x1e1610 },
+    { x: -7.5, z: -2.4, suit: 0x5b21b6, pant: 0x374151, skin: 0xd97706, hair: 0x3f3f46, hasPhone: true },
+
+    // --- 3. Right Plaza Walkway (Audience & Visitors Looking Up) ---
+    { x: 8.8, z: 3.6, suit: 0xff8c42, pant: 0x111827, skin: 0xdfa37a, hair: 0x1c1917, isPointing: true },
+    { x: 8.4, z: 2.0, suit: 0x1f2937, pant: 0x374151, skin: 0xfde047, hair: 0x451a03, hasPhone: true },
+    { x: 8.8, z: 0.2, suit: 0x1e3a8a, pant: 0x1f2937, skin: 0xb45309, hair: 0x18181b },
+    { x: 8.4, z: -1.6, suit: 0x047857, pant: 0x111827, skin: 0xfcd34d, hair: 0x78350f, isPointing: true },
+    { x: 8.8, z: -3.4, suit: 0x7f1d1d, pant: 0x374151, skin: 0xd97706, hair: 0x09090b },
+    { x: 7.5, z: 2.8, suit: 0x059669, pant: 0x1e293b, skin: 0xdfa37a, hair: 0x292524, hasPhone: true },
+    { x: 7.5, z: -0.6, suit: 0x2563eb, pant: 0x111827, skin: 0xfde047, hair: 0x1e1610 },
+    { x: 7.5, z: -2.4, suit: 0xff6b1a, pant: 0x374151, skin: 0xb45309, hair: 0x3f3f46, isPointing: true },
+
+    // --- 4. Plaza Corner Clusters ---
+    { x: -5.8, z: 7.8, suit: 0x475569, pant: 0x111827, skin: 0xdfa37a, hair: 0x1c1917, hasPhone: true },
+    { x: 5.8, z: 7.8, suit: 0x5b21b6, pant: 0x1f2937, skin: 0xfcd34d, hair: 0x451a03 },
+    { x: -5.8, z: -6.8, suit: 0x1e3a8a, pant: 0x374151, skin: 0xd97706, hair: 0x18181b, isPointing: true },
+    { x: 5.8, z: -6.8, suit: 0x047857, pant: 0x111827, skin: 0xb45309, hair: 0x78350f, hasPhone: true },
   ];
-  for (const def of carDefs) {
-    gltfLoader.load(
-      def.url,
-      (gltf) => {
-        const model = fitModelLength(gltf.scene, def.length, def.rotY);
-        model.position.set(def.x, 0, def.z);
-        scene.add(model);
-      },
-      undefined,
-      () => {}
-    );
+
+  for (const spec of crowdSpecs) {
+    const targetAngle = Math.atan2(-spec.x, -spec.z);
+    const distToCenter = Math.hypot(spec.x, spec.z);
+    const tiltAngle = Math.min(1.15, Math.max(0.72, 1.4 - distToCenter * 0.05));
+
+    const { person, headGroup } = makeLookingUpPerson({
+      suitColor: spec.suit,
+      pantColor: spec.pant,
+      skinColor: spec.skin,
+      hairColor: spec.hair,
+      hasPhone: spec.hasPhone,
+      isPointing: spec.isPointing,
+      tiltAngle: tiltAngle,
+    });
+
+    person.position.set(spec.x, 0, spec.z);
+    person.rotation.y = targetAngle + (Math.random() - 0.5) * 0.2;
+    crowdGroup.add(person);
+    crowdHeads.push(headGroup);
   }
+  scene.add(crowdGroup);
 
   // 9. Camera & Controls Setup
   const camera = new THREE.PerspectiveCamera(38, container.clientWidth / container.clientHeight, 0.1, 500);

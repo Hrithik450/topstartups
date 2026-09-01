@@ -65,20 +65,20 @@ function paintFloorTexture(
 ) {
   ctx.clearRect(0, 0, 1280, 256);
 
-  // Burj Khalifa reflective vision glass facade with horizontal stainless spandrels
+  // Burj Khalifa reflective amber bronze vision glass facade
   const bgGrad = ctx.createLinearGradient(0, 0, 0, 256);
-  bgGrad.addColorStop(0, "#3b6d9c");
-  bgGrad.addColorStop(0.3, "#214a72");
-  bgGrad.addColorStop(0.7, "#173656");
-  bgGrad.addColorStop(1, "#0f253d");
+  bgGrad.addColorStop(0, "#2c1c14");
+  bgGrad.addColorStop(0.35, "#1f130d");
+  bgGrad.addColorStop(0.7, "#170e0a");
+  bgGrad.addColorStop(1, "#0f0906");
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, 1280, 256);
 
-  // Reflective sheen lines
-  ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+  // Reflective sheen lines with warm champagne highlights
+  ctx.fillStyle = "rgba(255, 180, 130, 0.16)";
   ctx.fillRect(0, 0, 1280, 8);
   ctx.fillRect(0, 248, 1280, 8);
-  ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+  ctx.fillStyle = "rgba(255, 160, 100, 0.06)";
   ctx.fillRect(0, 124, 1280, 4);
 
   // Logo Badge
@@ -111,7 +111,7 @@ function paintFloorTexture(
 
   // Logo Border
   ctx.save();
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
+  ctx.strokeStyle = "rgba(255, 200, 160, 0.85)";
   ctx.lineWidth = 5;
   ctx.beginPath();
   ctx.roundRect(lx, ly, lw, lh, lr);
@@ -154,9 +154,9 @@ function createGlassGridTexture(): THREE.CanvasTexture {
   canvas.width = 1024;
   canvas.height = 256;
   const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "rgba(80, 140, 210, 0.15)";
+  ctx.fillStyle = "rgba(255, 140, 60, 0.12)";
   ctx.fillRect(0, 0, 1024, 256);
-  ctx.strokeStyle = "rgba(180, 210, 245, 0.45)";
+  ctx.strokeStyle = "rgba(255, 190, 140, 0.45)";
   ctx.lineWidth = 4;
   for (let x = 0; x <= 1024; x += 128) {
     ctx.beginPath();
@@ -386,10 +386,10 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   const roofY = totalHeight;
 
   // Lights
-  const hemi = new THREE.HemisphereLight(0xe4f2ff, 0xb0c4d8, 0.85);
+  const hemi = new THREE.HemisphereLight(0xffeedb, 0xd4a373, 0.85);
   scene.add(hemi);
 
-  const sun = new THREE.DirectionalLight(0xfff6e8, 2.6);
+  const sun = new THREE.DirectionalLight(0xfff3db, 2.8);
   sun.position.set(28, totalHeight + 35, 20);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -403,23 +403,23 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   sun.shadow.bias = -0.0004;
   scene.add(sun);
 
-  const fillLight = new THREE.DirectionalLight(0xd0e8ff, 1.1);
+  const fillLight = new THREE.DirectionalLight(0xffe5cc, 1.1);
   fillLight.position.set(-24, totalHeight / 2, -18);
   scene.add(fillLight);
 
-  // Burj Khalifa Materials: Anodized aluminum spandrels, reflective glass & stainless steel fins
+  // Burj Khalifa Materials: Anodized warm aluminum spandrels, warm reflective glass & champagne fins
   const slabMat = new THREE.MeshStandardMaterial({
-    color: 0xdde3ea,
+    color: 0xe8e2db,
     roughness: 0.25,
     metalness: 0.78,
   });
   const steelMullionMat = new THREE.MeshStandardMaterial({
-    color: 0xf1f5f9,
+    color: 0xfdfbf7,
     roughness: 0.15,
     metalness: 0.92,
   });
   const wingGlassMat = new THREE.MeshPhysicalMaterial({
-    color: 0x1e3a5f,
+    color: 0x3d281e,
     roughness: 0.18,
     metalness: 0.55,
     transmission: 0.3,
@@ -427,12 +427,12 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     clearcoat: 0.8,
   });
   const setbackRoofMat = new THREE.MeshStandardMaterial({
-    color: 0x64748b,
+    color: 0x5c483d,
     roughness: 0.45,
     metalness: 0.6,
   });
   const waterPoolMat = new THREE.MeshStandardMaterial({
-    color: 0x0f4c81,
+    color: 0x1a4568,
     roughness: 0.08,
     metalness: 0.85,
   });

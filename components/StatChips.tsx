@@ -40,7 +40,7 @@ export default function StatChips({ heightFt = 731 }: { heightFt?: number | stri
       key: "built",
       render: () => (
         <>
-          <span className="avatar" style={{ background: "linear-gradient(135deg,#7cc0ff,#2b6fff)" }} /> Built by You
+          <span className="avatar" style={{ background: "linear-gradient(135deg,#ff8f4d,#ff5500)" }} /> Built by You
         </>
       ),
     },

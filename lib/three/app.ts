@@ -16,8 +16,8 @@ export type TowerHandle = {
 };
 
 // Color constants
-const DEFAULT_GLASS_TINT = { h: 210, s: 48, l: 60 };
-const HELIPAD_DECK_HEX = "#ffbb00";
+const DEFAULT_GLASS_TINT = { h: 26, s: 68, l: 54 };
+const HELIPAD_DECK_HEX = "#ffaa00";
 const HELIPAD_MARK_HEX = "#000000";
 
 const AVAILABLE_LOGOS = new Set([
@@ -34,8 +34,8 @@ const AVAILABLE_LOGOS = new Set([
 ]);
 
 const AVATAR_COLORS = [
-  "#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6",
-  "#ec4899", "#06b6d4", "#84cc16", "#6366f1", "#14b8a6"
+  "#ff6b1a", "#f97316", "#ea580c", "#d97706", "#b45309",
+  "#ef4444", "#e11d48", "#f59e0b", "#f43f5e", "#c2410c"
 ];
 
 function getAvatarColor(str: string): string {
@@ -63,17 +63,24 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
   ctx.closePath();
 }
 
-function drawGlassBackground(ctx: CanvasRenderingContext2D, floorIndex: number, tint = DEFAULT_GLASS_TINT) {
-  const l = tint.l - (floorIndex % 3) * 3;
+function drawGlassBackground(ctx: CanvasRenderingContext2D, floorIndex: number) {
   const grad = ctx.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, `hsl(${tint.h - 2}, ${Math.max(0, tint.s - 6)}%, ${Math.min(94, l + 14)}%)`);
-  grad.addColorStop(0.55, `hsl(${tint.h}, ${tint.s}%, ${l}%)`);
-  grad.addColorStop(1, `hsl(${tint.h + 3}, ${Math.max(0, tint.s - 2)}%, ${Math.max(8, l - 8)}%)`);
+  grad.addColorStop(0, "#2c1c14");
+  grad.addColorStop(0.35, "#1f130d");
+  grad.addColorStop(0.7, "#170e0a");
+  grad.addColorStop(1, "#0f0906");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 1280, 256);
 
+  // Subtle warm amber glass reflection
+  ctx.fillStyle = "rgba(255, 175, 120, 0.16)";
+  ctx.fillRect(0, 0, 1280, 8);
+  ctx.fillRect(0, 248, 1280, 8);
+  ctx.fillStyle = "rgba(255, 160, 100, 0.06)";
+  ctx.fillRect(0, 124, 1280, 4);
+
   // Vertical window mullions
-  ctx.strokeStyle = "rgba(24, 34, 46, 0.38)";
+  ctx.strokeStyle = "rgba(15, 9, 6, 0.6)";
   ctx.lineWidth = 4;
   for (let x = 0; x <= 1280; x += 128) {
     ctx.beginPath();
@@ -90,7 +97,7 @@ function drawGlassBackground(ctx: CanvasRenderingContext2D, floorIndex: number, 
   ctx.stroke();
 
   // Top & bottom frame rails
-  ctx.fillStyle = "rgba(24, 34, 46, 0.45)";
+  ctx.fillStyle = "rgba(15, 9, 6, 0.7)";
   ctx.fillRect(0, 0, 1280, 6);
   ctx.fillRect(0, 250, 1280, 6);
 }
@@ -181,9 +188,9 @@ function createGlassGridTexture(): THREE.CanvasTexture {
   canvas.width = 1024;
   canvas.height = 256;
   const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "rgba(90, 150, 220, 0.1)";
+  ctx.fillStyle = "rgba(255, 140, 60, 0.12)";
   ctx.fillRect(0, 0, 1024, 256);
-  ctx.strokeStyle = "rgba(24, 34, 46, 0.5)";
+  ctx.strokeStyle = "rgba(45, 26, 18, 0.45)";
   ctx.lineWidth = 4;
   for (let x = 0; x <= 1024; x += 128) {
     ctx.beginPath();
@@ -196,7 +203,7 @@ function createGlassGridTexture(): THREE.CanvasTexture {
   ctx.moveTo(0, 128);
   ctx.lineTo(1024, 128);
   ctx.stroke();
-  ctx.fillStyle = "rgba(24, 34, 46, 0.55)";
+  ctx.fillStyle = "rgba(45, 26, 18, 0.5)";
   ctx.fillRect(0, 0, 1024, 6);
   ctx.fillRect(0, 250, 1024, 6);
   const tex = new THREE.CanvasTexture(canvas);
@@ -594,10 +601,10 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   const roofY = totalHeight;
 
   // Lights
-  const hemi = new THREE.HemisphereLight(0xdfefff, 0xb9c8ad, 0.8);
+  const hemi = new THREE.HemisphereLight(0xffedd5, 0xd4a373, 0.85);
   scene.add(hemi);
 
-  const sun = new THREE.DirectionalLight(0xfff4e0, 2.5);
+  const sun = new THREE.DirectionalLight(0xfff3db, 2.7);
   sun.position.set(24, totalHeight + 20, 16);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -612,7 +619,7 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   scene.add(sun);
 
   // Roof Directional Light
-  const roofLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  const roofLight = new THREE.DirectionalLight(0xfffaed, 1.2);
   const re = (55 * Math.PI) / 180;
   const rt = (45 * Math.PI) / 180;
   roofLight.position.set(Math.cos(re) * Math.cos(rt) * 40, roofY + 40 * Math.sin(rt), Math.sin(re) * Math.cos(rt) * 40);

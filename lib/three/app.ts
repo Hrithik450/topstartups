@@ -1674,13 +1674,13 @@ function createMoonTexture(): THREE.CanvasTexture {
   const gltfLoader = new GLTFLoader();
   const animMixers: THREE.AnimationMixer[] = [];
 
-  // Rooftop Juice & Cafe Pavilion (Cleaned, with outdoor dining tables & chairs)
+  // Rooftop Juice & Pizza Hut Cafe Pavilion (Rotated 90 deg clockwise with door facing helipad)
   gltfLoader.load(
     "/models/pizza-restaurant.glb",
     (gltf) => {
       const model = fitModelHeight(gltf.scene, 2.6);
-      model.position.set(3.9, roofY + 0.4, -2.6);
-      model.rotation.y = Math.PI / 2;
+      model.position.set(3.6, roofY + 0.4, -2.4);
+      model.rotation.y = -Math.PI / 2;
       scene.add(model);
     },
     undefined,
@@ -2031,10 +2031,8 @@ function createMoonTexture(): THREE.CanvasTexture {
     const helipadDeckY = roofY + 0.45;
     const ladderX = 0.44;
     const ladderZ = 0.0;
-    const sideWayX = 2.2;
-    const sideWayZ = -0.6;
-    const frontDoorX = 3.8;
-    const frontDoorZ = -1.2;
+    const pizzaDoorX = 2.4;
+    const pizzaDoorZ = -1.6; // Right in front of Pizza Hut front entrance door & patio tables
 
     if (loopT < 4.5) {
       // Phase 1: Climbing down the ladder from the helicopter door to helipad deck
@@ -2045,23 +2043,11 @@ function createMoonTexture(): THREE.CanvasTexture {
       juiceDrinker.armGroup.rotation.y = 0;
       juiceDrinker.armGroup.rotation.z = 0;
     } else if (loopT < 9.5) {
-      // Phase 2: Walking around the side walkway to the Pizza Hut front door
+      // Phase 2: Walking directly across helipad straight to the Pizza Hut front door
       const p = (loopT - 4.5) / 5.0;
-      let currentX: number, currentZ: number, targetHeading: number;
-
-      if (p < 0.45) {
-        // Step 2A: Walk from ladder across helipad to the side corner
-        const p1 = p / 0.45;
-        currentX = ladderX + (sideWayX - ladderX) * p1;
-        currentZ = ladderZ + (sideWayZ - ladderZ) * p1;
-        targetHeading = Math.atan2(sideWayX - ladderX, sideWayZ - ladderZ);
-      } else {
-        // Step 2B: Turn and walk along the front patio directly to the front entrance door
-        const p2 = (p - 0.45) / 0.55;
-        currentX = sideWayX + (frontDoorX - sideWayX) * p2;
-        currentZ = sideWayZ + (frontDoorZ - sideWayZ) * p2;
-        targetHeading = Math.atan2(frontDoorX - sideWayX, frontDoorZ - sideWayZ);
-      }
+      const currentX = ladderX + (pizzaDoorX - ladderX) * p;
+      const currentZ = ladderZ + (pizzaDoorZ - ladderZ) * p;
+      const targetHeading = Math.atan2(pizzaDoorX - ladderX, pizzaDoorZ - ladderZ);
 
       const walkBob = Math.abs(Math.sin(loopT * 14)) * 0.04;
       juiceDrinker.group.position.set(currentX, helipadDeckY + walkBob, currentZ);
@@ -2070,9 +2056,9 @@ function createMoonTexture(): THREE.CanvasTexture {
       juiceDrinker.armGroup.rotation.y = 0;
       juiceDrinker.armGroup.rotation.z = 0;
     } else if (loopT < 16.5) {
-      // Phase 3: Sitting at the Pizza Hut front door dining table drinking juice
-      juiceDrinker.group.position.set(frontDoorX, helipadDeckY - 0.05, frontDoorZ);
-      juiceDrinker.group.rotation.y = -0.15; // Facing forward towards patio view
+      // Phase 3: Sitting directly in front of the Pizza Hut front door enjoying juice
+      juiceDrinker.group.position.set(pizzaDoorX, helipadDeckY - 0.05, pizzaDoorZ);
+      juiceDrinker.group.rotation.y = Math.PI / 4; // Facing doorway & patio
 
       // Periodic sipping motion
       const sipCycle = (loopT - 9.5) % 3.2;
@@ -2089,23 +2075,11 @@ function createMoonTexture(): THREE.CanvasTexture {
         juiceDrinker.armGroup.rotation.z = 0;
       }
     } else if (loopT < 20.5) {
-      // Phase 4: Walking back from Pizza Hut front door around side to helipad ladder
+      // Phase 4: Walking back from Pizza Hut front door straight to helipad ladder
       const p = (loopT - 16.5) / 4.0;
-      let currentX: number, currentZ: number, targetHeading: number;
-
-      if (p < 0.55) {
-        // Step 4A: Walk from front door back to side corner
-        const p1 = p / 0.55;
-        currentX = frontDoorX + (sideWayX - frontDoorX) * p1;
-        currentZ = frontDoorZ + (sideWayZ - frontDoorZ) * p1;
-        targetHeading = Math.atan2(sideWayX - frontDoorX, sideWayZ - frontDoorZ);
-      } else {
-        // Step 4B: Walk from side corner back to ladder base
-        const p2 = (p - 0.55) / 0.45;
-        currentX = sideWayX + (ladderX - sideWayX) * p2;
-        currentZ = sideWayZ + (ladderZ - sideWayZ) * p2;
-        targetHeading = Math.atan2(ladderX - sideWayX, ladderZ - sideWayZ);
-      }
+      const currentX = pizzaDoorX + (ladderX - pizzaDoorX) * p;
+      const currentZ = pizzaDoorZ + (ladderZ - pizzaDoorZ) * p;
+      const targetHeading = Math.atan2(ladderX - pizzaDoorX, ladderZ - pizzaDoorZ);
 
       const walkBob = Math.abs(Math.sin(loopT * 14)) * 0.04;
       juiceDrinker.group.position.set(currentX, helipadDeckY + walkBob, currentZ);

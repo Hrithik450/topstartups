@@ -9,6 +9,8 @@ import {
   Ruler,
   SoundOn,
   SoundOff,
+  Moon,
+  Sun,
   ChevLeft,
   ChevRight,
   ArrowUp,
@@ -17,12 +19,24 @@ import {
 
 export default function Controls({
   handleRef,
+  theme = "dark",
+  onToggleTheme,
 }: {
   handleRef: React.MutableRefObject<TowerHandle | null>;
+  theme?: "dark" | "sunset";
+  onToggleTheme?: () => void;
 }) {
   const [ruler, setRuler] = useState(false);
   const [sound, setSound] = useState(false);
   const h = () => handleRef.current;
+
+  const handleThemeClick = () => {
+    if (onToggleTheme) {
+      onToggleTheme();
+    } else {
+      h()?.toggleTheme();
+    }
+  };
 
   return (
     <div className="controls">
@@ -38,6 +52,11 @@ export default function Controls({
       <button className="ctrl" onClick={() => h()?.zoom(-1)}>
         <Minus />
         <span>Zoom out</span>
+      </button>
+
+      <button className={`ctrl ${theme === "dark" ? "active" : ""}`} onClick={handleThemeClick} title="Toggle Night / Evening Mode">
+        {theme === "dark" ? <Moon /> : <Sun />}
+        <span>{theme === "dark" ? "Night" : "Evening"}</span>
       </button>
 
       <button className={`ctrl ${ruler ? "active" : ""}`} onClick={() => setRuler(h()?.toggleRuler() ?? false)}>

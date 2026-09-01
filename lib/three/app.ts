@@ -12,6 +12,8 @@ export type TowerHandle = {
   toggleRotate: () => boolean;
   toggleRuler: () => boolean;
   toggleSound?: () => boolean;
+  toggleTheme: () => "dark" | "sunset";
+  setTheme: (theme: "dark" | "sunset") => void;
   dispose: () => void;
 };
 
@@ -63,43 +65,82 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
   ctx.closePath();
 }
 
-function drawGlassBackground(ctx: CanvasRenderingContext2D, floorIndex: number) {
-  const grad = ctx.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, "#2c1c14");
-  grad.addColorStop(0.35, "#1f130d");
-  grad.addColorStop(0.7, "#170e0a");
-  grad.addColorStop(1, "#0f0906");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 1280, 256);
+function drawGlassBackground(ctx: CanvasRenderingContext2D, floorIndex: number, theme: "dark" | "sunset" = "dark") {
+  if (theme === "dark") {
+    // Deep luxury midnight sapphire/slate glass
+    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, "#0e1726");
+    grad.addColorStop(0.35, "#080e18");
+    grad.addColorStop(0.7, "#050912");
+    grad.addColorStop(1, "#020408");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1280, 256);
 
-  // Subtle warm amber glass reflection
-  ctx.fillStyle = "rgba(255, 175, 120, 0.16)";
-  ctx.fillRect(0, 0, 1280, 8);
-  ctx.fillRect(0, 248, 1280, 8);
-  ctx.fillStyle = "rgba(255, 160, 100, 0.06)";
-  ctx.fillRect(0, 124, 1280, 4);
+    // Warm interior office window lights for a lively luxury night apartment atmosphere
+    const isLit = floorIndex % 4 !== 3;
+    if (isLit) {
+      const warmTint = floorIndex % 2 === 0 ? "rgba(255, 210, 130, 0.28)" : "rgba(255, 185, 90, 0.22)";
+      ctx.fillStyle = warmTint;
+      ctx.fillRect(250, 48, 720, 160);
+      ctx.fillStyle = "rgba(255, 235, 170, 0.4)";
+      for (let wx = 270; wx <= 940; wx += 90) {
+        ctx.fillRect(wx, 56, 44, 144);
+      }
+    }
 
-  // Vertical window mullions
-  ctx.strokeStyle = "rgba(15, 9, 6, 0.6)";
-  ctx.lineWidth = 4;
-  for (let x = 0; x <= 1280; x += 128) {
+    // Exterior night glass sheen & mullions
+    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.fillRect(0, 0, 1280, 6);
+    ctx.fillRect(0, 250, 1280, 6);
+    ctx.strokeStyle = "rgba(24, 38, 58, 0.85)";
+    ctx.lineWidth = 4;
+    for (let x = 0; x <= 1280; x += 128) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, 256);
+      ctx.stroke();
+    }
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, 256);
+    ctx.moveTo(0, 128);
+    ctx.lineTo(1280, 128);
     ctx.stroke();
+  } else {
+    // Matching sunset amber-terracotta architectural glass
+    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, "#d97334");
+    grad.addColorStop(0.4, "#bd5b22");
+    grad.addColorStop(0.75, "#9c4212");
+    grad.addColorStop(1, "#752c06");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1280, 256);
+
+    // Warm glass reflection
+    ctx.fillStyle = "rgba(255, 255, 255, 0.16)";
+    ctx.fillRect(0, 0, 1280, 8);
+    ctx.fillRect(0, 248, 1280, 8);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.fillRect(0, 124, 1280, 4);
+
+    // Vertical window mullions
+    ctx.strokeStyle = "rgba(55, 18, 4, 0.4)";
+    ctx.lineWidth = 4;
+    for (let x = 0; x <= 1280; x += 128) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, 256);
+      ctx.stroke();
+    }
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 128);
+    ctx.lineTo(1280, 128);
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(55, 18, 4, 0.5)";
+    ctx.fillRect(0, 0, 1280, 6);
+    ctx.fillRect(0, 250, 1280, 6);
   }
-
-  // Horizontal mullion
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, 128);
-  ctx.lineTo(1280, 128);
-  ctx.stroke();
-
-  // Top & bottom frame rails
-  ctx.fillStyle = "rgba(15, 9, 6, 0.7)";
-  ctx.fillRect(0, 0, 1280, 6);
-  ctx.fillRect(0, 250, 1280, 6);
 }
 
 function drawAvatar(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, title: string, id: string) {
@@ -137,13 +178,14 @@ function paintFloorTexture(
   listing: Listing,
   rank: number,
   floorIndex: number,
-  logoImg: HTMLImageElement | null
+  logoImg: HTMLImageElement | null,
+  theme: "dark" | "sunset" = "dark"
 ) {
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   ctx.globalAlpha = 1;
   ctx.clearRect(0, 0, 1280, 256);
 
-  drawGlassBackground(ctx, floorIndex);
+  drawGlassBackground(ctx, floorIndex, theme);
   drawAvatar(ctx, logoImg, listing.title, listing.id);
 
   // Domain
@@ -564,10 +606,12 @@ function makeChopper(): { chopper: THREE.Group; rotor: THREE.Mesh } {
 
 export interface CreateTowerOptions {
   onFloorHover?: (data: { listing: Listing; rank: number } | null) => void;
+  theme?: "dark" | "sunset";
 }
 
 export function createTower(container: HTMLElement, options?: CreateTowerOptions): TowerHandle {
   const onFloorHover = options?.onFloorHover;
+  let currentTheme: "dark" | "sunset" = options?.theme || "dark";
   const disposables: (THREE.Material | THREE.BufferGeometry | THREE.Texture | { dispose: () => void })[] = [];
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -601,10 +645,10 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   const roofY = totalHeight;
 
   // Lights
-  const hemi = new THREE.HemisphereLight(0xffedd5, 0xd4a373, 0.85);
+  const hemi = new THREE.HemisphereLight(0x1e293b, 0x0a0f1d, 0.45);
   scene.add(hemi);
 
-  const sun = new THREE.DirectionalLight(0xfff3db, 2.7);
+  const sun = new THREE.DirectionalLight(0xd6e5ff, 1.35);
   sun.position.set(24, totalHeight + 20, 16);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -619,12 +663,128 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   scene.add(sun);
 
   // Roof Directional Light
-  const roofLight = new THREE.DirectionalLight(0xfffaed, 1.2);
+  const roofLight = new THREE.DirectionalLight(0xffe2b8, 1.5);
   const re = (55 * Math.PI) / 180;
   const rt = (45 * Math.PI) / 180;
   roofLight.position.set(Math.cos(re) * Math.cos(rt) * 40, roofY + 40 * Math.sin(rt), Math.sin(re) * Math.cos(rt) * 40);
   roofLight.target.position.set(0, roofY, 0);
   scene.add(roofLight, roofLight.target);
+
+function createStarTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 32;
+  canvas.height = 32;
+  const ctx = canvas.getContext("2d")!;
+  const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  grad.addColorStop(0, "rgba(255, 255, 255, 1)");
+  grad.addColorStop(0.35, "rgba(225, 240, 255, 0.85)");
+  grad.addColorStop(0.7, "rgba(180, 215, 255, 0.25)");
+  grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 32, 32);
+  return new THREE.CanvasTexture(canvas);
+}
+
+function createMoonTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d")!;
+  const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  grad.addColorStop(0, "#ffffff");
+  grad.addColorStop(0.5, "#fffbee");
+  grad.addColorStop(0.85, "#faeac4");
+  grad.addColorStop(1, "#eed496");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 256, 256);
+
+  ctx.fillStyle = "rgba(180, 155, 110, 0.14)";
+  for (let i = 0; i < 20; i++) {
+    const cx = 40 + Math.random() * 176;
+    const cy = 40 + Math.random() * 176;
+    const cr = 8 + Math.random() * 20;
+    ctx.beginPath();
+    ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return new THREE.CanvasTexture(canvas);
+}
+
+  // Penthouse Interior Warm Glow Light
+  const penthouseInteriorLight = new THREE.PointLight(0xffb84d, 3.5, 30);
+  penthouseInteriorLight.position.set(0, penthouseY + 1.2, 0);
+  scene.add(penthouseInteriorLight);
+
+  // Rooftop Cafe Warm Glow Light
+  const cafeInteriorLight = new THREE.PointLight(0xffa834, 2.5, 18);
+  cafeInteriorLight.position.set(3.4, roofY + 1.2, 0.4);
+  scene.add(cafeInteriorLight);
+
+  // Ground Lobby Warm Light
+  const lobbyLight = new THREE.PointLight(0xffaa33, 2.0, 15);
+  lobbyLight.position.set(0, BASE_HEIGHT / 2, 5.5);
+  scene.add(lobbyLight);
+
+  // Starfield in Night Sky
+  const starCount = 550;
+  const starGeo = new THREE.BufferGeometry();
+  const starPositions = new Float32Array(starCount * 3);
+  for (let i = 0; i < starCount; i++) {
+    const r = 140 + Math.random() * 80;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = 0.08 + Math.random() * 0.42;
+    starPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    starPositions[i * 3 + 1] = r * Math.cos(phi) + 20;
+    starPositions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+  }
+  starGeo.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+  const starTex = createStarTexture();
+  disposables.push(starTex);
+  const starMat = new THREE.PointsMaterial({
+    size: 2.2,
+    map: starTex,
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    sizeAttenuation: true,
+  });
+  const starField = new THREE.Points(starGeo, starMat);
+  starField.visible = currentTheme === "dark";
+  scene.add(starField);
+  disposables.push(starGeo, starMat);
+
+  // Realistic Glowing 3D Moon with Soft Lunar Atmosphere
+  const moonGroup = new THREE.Group();
+  const moonGeo = new THREE.SphereGeometry(2.4, 32, 32);
+  const moonTex = createMoonTexture();
+  disposables.push(moonTex);
+  const moonMat = new THREE.MeshStandardMaterial({
+    map: moonTex,
+    emissive: 0xfff3c4,
+    emissiveIntensity: 0.95,
+    roughness: 0.8,
+  });
+  const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+  moonGroup.add(moonMesh);
+
+  // Soft Moon Glow Aura
+  const moonGlowMat = new THREE.SpriteMaterial({
+    map: starTex,
+    color: 0xfffae0,
+    transparent: true,
+    opacity: 0.4,
+    blending: THREE.AdditiveBlending,
+  });
+  const moonGlow = new THREE.Sprite(moonGlowMat);
+  moonGlow.scale.set(12, 12, 1);
+  moonGroup.add(moonGlow);
+  disposables.push(moonGlowMat);
+
+  moonGroup.position.set(-42, totalHeight + 18, -35);
+  moonGroup.visible = currentTheme === "dark";
+  scene.add(moonGroup);
+  disposables.push(moonGeo, moonMat);
 
   // 1. Ground & Plaza & Base Podium
   const groundGeo = new THREE.CircleGeometry(30, 64);
@@ -766,7 +926,7 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
 
   const logoImagesCache = new Map<string, HTMLImageElement>();
 
-  function getOrLoadLogo(urlOrDomain: string, onLoaded: () => void): HTMLImageElement | null {
+  function getOrLoadLogo(urlOrDomain: string, onLoaded?: () => void): HTMLImageElement | null {
     if (logoImagesCache.has(urlOrDomain)) return logoImagesCache.get(urlOrDomain)!;
     const clean = urlOrDomain.replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./, "");
     if (!AVAILABLE_LOGOS.has(clean)) {
@@ -774,7 +934,7 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     }
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.onload = () => onLoaded();
+    img.onload = () => onLoaded?.();
     img.src = `/company-logos/${clean}.jpg`;
     logoImagesCache.set(urlOrDomain, img);
     return img;
@@ -1115,6 +1275,50 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   controls.maxPolarAngle = 0.5 * Math.PI - restingTilt;
   controls.update();
 
+  const applyTheme = (newTheme: "dark" | "sunset") => {
+    currentTheme = newTheme;
+    starField.visible = newTheme === "dark";
+    moonGroup.visible = newTheme === "dark";
+
+    if (newTheme === "dark") {
+      hemi.color.setHex(0x1e293b);
+      hemi.groundColor.setHex(0x0a0f1d);
+      hemi.intensity = 0.45;
+      sun.color.setHex(0xd6e5ff);
+      sun.intensity = 1.35;
+      roofLight.color.setHex(0xffe2b8);
+      roofLight.intensity = 1.5;
+      penthouseInteriorLight.intensity = 3.5;
+      cafeInteriorLight.intensity = 2.5;
+      lobbyLight.intensity = 2.0;
+    } else {
+      hemi.color.setHex(0xffedd5);
+      hemi.groundColor.setHex(0xd4a373);
+      hemi.intensity = 0.85;
+      sun.color.setHex(0xffe8cc);
+      sun.intensity = 2.6;
+      roofLight.color.setHex(0xfffaed);
+      roofLight.intensity = 1.2;
+      penthouseInteriorLight.intensity = 0.8;
+      cafeInteriorLight.intensity = 0.5;
+      lobbyLight.intensity = 0.4;
+    }
+
+    // Repaint all visible floor tiles in the pool
+    for (const slot of activeFloors) {
+      if (slot.floorIndex >= 0 && slot.listing) {
+        const ctx = slot.canvas.getContext("2d")!;
+        const rank = floorCount - slot.floorIndex;
+        const logoImg = getOrLoadLogo(slot.listing.url_or_handle);
+        paintFloorTexture(ctx, CANVAS_SCALE, slot.listing, rank, slot.floorIndex, logoImg, currentTheme);
+        slot.texture.needsUpdate = true;
+      }
+    }
+  };
+
+  // Set initial theme lighting
+  applyTheme(currentTheme);
+
   // Update visible active floors window based on camera elevation
   function updateFloorWindow() {
     const centerFloor = Math.round((travelY - BASE_HEIGHT) / FLOOR_PITCH);
@@ -1145,10 +1349,10 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
         const ctx = slot.canvas.getContext("2d")!;
         const rank = floorCount - fIdx;
         const logoImg = getOrLoadLogo(listing.url_or_handle, () => {
-          paintFloorTexture(ctx, CANVAS_SCALE, listing, rank, fIdx, logoImg);
+          paintFloorTexture(ctx, CANVAS_SCALE, listing, rank, fIdx, logoImg, currentTheme);
           slot!.texture.needsUpdate = true;
         });
-        paintFloorTexture(ctx, CANVAS_SCALE, listing, rank, fIdx, logoImg);
+        paintFloorTexture(ctx, CANVAS_SCALE, listing, rank, fIdx, logoImg, currentTheme);
         slot.texture.needsUpdate = true;
 
         if (listing.hiring) {
@@ -1383,6 +1587,14 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     toggleRuler() {
       rulerGroup.visible = !rulerGroup.visible;
       return rulerGroup.visible;
+    },
+    toggleTheme() {
+      const nextTheme = currentTheme === "dark" ? "sunset" : "dark";
+      applyTheme(nextTheme);
+      return nextTheme;
+    },
+    setTheme(theme) {
+      applyTheme(theme);
     },
     dispose() {
       cancelAnimationFrame(raf);

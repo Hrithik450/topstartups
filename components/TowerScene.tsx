@@ -8,9 +8,11 @@ import type { HoverData } from "@/components/FloorHoverCard";
 export default function TowerScene({
   handleRef,
   onFloorHover,
+  theme = "dark",
 }: {
   handleRef: React.MutableRefObject<TowerHandle | null>;
   onFloorHover?: (data: HoverData | null) => void;
+  theme?: "dark" | "sunset";
 }) {
   const mount = useRef<HTMLDivElement>(null);
 
@@ -20,7 +22,7 @@ export default function TowerScene({
 
     import("@/lib/three/app").then(({ createTower }) => {
       if (disposed || !mount.current) return;
-      handle = createTower(mount.current, { onFloorHover });
+      handle = createTower(mount.current, { onFloorHover, theme });
       handleRef.current = handle;
     });
 
@@ -29,7 +31,7 @@ export default function TowerScene({
       handle?.dispose();
       handleRef.current = null;
     };
-  }, [handleRef, onFloorHover]);
+  }, [handleRef, onFloorHover, theme]);
 
   return <div ref={mount} className="scene-canvas" />;
 }

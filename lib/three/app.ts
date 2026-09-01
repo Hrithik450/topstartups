@@ -2154,6 +2154,7 @@ function createMoonTexture(): THREE.CanvasTexture {
   controls.dampingFactor = 0.08;
   controls.enablePan = false;
   controls.enableZoom = false;
+  controls.enableRotate = false;
   controls.autoRotate = true;
   controls.autoRotateSpeed = 0.5;
 
@@ -2260,75 +2261,68 @@ function createMoonTexture(): THREE.CanvasTexture {
     };
   }
 
-  // Pointer Interaction (Smooth touch drag without accidental popups, text tap to open)
+  // Pointer & Touch Interaction (Smooth touch swipe elevator scrolling, horizontal orbit, text tap to open)
   let pointerDownPos = { x: 0, y: 0, time: 0 };
+  let lastPointerPos = { x: 0, y: 0 };
   let isPointerDragging = false;
+  let dragAxis: "none" | "vertical" | "horizontal" = "none";
+  let scrollVelocityY = 0;
 
   const onPointerDown = (e: PointerEvent) => {
     pointerDownPos = { x: e.clientX, y: e.clientY, time: performance.now() };
+    lastPointerPos = { x: e.clientX, y: e.clientY };
     isPointerDragging = false;
+    dragAxis = "none";
+    scrollVelocityY = 0;
     renderer.domElement.style.cursor = "grabbing";
     if (typeof document !== "undefined") document.body.classList.add("is-dragging");
+    try {
+      renderer.domElement.setPointerCapture(e.pointerId);
+    } catch {}
   };
 
-  const onPointerUp = (e: PointerEvent) => {
-    renderer.domElement.style.cursor = "grab";
-    if (typeof document !== "undefined") document.body.classList.remove("is-dragging");
-
-    const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
-    const duration = performance.now() - pointerDownPos.time;
-
-    // Intentional tap/click without dragging (< 6px movement and < 350ms)
-    if (!isPointerDragging && dist < 6 && duration < 350 && !inIntro) {
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(scene.children, true);
-
-      let found = null;
-      for (const hit of intersects) {
-        found = getFloorTextHit(hit);
-        if (found) break;
-      }
-
-      if (found) {
-        currentHoveredFloor = found.floorIndex;
-        if (onFloorHover) onFloorHover({ listing: found.listing, rank: found.rank });
-      }
-    }
-
-    isPointerDragging = false;
-  };
-  renderer.domElement.addEventListener("pointerdown", onPointerDown);
-  window.addEventListener("pointerup", onPointerUp);
-
-  // Raycast hover detection: ONLY for true mouse pointers on laptops/desktops
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
-  let currentHoveredFloor = -1;
-
-  const onPointerMoveHover = (e: PointerEvent) => {
+  const onPointerMove = (e: PointerEvent) => {
     if (inIntro) return;
 
-    // Detect drag movement during touch scroll or mouse drag
+    // 1. Drag / Swipe Scroll Handling (For mobile touch and mouse drag)
     if (pointerDownPos.time > 0) {
-      const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
-      if (dist > 6) {
+      const deltaY = e.clientY - lastPointerPos.y;
+      const deltaX = e.clientX - lastPointerPos.x;
+      const totalDist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+
+      if (totalDist > 5) {
         isPointerDragging = true;
+        if (dragAxis === "none") {
+          dragAxis = Math.abs(deltaY) >= Math.abs(deltaX) ? "vertical" : "horizontal";
+        }
       }
+
+      if (isPointerDragging) {
+        if (dragAxis === "vertical") {
+          // Vertical swipe: swipe UP (deltaY < 0) scrolls DOWN the tower, swipe DOWN (deltaY > 0) scrolls UP
+          const sensitivity = 0.08;
+          travelYTarget = THREE.MathUtils.clamp(travelYTarget + deltaY * sensitivity, 1.32, roofY);
+          scrollVelocityY = deltaY * sensitivity;
+        } else if (dragAxis === "horizontal") {
+          // Horizontal drag: orbit around tower
+          controls.autoRotate = false;
+          const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
+          spherical.theta -= deltaX * 0.006;
+          camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
+        }
+
+        if (currentHoveredFloor !== -1) {
+          currentHoveredFloor = -1;
+          if (onFloorHover) onFloorHover(null);
+        }
+      }
+
+      lastPointerPos = { x: e.clientX, y: e.clientY };
+      if (isPointerDragging) return;
     }
 
-    // STRICT: Hover only works on laptops / desktops with real mouse cursor
+    // 2. Hover detection: STRICTLY for laptop/desktop mouse pointers only (never touch)
     if (e.pointerType !== "mouse") {
-      return;
-    }
-
-    if (isPointerDragging) {
-      if (currentHoveredFloor !== -1) {
-        currentHoveredFloor = -1;
-        if (onFloorHover) onFloorHover(null);
-      }
       return;
     }
 
@@ -2360,7 +2354,45 @@ function createMoonTexture(): THREE.CanvasTexture {
     }
   };
 
-  const onPointerLeaveHover = (e: PointerEvent) => {
+  const onPointerUp = (e: PointerEvent) => {
+    renderer.domElement.style.cursor = "grab";
+    if (typeof document !== "undefined") document.body.classList.remove("is-dragging");
+
+    const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+    const duration = performance.now() - pointerDownPos.time;
+
+    if (isPointerDragging) {
+      // Smooth inertial glide on flick/drag release
+      if (dragAxis === "vertical" && Math.abs(scrollVelocityY) > 0.05) {
+        travelYTarget = THREE.MathUtils.clamp(travelYTarget + scrollVelocityY * 4.0, 1.32, roofY);
+      }
+    } else if (dist < 6 && duration < 350 && !inIntro) {
+      // Intentional clean tap/click on underlined company text: open overview popup
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+
+      let found = null;
+      for (const hit of intersects) {
+        found = getFloorTextHit(hit);
+        if (found) break;
+      }
+
+      if (found) {
+        currentHoveredFloor = found.floorIndex;
+        if (onFloorHover) onFloorHover({ listing: found.listing, rank: found.rank });
+      }
+    }
+
+    pointerDownPos = { x: 0, y: 0, time: 0 };
+    isPointerDragging = false;
+    dragAxis = "none";
+    scrollVelocityY = 0;
+  };
+
+  const onPointerLeave = (e: PointerEvent) => {
     if (e.pointerType !== "mouse") return;
     if (currentHoveredFloor !== -1) {
       currentHoveredFloor = -1;
@@ -2368,8 +2400,43 @@ function createMoonTexture(): THREE.CanvasTexture {
     }
   };
 
-  window.addEventListener("pointermove", onPointerMoveHover);
-  window.addEventListener("pointerleave", onPointerLeaveHover);
+  // Two-finger pinch-to-zoom for touch screens
+  let initialPinchDist = 0;
+  let initialPinchZoom = zoomDistTarget;
+
+  const onTouchStart = (e: TouchEvent) => {
+    if (e.touches.length === 2) {
+      initialPinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialPinchZoom = zoomDistTarget;
+    }
+  };
+
+  const onTouchMove = (e: TouchEvent) => {
+    if (e.touches.length === 2 && initialPinchDist > 0) {
+      const currentDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const factor = initialPinchDist / Math.max(1, currentDist);
+      zoomDistTarget = THREE.MathUtils.clamp(initialPinchZoom * factor, 12, 48);
+    }
+  };
+
+  renderer.domElement.style.touchAction = "none";
+  renderer.domElement.addEventListener("pointerdown", onPointerDown);
+  window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointerleave", onPointerLeave);
+  renderer.domElement.addEventListener("touchstart", onTouchStart, { passive: true });
+  renderer.domElement.addEventListener("touchmove", onTouchMove, { passive: true });
+
+  // Raycast hover detection: ONLY for true mouse pointers on laptops/desktops
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  let currentHoveredFloor = -1;
 
   // Intro Animation State
   let inIntro = true;
@@ -2620,9 +2687,11 @@ function createMoonTexture(): THREE.CanvasTexture {
       }
       renderer.domElement.removeEventListener("wheel", onWheel);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      renderer.domElement.removeEventListener("touchstart", onTouchStart);
+      renderer.domElement.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("pointerup", onPointerUp);
-      window.removeEventListener("pointermove", onPointerMoveHover);
-      window.removeEventListener("pointerleave", onPointerLeaveHover);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerleave", onPointerLeave);
       if (typeof document !== "undefined") document.body.classList.remove("is-dragging");
       controls.dispose();
       renderer.dispose();

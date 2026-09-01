@@ -1226,6 +1226,48 @@ body.home-tower-scrolled .tower-top-fade {
   animation: cardFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.floor-hover-card-container {
+  position: relative;
+  width: 100%;
+}
+
+.floor-hover-card-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--pill);
+  border: 1px solid var(--pill-border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.15s, color 0.15s, border-color 0.15s;
+  touch-action: manipulation;
+}
+
+.floor-hover-card-close:hover {
+  background: var(--brand-orange-soft);
+  border-color: rgba(255, 107, 26, 0.45);
+  color: var(--brand-orange);
+  transform: scale(1.08);
+}
+
+.floor-hover-card-close:active {
+  transform: scale(0.92);
+}
+
+.floor-hover-card-close svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.4;
+  color: inherit;
+}
+
 .floor-hover-card {
   display: block;
   text-decoration: none;

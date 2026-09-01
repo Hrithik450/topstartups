@@ -74,7 +74,7 @@ export default function Experience() {
           onToggleTheme={toggleTheme}
           onOpenStats={() => setIsMobileStatsOpen(true)}
         />
-        <FloorHoverCard data={hoveredData} />
+        <FloorHoverCard data={hoveredData} onClose={() => setHoveredData(null)} />
         <MobileStatsSheet open={isMobileStatsOpen} onClose={() => setIsMobileStatsOpen(false)} />
       </div>
     </div>

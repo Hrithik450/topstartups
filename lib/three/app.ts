@@ -2239,13 +2239,44 @@ function createMoonTexture(): THREE.CanvasTexture {
   renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
 
   // Hand grabbing cursor on rotate / drag
-  const onPointerDown = () => {
+  let pointerDownPos = { x: 0, y: 0, time: 0 };
+  const onPointerDown = (e: PointerEvent) => {
+    pointerDownPos = { x: e.clientX, y: e.clientY, time: performance.now() };
     renderer.domElement.style.cursor = "grabbing";
     if (typeof document !== "undefined") document.body.classList.add("is-dragging");
   };
-  const onPointerUp = () => {
+  const onPointerUp = (e: PointerEvent) => {
     renderer.domElement.style.cursor = "grab";
     if (typeof document !== "undefined") document.body.classList.remove("is-dragging");
+
+    // If tap/click without dragging (< 10px movement and < 350ms)
+    const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+    const duration = performance.now() - pointerDownPos.time;
+    if (dist < 10 && duration < 350 && !inIntro) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      let foundFloor = -1;
+      for (const hit of intersects) {
+        if (hit.point.y >= BASE_HEIGHT && hit.point.y < roofY) {
+          const fIdx = Math.floor((hit.point.y - BASE_HEIGHT) / FLOOR_PITCH);
+          if (fIdx >= 0 && fIdx < floorCount) {
+            foundFloor = fIdx;
+            break;
+          }
+        }
+      }
+      if (foundFloor >= 0) {
+        currentHoveredFloor = foundFloor;
+        const rank = floorCount - foundFloor;
+        const listing = listings[foundFloor];
+        if (listing && onFloorHover) {
+          onFloorHover({ listing, rank });
+        }
+      }
+    }
   };
   renderer.domElement.addEventListener("pointerdown", onPointerDown);
   window.addEventListener("pointerup", onPointerUp);

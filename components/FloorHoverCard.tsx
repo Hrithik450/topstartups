@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { Listing } from "@/lib/three/listings";
+import { Close } from "./icons";
 
 const AVAILABLE_LOGOS = new Set([
   "befailproof.ai",
@@ -57,7 +58,13 @@ export interface HoverData {
   rank: number;
 }
 
-export default function FloorHoverCard({ data }: { data: HoverData | null }) {
+export default function FloorHoverCard({
+  data,
+  onClose,
+}: {
+  data: HoverData | null;
+  onClose?: () => void;
+}) {
   if (!data) return null;
   const { listing, rank } = data;
 
@@ -68,78 +75,96 @@ export default function FloorHoverCard({ data }: { data: HoverData | null }) {
 
   return (
     <div className="floor-hover-card-wrapper animate-card-fade">
-      <a
-        href={listing.url_or_handle}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="floor-hover-card"
-      >
-        {listing.hiring && (
-          <div className="floor-hover-card-header">
-            HIRING ACTIVELY
-          </div>
+      <div className="floor-hover-card-container">
+        {onClose && (
+          <button
+            type="button"
+            className="floor-hover-card-close"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            aria-label="Close overview card"
+            title="Close"
+          >
+            <Close />
+          </button>
         )}
 
-        <div className="floor-hover-card-body">
-          <div className="floor-hover-card-top-row">
-            <div className="floor-hover-card-logo">
-              {hasLogo ? (
-                <img
-                  src={`/company-logos/${cleanDomain}.jpg`}
-                  alt={listing.title}
-                  className="floor-hover-card-img"
-                />
-              ) : (
-                <div
-                  className="floor-hover-card-avatar"
-                  style={{ backgroundColor: stringToColor(listing.title || cleanDomain) }}
-                >
-                  {(listing.title.trim().charAt(0) || "?").toUpperCase()}
+        <a
+          href={listing.url_or_handle}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="floor-hover-card"
+        >
+          {listing.hiring && (
+            <div className="floor-hover-card-header">
+              HIRING ACTIVELY
+            </div>
+          )}
+
+          <div className="floor-hover-card-body">
+            <div className="floor-hover-card-top-row">
+              <div className="floor-hover-card-logo">
+                {hasLogo ? (
+                  <img
+                    src={`/company-logos/${cleanDomain}.jpg`}
+                    alt={listing.title}
+                    className="floor-hover-card-img"
+                  />
+                ) : (
+                  <div
+                    className="floor-hover-card-avatar"
+                    style={{ backgroundColor: stringToColor(listing.title || cleanDomain) }}
+                  >
+                    {(listing.title.trim().charAt(0) || "?").toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              <div className="floor-hover-card-rank-badge">
+                #{rank}
+              </div>
+            </div>
+
+            <div className="floor-hover-card-main-info">
+              <h3 className="floor-hover-card-title">{listing.title}</h3>
+              <div className="floor-hover-card-price">
+                Claimed floor at ₹{listing.total_paid}
+              </div>
+            </div>
+
+            <div className="floor-hover-card-meta-list">
+              <div className="floor-hover-card-meta-item">
+                <span className="meta-icon">🏷️</span>
+                <span className="meta-label">Category:</span>
+                <span className="meta-value">{listing.category || "AI Agents & Infrastructure"}</span>
+              </div>
+
+              <div className="floor-hover-card-meta-item">
+                <span className="meta-icon">📍</span>
+                <span className="meta-label">Location:</span>
+                <span className="meta-value">{flag} {listing.country_name || "India"}</span>
+              </div>
+
+              <div className="floor-hover-card-meta-item">
+                <span className="meta-icon">🗓️</span>
+                <span className="meta-label">Listed:</span>
+                <span className="meta-value">{timeAgo}</span>
+              </div>
+
+              {listing.description && (
+                <div className="floor-hover-card-meta-item meta-about">
+                  <span className="meta-icon">📄</span>
+                  <span className="meta-label">About:</span>
+                  <span className="meta-value">{listing.description}</span>
                 </div>
               )}
             </div>
-
-            <div className="floor-hover-card-rank-badge">
-              #{rank}
-            </div>
           </div>
-
-          <div className="floor-hover-card-main-info">
-            <h3 className="floor-hover-card-title">{listing.title}</h3>
-            <div className="floor-hover-card-price">
-              Claimed floor at ₹{listing.total_paid}
-            </div>
-          </div>
-
-          <div className="floor-hover-card-meta-list">
-            <div className="floor-hover-card-meta-item">
-              <span className="meta-icon">🏷️</span>
-              <span className="meta-label">Category:</span>
-              <span className="meta-value">{listing.category || "AI Agents & Infrastructure"}</span>
-            </div>
-
-            <div className="floor-hover-card-meta-item">
-              <span className="meta-icon">📍</span>
-              <span className="meta-label">Location:</span>
-              <span className="meta-value">{flag} {listing.country_name || "India"}</span>
-            </div>
-
-            <div className="floor-hover-card-meta-item">
-              <span className="meta-icon">🗓️</span>
-              <span className="meta-label">Listed:</span>
-              <span className="meta-value">{timeAgo}</span>
-            </div>
-
-            {listing.description && (
-              <div className="floor-hover-card-meta-item meta-about">
-                <span className="meta-icon">📄</span>
-                <span className="meta-label">About:</span>
-                <span className="meta-value">{listing.description}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </a>
+        </a>
+      </div>
     </div>
   );
 }

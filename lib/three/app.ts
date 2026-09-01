@@ -609,13 +609,117 @@ function makeRealisticHelicopter(): {
   cabin.scale.set(1.0, 1.1, 0.9);
   chopper.add(cabin);
 
-  // Cockpit Glass Canopy
+  // Cockpit Glass Canopy Front Windshield
   const glassGeo = new THREE.SphereGeometry(0.5, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2);
   const cockpit = new THREE.Mesh(glassGeo, cockpitGlassMat);
   cockpit.rotation.x = Math.PI / 2;
   cockpit.position.set(0, 0.05, -0.68);
   cockpit.scale.set(0.96, 0.96, 0.9);
   chopper.add(cockpit);
+
+  // Left & Right Side Cabin Windows with Chrome Frames
+  const windowGlassMat = new THREE.MeshPhysicalMaterial({
+    color: 0x050914,
+    roughness: 0.1,
+    transmission: 0.8,
+    transparent: true,
+    opacity: 0.88,
+  });
+  const windowFrameMat = new THREE.MeshStandardMaterial({ color: 0x22262e, roughness: 0.3, metalness: 0.8 });
+
+  for (const sx of [-0.52, 0.52]) {
+    // Side window pane
+    const sideWin = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.34, 0.62), windowGlassMat);
+    sideWin.position.set(sx, 0.06, 0.08);
+    chopper.add(sideWin);
+
+    // Side window outer frame
+    const winFrame = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.37, 0.65), windowFrameMat);
+    winFrame.position.set(sx * 1.01, 0.06, 0.08);
+    chopper.add(winFrame);
+  }
+
+  // --- Cockpit Driving Controls & Avionics Dashboard in Front of Windows ---
+  const cockpitControlsGroup = new THREE.Group();
+
+  // Avionics Dashboard Console
+  const dashMat = new THREE.MeshStandardMaterial({ color: 0x141820, roughness: 0.4, metalness: 0.3 });
+  const dashboard = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.22, 0.28), dashMat);
+  dashboard.position.set(0, -0.06, -0.52);
+  dashboard.rotation.x = 0.22;
+  cockpitControlsGroup.add(dashboard);
+
+  // Glowing Digital Flight HUD Screens on Dashboard
+  const hudScreenMat1 = new THREE.MeshStandardMaterial({
+    color: 0x001122,
+    emissive: 0x00e5ff,
+    emissiveIntensity: 0.9,
+    roughness: 0.2,
+  });
+  const hudScreenMat2 = new THREE.MeshStandardMaterial({
+    color: 0x002211,
+    emissive: 0x10b981,
+    emissiveIntensity: 0.9,
+    roughness: 0.2,
+  });
+  const hudScreenMat3 = new THREE.MeshStandardMaterial({
+    color: 0x221100,
+    emissive: 0xff7a00,
+    emissiveIntensity: 0.9,
+    roughness: 0.2,
+  });
+
+  const pfdScreen = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.01), hudScreenMat1);
+  pfdScreen.position.set(-0.2, 0.02, -0.48);
+  pfdScreen.rotation.x = -0.15;
+  cockpitControlsGroup.add(pfdScreen);
+
+  const mfdScreen = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.01), hudScreenMat2);
+  mfdScreen.position.set(0, 0.02, -0.5);
+  mfdScreen.rotation.x = -0.15;
+  cockpitControlsGroup.add(mfdScreen);
+
+  const engScreen = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.01), hudScreenMat3);
+  engScreen.position.set(0.2, 0.02, -0.48);
+  engScreen.rotation.x = -0.15;
+  cockpitControlsGroup.add(engScreen);
+
+  // Dual Flight Cyclic Control Sticks (Left & Right Pilot Controls)
+  const stickMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3, metalness: 0.85 });
+  for (const sx of [-0.2, 0.2]) {
+    // Control stick shaft
+    const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.22, 8), stickMat);
+    stick.position.set(sx, -0.1, -0.34);
+    stick.rotation.x = -0.18;
+    cockpitControlsGroup.add(stick);
+
+    // Ergonomic flight grip
+    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.07, 0.04), stickMat);
+    grip.position.set(sx, 0.02, -0.36);
+    cockpitControlsGroup.add(grip);
+  }
+
+  // Dual Pilot Bucket Seats with Headrests
+  const pilotSeatMat = new THREE.MeshStandardMaterial({ color: 0x1f242d, roughness: 0.5 });
+  for (const sx of [-0.2, 0.2]) {
+    // Seat base
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.06, 0.26), pilotSeatMat);
+    seat.position.set(sx, -0.16, -0.14);
+    cockpitControlsGroup.add(seat);
+
+    // Seat back
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.32, 0.05), pilotSeatMat);
+    back.position.set(sx, 0.02, -0.02);
+    back.rotation.x = 0.12;
+    cockpitControlsGroup.add(back);
+
+    // Headrest
+    const headrest = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.05), pilotSeatMat);
+    headrest.position.set(sx, 0.22, 0.01);
+    cockpitControlsGroup.add(headrest);
+  }
+
+  chopper.add(cockpitControlsGroup);
 
   // Turbine Engine Cowling (Top)
   const engine = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.32, 1.1), orangeStripeMat);
@@ -1911,8 +2015,8 @@ function createMoonTexture(): THREE.CanvasTexture {
     const helipadDeckY = roofY + 0.45;
     const ladderX = 0.48;
     const ladderZ = 0.0;
-    const juiceTableX = 2.7;
-    const juiceTableZ = -1.9;
+    const juiceDoorX = 2.4;
+    const juiceDoorZ = -1.1; // Right in front of Pizza Hut entrance door & patio
 
     if (loopT < 4.0) {
       // Phase 1: Climbing down the ladder from the helicopter
@@ -1923,20 +2027,20 @@ function createMoonTexture(): THREE.CanvasTexture {
       juiceDrinker.armGroup.rotation.y = 0;
       juiceDrinker.armGroup.rotation.z = 0;
     } else if (loopT < 8.0) {
-      // Phase 2: Walking across helipad to the Juice Stall
+      // Phase 2: Walking across helipad to the Pizza Hut front entrance door
       const p = (loopT - 4.0) / 4.0;
-      const currentX = ladderX + (juiceTableX - ladderX) * p;
-      const currentZ = ladderZ + (juiceTableZ - ladderZ) * p;
+      const currentX = ladderX + (juiceDoorX - ladderX) * p;
+      const currentZ = ladderZ + (juiceDoorZ - ladderZ) * p;
       const walkBob = Math.abs(Math.sin(loopT * 14)) * 0.04;
       juiceDrinker.group.position.set(currentX, helipadDeckY + walkBob, currentZ);
-      juiceDrinker.group.rotation.y = Math.atan2(juiceTableX - ladderX, juiceTableZ - ladderZ);
+      juiceDrinker.group.rotation.y = Math.atan2(juiceDoorX - ladderX, juiceDoorZ - ladderZ);
       juiceDrinker.armGroup.rotation.x = Math.sin(loopT * 10) * 0.35;
       juiceDrinker.armGroup.rotation.y = 0;
       juiceDrinker.armGroup.rotation.z = 0;
     } else if (loopT < 15.5) {
-      // Phase 3: Sitting at the Juice Stall & Drinking Juice
-      juiceDrinker.group.position.set(juiceTableX, helipadDeckY - 0.05, juiceTableZ);
-      juiceDrinker.group.rotation.y = Math.PI / 3;
+      // Phase 3: At Pizza Hut door counter & patio drinking juice
+      juiceDrinker.group.position.set(juiceDoorX, helipadDeckY - 0.05, juiceDoorZ);
+      juiceDrinker.group.rotation.y = Math.PI / 4;
 
       // Periodic sipping motion
       const sipCycle = (loopT - 8.0) % 3.0;
@@ -1955,11 +2059,11 @@ function createMoonTexture(): THREE.CanvasTexture {
     } else if (loopT < 19.0) {
       // Phase 4: Walking back to the Helipad Ladder
       const p = (loopT - 15.5) / 3.5;
-      const currentX = juiceTableX + (ladderX - juiceTableX) * p;
-      const currentZ = juiceTableZ + (ladderZ - juiceTableZ) * p;
+      const currentX = juiceDoorX + (ladderX - juiceDoorX) * p;
+      const currentZ = juiceDoorZ + (ladderZ - juiceDoorZ) * p;
       const walkBob = Math.abs(Math.sin(loopT * 14)) * 0.04;
       juiceDrinker.group.position.set(currentX, helipadDeckY + walkBob, currentZ);
-      juiceDrinker.group.rotation.y = Math.atan2(ladderX - juiceTableX, ladderZ - juiceTableZ);
+      juiceDrinker.group.rotation.y = Math.atan2(ladderX - juiceDoorX, ladderZ - juiceDoorZ);
       juiceDrinker.armGroup.rotation.x = Math.sin(loopT * 10) * 0.35;
       juiceDrinker.armGroup.rotation.y = 0;
       juiceDrinker.armGroup.rotation.z = 0;

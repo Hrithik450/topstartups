@@ -799,25 +799,41 @@ function makeRealisticHelicopter(): {
     }
   }
 
-  // Suspended Boarding Ladder descending towards roof helipad
+  // Suspended Boarding Ladder firmly attached to helicopter side cabin door
   const ladder = new THREE.Group();
   const ropeMat = new THREE.MeshStandardMaterial({ color: 0x8a7356, roughness: 0.85 });
   const rungMat = new THREE.MeshStandardMaterial({ color: 0xd4d8de, roughness: 0.3, metalness: 0.7 });
+  const bracketMat = new THREE.MeshStandardMaterial({ color: 0x181a20, roughness: 0.3, metalness: 0.85 });
 
-  const ladderHeight = 3.4;
+  const ladderHeight = 3.6;
   const numRungs = 12;
+
+  // Solid steel anchor bracket bar on cabin door sill
+  const mountBar = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.46), bracketMat);
+  mountBar.position.set(0, 0, 0);
+  ladder.add(mountBar);
+
   for (const side of [-0.18, 0.18]) {
+    // Heavy duty steel mounting eyelet / shackle
+    const eyelet = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.01, 8, 12), bracketMat);
+    eyelet.position.set(0, -0.02, side);
+    eyelet.rotation.y = Math.PI / 2;
+    ladder.add(eyelet);
+
+    // Suspension rope extending directly down from the eyelet
     const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, ladderHeight, 6), ropeMat);
-    rope.position.set(side, -ladderHeight / 2, 0);
+    rope.position.set(0, -ladderHeight / 2 - 0.04, side);
     ladder.add(rope);
   }
+
   for (let r = 0; r < numRungs; r++) {
     const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.4, 6), rungMat);
-    rung.rotation.z = Math.PI / 2;
-    rung.position.set(0, -0.2 - r * (ladderHeight / numRungs), 0);
+    rung.position.set(0, -0.22 - r * (ladderHeight / numRungs), 0);
     ladder.add(rung);
   }
-  ladder.position.set(0.48, -0.35, 0);
+
+  // Anchor ladder directly to the right cabin door floor sill
+  ladder.position.set(0.44, -0.15, 0);
   chopper.add(ladder);
 
   chopper.traverse((o) => {
@@ -1651,7 +1667,7 @@ function createMoonTexture(): THREE.CanvasTexture {
 
   // Animated Passenger: Descends from Helicopter ➔ Drinks Juice at Cafe ➔ Returns to Helicopter
   const juiceDrinker = makeJuiceDrinkerCharacter();
-  juiceDrinker.group.position.set(0.48, roofY + 3.4, 0);
+  juiceDrinker.group.position.set(0.44, roofY + 3.65, 0);
   scene.add(juiceDrinker.group);
 
   // 8. GLTF Model Loader (Asynchronously populate rich GLB models with exact dimensions)
@@ -2007,43 +2023,59 @@ function createMoonTexture(): THREE.CanvasTexture {
     // Suspended Ladder breeze sway
     chopperObj.ladder.rotation.z = Math.sin(t * 2.2) * 0.035;
 
-    // Animated Passenger Helicopter-to-Juice-Stall Loop (22 second periodic cycle)
-    const cycleDuration = 22.0;
+    // Animated Passenger Helicopter-to-Juice-Stall Loop (24 second periodic cycle)
+    const cycleDuration = 24.0;
     const loopT = (now * 0.001) % cycleDuration;
 
-    const helipadLadderTopY = chopperHoverY - 0.4;
+    const helipadLadderTopY = chopperHoverY - 0.15;
     const helipadDeckY = roofY + 0.45;
-    const ladderX = 0.48;
+    const ladderX = 0.44;
     const ladderZ = 0.0;
-    const juiceDoorX = 2.4;
-    const juiceDoorZ = -1.1; // Right in front of Pizza Hut entrance door & patio
+    const sideWayX = 2.2;
+    const sideWayZ = -0.6;
+    const frontDoorX = 3.8;
+    const frontDoorZ = -1.2;
 
-    if (loopT < 4.0) {
-      // Phase 1: Climbing down the ladder from the helicopter
-      const p = loopT / 4.0;
+    if (loopT < 4.5) {
+      // Phase 1: Climbing down the ladder from the helicopter door to helipad deck
+      const p = loopT / 4.5;
       juiceDrinker.group.position.set(ladderX, helipadLadderTopY - p * (helipadLadderTopY - helipadDeckY), ladderZ);
       juiceDrinker.group.rotation.y = -Math.PI / 2;
       juiceDrinker.armGroup.rotation.x = Math.sin(loopT * 10) * 0.45 - 0.3;
       juiceDrinker.armGroup.rotation.y = 0;
       juiceDrinker.armGroup.rotation.z = 0;
-    } else if (loopT < 8.0) {
-      // Phase 2: Walking across helipad to the Pizza Hut front entrance door
-      const p = (loopT - 4.0) / 4.0;
-      const currentX = ladderX + (juiceDoorX - ladderX) * p;
-      const currentZ = ladderZ + (juiceDoorZ - ladderZ) * p;
+    } else if (loopT < 9.5) {
+      // Phase 2: Walking around the side walkway to the Pizza Hut front door
+      const p = (loopT - 4.5) / 5.0;
+      let currentX: number, currentZ: number, targetHeading: number;
+
+      if (p < 0.45) {
+        // Step 2A: Walk from ladder across helipad to the side corner
+        const p1 = p / 0.45;
+        currentX = ladderX + (sideWayX - ladderX) * p1;
+        currentZ = ladderZ + (sideWayZ - ladderZ) * p1;
+        targetHeading = Math.atan2(sideWayX - ladderX, sideWayZ - ladderZ);
+      } else {
+        // Step 2B: Turn and walk along the front patio directly to the front entrance door
+        const p2 = (p - 0.45) / 0.55;
+        currentX = sideWayX + (frontDoorX - sideWayX) * p2;
+        currentZ = sideWayZ + (frontDoorZ - sideWayZ) * p2;
+        targetHeading = Math.atan2(frontDoorX - sideWayX, frontDoorZ - sideWayZ);
+      }
+
       const walkBob = Math.abs(Math.sin(loopT * 14)) * 0.04;
       juiceDrinker.group.position.set(currentX, helipadDeckY + walkBob, currentZ);
-      juiceDrinker.group.rotation.y = Math.atan2(juiceDoorX - ladderX, juiceDoorZ - ladderZ);
+      juiceDrinker.group.rotation.y = targetHeading;
       juiceDrinker.armGroup.rotation.x = Math.sin(loopT * 10) * 0.35;
       juiceDrinker.armGroup.rotation.y = 0;
       juiceDrinker.armGroup.rotation.z = 0;
-    } else if (loopT < 15.5) {
-      // Phase 3: At Pizza Hut door counter & patio drinking juice
-      juiceDrinker.group.position.set(juiceDoorX, helipadDeckY - 0.05, juiceDoorZ);
-      juiceDrinker.group.rotation.y = Math.PI / 4;
+    } else if (loopT < 16.5) {
+      // Phase 3: Sitting at the Pizza Hut front door dining table drinking juice
+      juiceDrinker.group.position.set(frontDoorX, helipadDeckY - 0.05, frontDoorZ);
+      juiceDrinker.group.rotation.y = -0.15; // Facing forward towards patio view
 
       // Periodic sipping motion
-      const sipCycle = (loopT - 8.0) % 3.0;
+      const sipCycle = (loopT - 9.5) % 3.2;
       if (sipCycle < 1.8) {
         // Lift juice glass to mouth
         const sipProgress = Math.sin((sipCycle / 1.8) * Math.PI);
@@ -2056,20 +2088,34 @@ function createMoonTexture(): THREE.CanvasTexture {
         juiceDrinker.armGroup.rotation.y = 0.1;
         juiceDrinker.armGroup.rotation.z = 0;
       }
-    } else if (loopT < 19.0) {
-      // Phase 4: Walking back to the Helipad Ladder
-      const p = (loopT - 15.5) / 3.5;
-      const currentX = juiceDoorX + (ladderX - juiceDoorX) * p;
-      const currentZ = juiceDoorZ + (ladderZ - juiceDoorZ) * p;
+    } else if (loopT < 20.5) {
+      // Phase 4: Walking back from Pizza Hut front door around side to helipad ladder
+      const p = (loopT - 16.5) / 4.0;
+      let currentX: number, currentZ: number, targetHeading: number;
+
+      if (p < 0.55) {
+        // Step 4A: Walk from front door back to side corner
+        const p1 = p / 0.55;
+        currentX = frontDoorX + (sideWayX - frontDoorX) * p1;
+        currentZ = frontDoorZ + (sideWayZ - frontDoorZ) * p1;
+        targetHeading = Math.atan2(sideWayX - frontDoorX, sideWayZ - frontDoorZ);
+      } else {
+        // Step 4B: Walk from side corner back to ladder base
+        const p2 = (p - 0.55) / 0.45;
+        currentX = sideWayX + (ladderX - sideWayX) * p2;
+        currentZ = sideWayZ + (ladderZ - sideWayZ) * p2;
+        targetHeading = Math.atan2(ladderX - sideWayX, ladderZ - sideWayZ);
+      }
+
       const walkBob = Math.abs(Math.sin(loopT * 14)) * 0.04;
       juiceDrinker.group.position.set(currentX, helipadDeckY + walkBob, currentZ);
-      juiceDrinker.group.rotation.y = Math.atan2(ladderX - juiceDoorX, ladderZ - juiceDoorZ);
+      juiceDrinker.group.rotation.y = targetHeading;
       juiceDrinker.armGroup.rotation.x = Math.sin(loopT * 10) * 0.35;
       juiceDrinker.armGroup.rotation.y = 0;
       juiceDrinker.armGroup.rotation.z = 0;
     } else {
       // Phase 5: Climbing back up the ladder into the helicopter
-      const p = (loopT - 19.0) / 3.0;
+      const p = (loopT - 20.5) / 3.5;
       juiceDrinker.group.position.set(ladderX, helipadDeckY + p * (helipadLadderTopY - helipadDeckY), ladderZ);
       juiceDrinker.group.rotation.y = -Math.PI / 2;
       juiceDrinker.armGroup.rotation.x = Math.sin(loopT * 10) * 0.45 - 0.3;

@@ -1381,6 +1381,7 @@ function makeLaptop(): THREE.Group {
 }
 
 export interface CreateTowerOptions {
+  listings?: Listing[];
   onFloorHover?: (data: { listing: Listing; rank: number } | null) => void;
   theme?: "dark" | "sunset";
 }
@@ -1414,9 +1415,10 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   scene.environmentIntensity = 0.6;
   disposables.push(pmremGenerator, roomTex);
 
-  // Tower Geometry Parameters
-  const listings: Listing[] = [...INITIAL_LISTINGS].reverse();
-  const floorCount = listings.length; // 58 floors
+  // Tower Geometry Parameters (100% Dynamic to any listings count)
+  const rawListings = options?.listings ?? INITIAL_LISTINGS;
+  const listings: Listing[] = [...rawListings].reverse();
+  const floorCount = listings.length;
   const BASE_HEIGHT = 2.4;
   const FLOOR_PITCH = 2.45;
   const SLAB_HEIGHT = 0.45;

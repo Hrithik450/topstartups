@@ -460,79 +460,79 @@ function createBillboardTexture(): THREE.CanvasTexture {
 
 function createBrandingPlaceholderTexture(panelNumber: number): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 400;
+  canvas.width = 2560;
+  canvas.height = 420;
   const ctx = canvas.getContext("2d")!;
 
   // Dark obsidian gradient background
-  const bgGrad = ctx.createLinearGradient(0, 0, 1024, 400);
-  bgGrad.addColorStop(0, "#0b0f19");
-  bgGrad.addColorStop(0.5, "#151b26");
-  bgGrad.addColorStop(1, "#0b0f19");
+  const bgGrad = ctx.createLinearGradient(0, 0, 2560, 420);
+  bgGrad.addColorStop(0, "#090d16");
+  bgGrad.addColorStop(0.5, "#131a27");
+  bgGrad.addColorStop(1, "#090d16");
   ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, 1024, 400);
+  ctx.fillRect(0, 0, 2560, 420);
 
   // Subtle tech grid pattern
   ctx.strokeStyle = "rgba(255, 107, 26, 0.08)";
   ctx.lineWidth = 1;
-  for (let x = 32; x < 1024; x += 32) {
+  for (let x = 40; x < 2560; x += 40) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, 400);
+    ctx.lineTo(x, 420);
     ctx.stroke();
   }
-  for (let y = 32; y < 400; y += 32) {
+  for (let y = 30; y < 420; y += 30) {
     ctx.beginPath();
     ctx.moveTo(0, y);
-    ctx.lineTo(1024, y);
+    ctx.lineTo(2560, y);
     ctx.stroke();
   }
 
   // Outer border with BharatHunt orange glow
   ctx.strokeStyle = "#ff6b1a";
-  ctx.lineWidth = 6;
-  ctx.strokeRect(8, 8, 1008, 384);
+  ctx.lineWidth = 8;
+  ctx.strokeRect(10, 10, 2540, 400);
 
   // Inner dashed framing
   ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
   ctx.lineWidth = 3;
-  ctx.setLineDash([16, 12]);
-  ctx.strokeRect(28, 28, 968, 344);
+  ctx.setLineDash([20, 14]);
+  ctx.strokeRect(32, 32, 2496, 356);
   ctx.setLineDash([]);
 
   // Corner brackets
   ctx.strokeStyle = "#ff8c42";
-  ctx.lineWidth = 5;
-  const bSize = 36;
+  ctx.lineWidth = 6;
+  const bSize = 48;
   // Top-left
   ctx.beginPath();
-  ctx.moveTo(28, 28 + bSize);
-  ctx.lineTo(28, 28);
-  ctx.lineTo(28 + bSize, 28);
+  ctx.moveTo(32, 32 + bSize);
+  ctx.lineTo(32, 32);
+  ctx.lineTo(32 + bSize, 32);
   ctx.stroke();
   // Top-right
   ctx.beginPath();
-  ctx.moveTo(996 - bSize, 28);
-  ctx.lineTo(996, 28);
-  ctx.lineTo(996, 28 + bSize);
+  ctx.moveTo(2528 - bSize, 32);
+  ctx.lineTo(2528, 32);
+  ctx.lineTo(2528, 32 + bSize);
   ctx.stroke();
   // Bottom-left
   ctx.beginPath();
-  ctx.moveTo(28, 372 - bSize);
-  ctx.lineTo(28, 372);
-  ctx.lineTo(28 + bSize, 372);
+  ctx.moveTo(32, 388 - bSize);
+  ctx.lineTo(32, 388);
+  ctx.lineTo(32 + bSize, 388);
   ctx.stroke();
   // Bottom-right
   ctx.beginPath();
-  ctx.moveTo(996 - bSize, 372);
-  ctx.lineTo(996, 372);
-  ctx.lineTo(996 - bSize, 372);
+  ctx.moveTo(2528 - bSize, 388);
+  ctx.lineTo(2528, 388);
+  ctx.lineTo(2528 - bSize, 388);
   ctx.stroke();
 
-  // Branding Icon badge
-  ctx.fillStyle = "rgba(255, 107, 26, 0.18)";
+  // Left Tag Pill: Sponsor Status
+  ctx.fillStyle = "rgba(255, 107, 26, 0.16)";
   ctx.beginPath();
-  ctx.roundRect(512 - 90, 48, 180, 44, 8);
+  ctx.roundRect(80, 185, 340, 50, 25);
   ctx.fill();
   ctx.strokeStyle = "#ff6b1a";
   ctx.lineWidth = 2;
@@ -541,31 +541,56 @@ function createBrandingPlaceholderTexture(panelNumber: number): THREE.CanvasText
   ctx.fillStyle = "#ff8c42";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = "700 20px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
-  ctx.fillText(`BRAND SPOT #${panelNumber}`, 512, 70);
+  ctx.font = "800 22px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.fillText("⚡ PRIME PLAZA SPOT", 250, 210);
 
-  // Main Title
+  // Right Tag Pill: Resolution & Media Spec
+  ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+  ctx.beginPath();
+  ctx.roundRect(2560 - 420, 185, 340, 50, 25);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = "#ff8c42";
+  ctx.fillText("🖼️ 2560 × 420 WIDE MEDIA", 2560 - 250, 210);
+
+  // Center Badge: Brand Spot #
+  ctx.fillStyle = "rgba(255, 107, 26, 0.22)";
+  ctx.beginPath();
+  ctx.roundRect(2560 / 2 - 160, 55, 320, 50, 10);
+  ctx.fill();
+  ctx.strokeStyle = "#ff6b1a";
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  ctx.fillStyle = "#ff8c42";
+  ctx.font = "800 24px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.fillText(`BRAND SPOT #${panelNumber} • SPONSOR`, 2560 / 2, 80);
+
+  // Main Center Title
   ctx.fillStyle = "#ffffff";
-  ctx.font = "800 48px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
-  ctx.fillText("BRANDING PLACEHOLDER", 512, 150);
+  ctx.font = "900 64px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.fillText("RESERVED FOR BRANDING PLACEHOLDER", 2560 / 2, 190);
 
   // Subtitle / Prompt
   ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
-  ctx.font = "600 28px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
-  ctx.fillText("Reserved for Sponsor & Partner Showcase", 512, 210);
+  ctx.font = "600 32px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.fillText("Showcase your brand logo, corporate campaign, or sponsor creative across the main building plaza", 2560 / 2, 280);
 
-  // Call-to-action badge
-  ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+  // Bottom CTA Bar
+  ctx.fillStyle = "rgba(255, 107, 26, 0.12)";
   ctx.beginPath();
-  ctx.roundRect(512 - 220, 265, 440, 56, 28);
+  ctx.roundRect(2560 / 2 - 280, 335, 560, 48, 24);
   ctx.fill();
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+  ctx.strokeStyle = "rgba(255, 107, 26, 0.4)";
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  ctx.fillStyle = "#ff6b1a";
+  ctx.fillStyle = "#ff9e58";
   ctx.font = "700 22px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
-  ctx.fillText("🖼️ 1024 × 400 High-Res Media Space", 512, 293);
+  ctx.fillText("🚀 High-Traffic Landmark Billboard Placement", 2560 / 2, 359);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -1573,9 +1598,9 @@ function createMoonTexture(): THREE.CanvasTexture {
   scene.add(podium);
   disposables.push(podiumGeo, podiumMat);
 
-  // 4 Rectangular Image Placeholders for Branding (on 4 sides of the basement)
+  // 4 Full-Scale Rectangular Image Placeholders for Branding (covering 4 basement walls with 0.15-0.2 breathing margin)
   const brandingGroup = new THREE.Group();
-  const brandPanelGeo = new THREE.BoxGeometry(6.4, 1.45, 0.08);
+  const brandPanelGeo = new THREE.BoxGeometry(12.6, 2.1, 0.08);
   disposables.push(brandPanelGeo);
   const brandFrameMat = new THREE.MeshStandardMaterial({
     color: 0x161b22,
@@ -1586,13 +1611,13 @@ function createMoonTexture(): THREE.CanvasTexture {
 
   const brandingSides = [
     // 1. Front Facade (South, +Z)
-    { x: 0, y: 1.22, z: 6.55, rotY: 0, spot: 1 },
+    { x: 0, y: 1.2, z: 6.55, rotY: 0, spot: 1 },
     // 2. Right Facade (East, +X)
-    { x: 6.55, y: 1.22, z: 0, rotY: Math.PI / 2, spot: 2 },
+    { x: 6.55, y: 1.2, z: 0, rotY: Math.PI / 2, spot: 2 },
     // 3. Back Facade (North, -Z)
-    { x: 0, y: 1.22, z: -6.55, rotY: Math.PI, spot: 3 },
+    { x: 0, y: 1.2, z: -6.55, rotY: Math.PI, spot: 3 },
     // 4. Left Facade (West, -X)
-    { x: -6.55, y: 1.22, z: 0, rotY: -Math.PI / 2, spot: 4 },
+    { x: -6.55, y: 1.2, z: 0, rotY: -Math.PI / 2, spot: 4 },
   ];
 
   for (const bSide of brandingSides) {

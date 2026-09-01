@@ -1660,27 +1660,18 @@ function createMoonTexture(): THREE.CanvasTexture {
     scene.add(makeLowPolyTree(tx, tz, ts));
   }
 
-  // 2. Tower Slabs & Instanced Meshes
+  // 2. Tower Slabs (Instanced Meshes)
   const slabGeo = new THREE.BoxGeometry(TOWER_WIDTH + 0.3, SLAB_HEIGHT, TOWER_WIDTH + 0.3);
   const slabMat = new THREE.MeshStandardMaterial({ color: 0xdfe3e8, roughness: 0.45, metalness: 0.55 });
   const slabInstMesh = new THREE.InstancedMesh(slabGeo, slabMat, floorCount + 2);
   slabInstMesh.castShadow = true;
   slabInstMesh.receiveShadow = true;
 
-  const placeholderGeo = new THREE.BoxGeometry(TOWER_WIDTH, BODY_HEIGHT, TOWER_WIDTH);
-  const placeholderMat = new THREE.MeshPhysicalMaterial({ color: 0x386b9f, roughness: 0.75, metalness: 0.05 });
-  const placeholderInstMesh = new THREE.InstancedMesh(placeholderGeo, placeholderMat, floorCount);
-  placeholderInstMesh.castShadow = true;
-  placeholderInstMesh.receiveShadow = true;
-
   const dummyMatrix = new THREE.Matrix4();
   for (let i = 0; i < floorCount; i++) {
     const y = BASE_HEIGHT + FLOOR_PITCH * i;
     dummyMatrix.makeTranslation(0, y + SLAB_HEIGHT / 2, 0);
     slabInstMesh.setMatrixAt(i, dummyMatrix);
-
-    dummyMatrix.makeTranslation(0, y + SLAB_HEIGHT + BODY_HEIGHT / 2, 0);
-    placeholderInstMesh.setMatrixAt(i, dummyMatrix);
   }
   // Penthouse & Roof slabs
   dummyMatrix.makeTranslation(0, penthouseY + SLAB_HEIGHT / 2, 0);
@@ -1689,20 +1680,18 @@ function createMoonTexture(): THREE.CanvasTexture {
   slabInstMesh.setMatrixAt(floorCount + 1, dummyMatrix);
 
   slabInstMesh.instanceMatrix.needsUpdate = true;
-  placeholderInstMesh.instanceMatrix.needsUpdate = true;
-  scene.add(slabInstMesh, placeholderInstMesh);
-  disposables.push(slabGeo, slabMat, placeholderGeo, placeholderMat);
+  scene.add(slabInstMesh);
+  disposables.push(slabGeo, slabMat);
 
-  // 3. Dynamic Active Floor Pool (Optimized for 60fps scrolling across mobile and desktop)
-  const POOL_SIZE = isMobileDevice ? 16 : 20;
+  // 3. All 58 Skyscraper Floors (Persistent, Guaranteed Zero-Skip at Any Scroll Speed)
   const CANVAS_SCALE = isMobileDevice ? 1.5 : 2;
-  const activeFloors: {
+  const allFloors: {
     mesh: THREE.Mesh;
     canvas: HTMLCanvasElement;
     texture: THREE.CanvasTexture;
-    hiringBadge: THREE.Group;
+    hiringBadge: THREE.Group | null;
     floorIndex: number;
-    listing: Listing | null;
+    listing: Listing;
   }[] = [];
 
   const topBottomMat = new THREE.MeshStandardMaterial({ color: 0xc8cdd3, roughness: 0.7 });
@@ -1711,6 +1700,9 @@ function createMoonTexture(): THREE.CanvasTexture {
   const hiringBackMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
   const hiringCordMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
   disposables.push(topBottomMat, hiringTex, hiringMat, hiringBackMat, hiringCordMat);
+
+  const floorBodyGeo = new THREE.BoxGeometry(TOWER_WIDTH, BODY_HEIGHT, TOWER_WIDTH);
+  disposables.push(floorBodyGeo);
 
   const logoImagesCache = new Map<string, HTMLImageElement>();
 
@@ -1728,7 +1720,11 @@ function createMoonTexture(): THREE.CanvasTexture {
     return img;
   }
 
-  for (let p = 0; p < POOL_SIZE; p++) {
+  for (let fIdx = 0; fIdx < floorCount; fIdx++) {
+    const listing = listings[fIdx];
+    const rank = floorCount - fIdx;
+    const fy = BASE_HEIGHT + FLOOR_PITCH * fIdx;
+
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(1280 * CANVAS_SCALE);
     canvas.height = Math.round(256 * CANVAS_SCALE);
@@ -1740,6 +1736,13 @@ function createMoonTexture(): THREE.CanvasTexture {
     texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), isMobileDevice ? 2 : 4);
     disposables.push(texture);
 
+    const ctx = canvas.getContext("2d")!;
+    const logoImg = getOrLoadLogo(listing.url_or_handle, () => {
+      paintFloorTexture(ctx, CANVAS_SCALE, listing, rank, fIdx, logoImg, currentTheme);
+      texture.needsUpdate = true;
+    });
+    paintFloorTexture(ctx, CANVAS_SCALE, listing, rank, fIdx, logoImg, currentTheme);
+
     const sideMat = new THREE.MeshPhysicalMaterial({
       map: texture,
       roughness: 0.24,
@@ -1748,7 +1751,7 @@ function createMoonTexture(): THREE.CanvasTexture {
     });
     disposables.push(sideMat);
 
-    const floorMesh = new THREE.Mesh(placeholderGeo, [
+    const floorMesh = new THREE.Mesh(floorBodyGeo, [
       sideMat,
       sideMat,
       topBottomMat,
@@ -1756,36 +1759,37 @@ function createMoonTexture(): THREE.CanvasTexture {
       sideMat,
       sideMat,
     ]);
+    floorMesh.position.set(0, fy + SLAB_HEIGHT + BODY_HEIGHT / 2, 0);
     floorMesh.castShadow = true;
     floorMesh.receiveShadow = true;
-    floorMesh.visible = false;
     scene.add(floorMesh);
 
-    // 3D Hanging HIRING Badge - Single clean front-facing rectangular sign
-    const hiringBadge = new THREE.Group();
-    const sign = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, 0.7, 0.04),
-      [hiringBackMat, hiringBackMat, hiringBackMat, hiringBackMat, hiringMat, hiringMat]
-    );
-    sign.castShadow = true;
-    for (const side of [-1, 1]) {
-      const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.94, 5), hiringCordMat);
-      cord.position.set(0.36 * side, 0.65, 0);
-      cord.rotation.z = side * Math.atan2(0.72, 0.6);
-      hiringBadge.add(cord);
+    let hiringBadge: THREE.Group | null = null;
+    if (listing.hiring) {
+      hiringBadge = new THREE.Group();
+      const sign = new THREE.Mesh(
+        new THREE.BoxGeometry(1.6, 0.7, 0.04),
+        [hiringBackMat, hiringBackMat, hiringBackMat, hiringBackMat, hiringMat, hiringMat]
+      );
+      sign.castShadow = true;
+      for (const side of [-1, 1]) {
+        const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.94, 5), hiringCordMat);
+        cord.position.set(0.36 * side, 0.65, 0);
+        cord.rotation.z = side * Math.atan2(0.72, 0.6);
+        hiringBadge.add(cord);
+      }
+      hiringBadge.add(sign);
+      hiringBadge.position.set(2.4, fy + SLAB_HEIGHT + BODY_HEIGHT - 0.85, 5.18);
+      scene.add(hiringBadge);
     }
-    hiringBadge.add(sign);
-    hiringBadge.position.set(2.4, 0, 5.18);
-    hiringBadge.visible = false;
-    scene.add(hiringBadge);
 
-    activeFloors.push({
+    allFloors.push({
       mesh: floorMesh,
       canvas,
       texture,
       hiringBadge,
-      floorIndex: -1,
-      listing: null,
+      floorIndex: fIdx,
+      listing,
     });
   }
 
@@ -1804,7 +1808,7 @@ function createMoonTexture(): THREE.CanvasTexture {
   });
   disposables.push(penthouseGlassMat);
 
-  const penthouseMesh = new THREE.Mesh(placeholderGeo, [
+  const penthouseMesh = new THREE.Mesh(floorBodyGeo, [
     penthouseGlassMat,
     penthouseGlassMat,
     topBottomMat,
@@ -2208,82 +2212,18 @@ function createMoonTexture(): THREE.CanvasTexture {
       lobbyLight.intensity = 0.4;
     }
 
-    // Repaint all visible floor tiles in the pool
-    for (const slot of activeFloors) {
-      if (slot.floorIndex >= 0 && slot.listing) {
-        const ctx = slot.canvas.getContext("2d")!;
-        const rank = floorCount - slot.floorIndex;
-        const logoImg = getOrLoadLogo(slot.listing.url_or_handle);
-        paintFloorTexture(ctx, CANVAS_SCALE, slot.listing, rank, slot.floorIndex, logoImg, currentTheme);
-        slot.texture.needsUpdate = true;
-      }
+    // Repaint all floor tiles across the tower
+    for (const slot of allFloors) {
+      const ctx = slot.canvas.getContext("2d")!;
+      const rank = floorCount - slot.floorIndex;
+      const logoImg = getOrLoadLogo(slot.listing.url_or_handle);
+      paintFloorTexture(ctx, CANVAS_SCALE, slot.listing, rank, slot.floorIndex, logoImg, currentTheme);
+      slot.texture.needsUpdate = true;
     }
   };
 
   // Set initial theme lighting
   applyTheme(currentTheme);
-
-  // Update visible active floors window based on camera elevation
-  function updateFloorWindow() {
-    const centerFloor = Math.round((travelY - BASE_HEIGHT) / FLOOR_PITCH);
-    const halfWindow = Math.floor(POOL_SIZE / 2);
-    const minFloor = Math.max(0, centerFloor - halfWindow);
-    const maxFloor = Math.min(floorCount - 1, centerFloor + halfWindow);
-
-    const neededFloors: number[] = [];
-    for (let i = minFloor; i <= maxFloor; i++) neededFloors.push(i);
-
-    const freeSlots = activeFloors.filter((af) => !neededFloors.includes(af.floorIndex));
-
-    for (const fIdx of neededFloors) {
-      let slot = activeFloors.find((af) => af.floorIndex === fIdx);
-      if (!slot && freeSlots.length > 0) {
-        slot = freeSlots.pop()!;
-        slot.floorIndex = fIdx;
-        const listing = listings[fIdx];
-        slot.listing = listing;
-        const fy = BASE_HEIGHT + FLOOR_PITCH * fIdx;
-        slot.mesh.position.y = fy + SLAB_HEIGHT + BODY_HEIGHT / 2;
-        slot.mesh.visible = true;
-
-        // Hide corresponding placeholder instance
-        dummyMatrix.makeScale(0, 0, 0);
-        placeholderInstMesh.setMatrixAt(fIdx, dummyMatrix);
-
-        const ctx = slot.canvas.getContext("2d")!;
-        const rank = floorCount - fIdx;
-        const logoImg = getOrLoadLogo(listing.url_or_handle, () => {
-          paintFloorTexture(ctx, CANVAS_SCALE, listing, rank, fIdx, logoImg, currentTheme);
-          slot!.texture.needsUpdate = true;
-        });
-        paintFloorTexture(ctx, CANVAS_SCALE, listing, rank, fIdx, logoImg, currentTheme);
-        slot.texture.needsUpdate = true;
-
-        if (listing.hiring) {
-          slot.hiringBadge.position.y = fy + SLAB_HEIGHT + BODY_HEIGHT - 0.85;
-          slot.hiringBadge.visible = true;
-        } else {
-          slot.hiringBadge.visible = false;
-        }
-      }
-    }
-
-    // Restore hidden placeholder instances for non-active floors
-    for (const slot of freeSlots) {
-      if (slot.floorIndex >= 0) {
-        const oldIdx = slot.floorIndex;
-        const fy = BASE_HEIGHT + FLOOR_PITCH * oldIdx;
-        dummyMatrix.makeTranslation(0, fy + SLAB_HEIGHT + BODY_HEIGHT / 2, 0);
-        placeholderInstMesh.setMatrixAt(oldIdx, dummyMatrix);
-        slot.floorIndex = -1;
-        slot.mesh.visible = false;
-        slot.hiringBadge.visible = false;
-      }
-    }
-    placeholderInstMesh.instanceMatrix.needsUpdate = true;
-  }
-
-  updateFloorWindow();
 
   // Wheel interaction for floor ride
   const onWheel = (e: WheelEvent) => {
@@ -2502,8 +2442,6 @@ function createMoonTexture(): THREE.CanvasTexture {
       camera.position.setFromSphericalCoords(zoomDist, 0.5 * Math.PI - restingTilt, currentAzimuth).add(controls.target);
       camera.lookAt(controls.target);
 
-      updateFloorWindow();
-
       if (progress >= 1) {
         inIntro = false;
         controls.enabled = true;
@@ -2515,7 +2453,6 @@ function createMoonTexture(): THREE.CanvasTexture {
         travelY += dy;
         controls.target.y += dy;
         camera.position.y += dy;
-        updateFloorWindow();
       }
 
       const dz = (zoomDistTarget - zoomDist) * 0.12;

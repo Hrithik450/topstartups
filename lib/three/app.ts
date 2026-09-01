@@ -7,6 +7,8 @@ import { INITIAL_LISTINGS, type Listing } from "./listings";
 export type TowerHandle = {
   zoom: (dir: 1 | -1) => void;
   reset: () => void;
+  jumpToTop: () => void;
+  jumpToBase: () => void;
   nudgeRotate: (dir: 1 | -1) => void;
   moveFloors: (dir: 1 | -1) => void;
   toggleRotate: () => boolean;
@@ -253,6 +255,15 @@ function paintFloorTexture(
   ctx.restore();
 }
 
+function makeCanvasTexture(canvas: HTMLCanvasElement): THREE.CanvasTexture {
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false;
+  return tex;
+}
+
 function createGlassGridTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 1024;
@@ -276,9 +287,7 @@ function createGlassGridTexture(): THREE.CanvasTexture {
   ctx.fillStyle = "rgba(45, 26, 18, 0.5)";
   ctx.fillRect(0, 0, 1024, 6);
   ctx.fillRect(0, 250, 1024, 6);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return makeCanvasTexture(canvas);
 }
 
 function createVideoPlaceholderTexture(): THREE.CanvasTexture {
@@ -410,9 +419,7 @@ function createVideoPlaceholderTexture(): THREE.CanvasTexture {
   ctx.fillStyle = "#ff8c42";
   ctx.fillText("4K HD  🔊  ⛶", 1836, 978);
 
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return makeCanvasTexture(canvas);
 }
 
 function createHelipadTexture(): THREE.CanvasTexture {
@@ -432,9 +439,7 @@ function createHelipadTexture(): THREE.CanvasTexture {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("H", 256, 272);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return makeCanvasTexture(canvas);
 }
 
 function createBillboardTexture(): THREE.CanvasTexture {
@@ -452,9 +457,7 @@ function createBillboardTexture(): THREE.CanvasTexture {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("BharatHunt", 512, 134, 928);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return makeCanvasTexture(canvas);
 }
 
 
@@ -592,9 +595,7 @@ function createBrandingPlaceholderTexture(panelNumber: number): THREE.CanvasText
   ctx.font = "700 22px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
   ctx.fillText("🚀 High-Traffic Landmark Billboard Placement", 2560 / 2, 359);
 
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return makeCanvasTexture(canvas);
 }
 
 function createBannerTexture(): THREE.CanvasTexture {
@@ -612,9 +613,7 @@ function createBannerTexture(): THREE.CanvasTexture {
   ctx.textBaseline = "middle";
   ctx.font = "800 84px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
   ctx.fillText("Add your website domain here", 768, 192);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return makeCanvasTexture(canvas);
 }
 
 function createRulerLabelTexture(text: string): THREE.CanvasTexture {
@@ -632,9 +631,7 @@ function createRulerLabelTexture(text: string): THREE.CanvasTexture {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(text, 110, 52);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return makeCanvasTexture(canvas);
 }
 
 function createHiringTexture(): THREE.CanvasTexture {
@@ -652,9 +649,7 @@ function createHiringTexture(): THREE.CanvasTexture {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("HIRING", 256, 118);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return makeCanvasTexture(canvas);
 }
 
 // Bounding box helper: fit model to exact target height
@@ -1253,11 +1248,8 @@ function makeLookingUpPerson(opts: {
   }
 
   person.scale.setScalar(0.95);
-  person.traverse((o) => {
-    if (o instanceof THREE.Mesh) {
-      o.castShadow = true;
-    }
-  });
+  torso.castShadow = true;
+  head.castShadow = true;
 
   return { person, headGroup };
 }
@@ -1326,7 +1318,7 @@ function createPitchDeckTexture(): THREE.CanvasTexture {
   ctx.font = "bold 13px 'Bricolage Grotesque', sans-serif";
   ctx.fillText("● LIVE: 58 FLOORS CLAIMED • 192K VIEWS", 24, 244);
 
-  return new THREE.CanvasTexture(canvas);
+  return makeCanvasTexture(canvas);
 }
 
 function makeExecutiveChair(): THREE.Group {
@@ -1398,11 +1390,17 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   let currentTheme: "dark" | "sunset" = options?.theme || "dark";
   const disposables: (THREE.Material | THREE.BufferGeometry | THREE.Texture | { dispose: () => void })[] = [];
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const isMobileDevice = typeof window !== "undefined" && window.innerWidth < 768;
+
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+    powerPreference: "high-performance",
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobileDevice ? 1.5 : 1.75));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   container.appendChild(renderer.domElement);
@@ -1435,7 +1433,8 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   const sun = new THREE.DirectionalLight(0xd6e5ff, 1.35);
   sun.position.set(24, totalHeight + 20, 16);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  const shadowResolution = isMobileDevice ? 1024 : 1536;
+  sun.shadow.mapSize.set(shadowResolution, shadowResolution);
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = totalHeight * 3 + 80;
   const shadowBound = 22;
@@ -1443,7 +1442,7 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   sun.shadow.camera.right = shadowBound;
   sun.shadow.camera.top = totalHeight + 10;
   sun.shadow.camera.bottom = -10;
-  sun.shadow.bias = -0.0004;
+  sun.shadow.bias = -0.0005;
   scene.add(sun);
 
   // Roof Directional Light
@@ -1466,7 +1465,7 @@ function createStarTexture(): THREE.CanvasTexture {
   grad.addColorStop(1, "rgba(0, 0, 0, 0)");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 32, 32);
-  return new THREE.CanvasTexture(canvas);
+  return makeCanvasTexture(canvas);
 }
 
 function createMoonTexture(): THREE.CanvasTexture {
@@ -1491,7 +1490,7 @@ function createMoonTexture(): THREE.CanvasTexture {
     ctx.arc(cx, cy, cr, 0, Math.PI * 2);
     ctx.fill();
   }
-  return new THREE.CanvasTexture(canvas);
+  return makeCanvasTexture(canvas);
 }
 
   // Penthouse Interior Warm Glow Light
@@ -1694,9 +1693,9 @@ function createMoonTexture(): THREE.CanvasTexture {
   scene.add(slabInstMesh, placeholderInstMesh);
   disposables.push(slabGeo, slabMat, placeholderGeo, placeholderMat);
 
-  // 3. Dynamic Active Floor Pool (24 Reusable Canvases / Meshes)
-  const POOL_SIZE = 24;
-  const CANVAS_SCALE = 2; // retina resolution
+  // 3. Dynamic Active Floor Pool (Optimized for 60fps scrolling across mobile and desktop)
+  const POOL_SIZE = isMobileDevice ? 16 : 20;
+  const CANVAS_SCALE = isMobileDevice ? 1.5 : 2;
   const activeFloors: {
     mesh: THREE.Mesh;
     canvas: HTMLCanvasElement;
@@ -1731,11 +1730,14 @@ function createMoonTexture(): THREE.CanvasTexture {
 
   for (let p = 0; p < POOL_SIZE; p++) {
     const canvas = document.createElement("canvas");
-    canvas.width = 1280 * CANVAS_SCALE;
-    canvas.height = 256 * CANVAS_SCALE;
+    canvas.width = Math.round(1280 * CANVAS_SCALE);
+    canvas.height = Math.round(256 * CANVAS_SCALE);
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), isMobileDevice ? 2 : 4);
     disposables.push(texture);
 
     const sideMat = new THREE.MeshPhysicalMaterial({
@@ -2362,9 +2364,17 @@ function createMoonTexture(): THREE.CanvasTexture {
 
   const clock = new THREE.Clock();
   let raf = 0;
+  let isTabVisible = true;
+  const onVisibilityChange = () => {
+    isTabVisible = !document.hidden;
+  };
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", onVisibilityChange);
+  }
 
   function renderFrame(now: number) {
     raf = requestAnimationFrame(renderFrame);
+    if (!isTabVisible) return;
     const dt = Math.min(clock.getDelta(), 0.05);
 
     // Animation Mixers
@@ -2557,6 +2567,15 @@ function createMoonTexture(): THREE.CanvasTexture {
       controls.autoRotate = true;
       inIntro = false;
     },
+    jumpToTop() {
+      inIntro = false;
+      travelYTarget = calculateRestingTargetY();
+      zoomDistTarget = calculateZoomDist(container.clientWidth / container.clientHeight);
+    },
+    jumpToBase() {
+      inIntro = false;
+      travelYTarget = 1.32;
+    },
     nudgeRotate(dir) {
       controls.autoRotate = false;
       const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
@@ -2585,6 +2604,9 @@ function createMoonTexture(): THREE.CanvasTexture {
     dispose() {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
       renderer.domElement.removeEventListener("wheel", onWheel);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointerup", onPointerUp);

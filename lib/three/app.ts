@@ -632,6 +632,132 @@ function makeChopper(): { chopper: THREE.Group; rotor: THREE.Mesh } {
   return { chopper, rotor };
 }
 
+function createPitchDeckTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d")!;
+
+  // Tech dashboard background
+  ctx.fillStyle = "#0c1322";
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Top header bar
+  ctx.fillStyle = "#1e293b";
+  ctx.fillRect(0, 0, 512, 38);
+  ctx.fillStyle = "#ff6b1a";
+  ctx.fillRect(16, 12, 14, 14);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 16px 'Bricolage Grotesque', sans-serif";
+  ctx.fillText("BHARAT HUNT • EXECUTIVE BOARDROOM", 40, 26);
+
+  // Big MRR Growth Metric
+  ctx.fillStyle = "#22c55e";
+  ctx.font = "bold 28px 'Bricolage Grotesque', sans-serif";
+  ctx.fillText("₹4.8 Cr ARR  ▲ +340%", 24, 76);
+
+  // Target label
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "14px 'Bricolage Grotesque', sans-serif";
+  ctx.fillText("Q3 STRATEGIC ROADMAP & VALUATION PITCH", 24, 98);
+
+  // Growth Chart line
+  ctx.strokeStyle = "#ff6b1a";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(24, 205);
+  ctx.lineTo(100, 180);
+  ctx.lineTo(180, 190);
+  ctx.lineTo(260, 145);
+  ctx.lineTo(340, 125);
+  ctx.lineTo(420, 95);
+  ctx.lineTo(488, 65);
+  ctx.stroke();
+
+  // Chart fill
+  ctx.lineTo(488, 220);
+  ctx.lineTo(24, 220);
+  ctx.closePath();
+  ctx.fillStyle = "rgba(255, 107, 26, 0.15)";
+  ctx.fill();
+
+  // Grid lines
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+  ctx.lineWidth = 1;
+  for (let y = 120; y <= 210; y += 30) {
+    ctx.beginPath();
+    ctx.moveTo(24, y);
+    ctx.lineTo(488, y);
+    ctx.stroke();
+  }
+
+  // Footer status
+  ctx.fillStyle = "#38bdf8";
+  ctx.font = "bold 13px 'Bricolage Grotesque', sans-serif";
+  ctx.fillText("● LIVE: 58 FLOORS CLAIMED • 192K VIEWS", 24, 244);
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+function makeExecutiveChair(): THREE.Group {
+  const chair = new THREE.Group();
+  const leatherMat = new THREE.MeshStandardMaterial({ color: 0x181a20, roughness: 0.45 });
+  const chromeMat = new THREE.MeshStandardMaterial({ color: 0xd4d8de, roughness: 0.2, metalness: 0.85 });
+
+  // Seat cushion
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.06, 0.38), leatherMat);
+  seat.position.y = 0.38;
+  chair.add(seat);
+
+  // Ergonomic curved backrest
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.44, 0.05), leatherMat);
+  back.position.set(0, 0.62, -0.17);
+  chair.add(back);
+
+  // Armrests
+  for (const sx of [-0.2, 0.2]) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.18, 0.28), leatherMat);
+    arm.position.set(sx, 0.48, -0.04);
+    chair.add(arm);
+  }
+
+  // Central pole
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.35, 8), chromeMat);
+  pole.position.y = 0.18;
+  chair.add(pole);
+
+  // 5-star swivel base
+  for (let a = 0; a < 5; a++) {
+    const rad = (a * Math.PI * 2) / 5;
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.22, 6), chromeMat);
+    leg.rotation.z = Math.PI / 2;
+    leg.rotation.y = rad;
+    leg.position.set(Math.cos(rad) * 0.11, 0.02, Math.sin(rad) * 0.11);
+    chair.add(leg);
+  }
+
+  chair.traverse((o) => {
+    if (o instanceof THREE.Mesh) o.castShadow = true;
+  });
+  return chair;
+}
+
+function makeLaptop(): THREE.Group {
+  const laptop = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2b303c, roughness: 0.3, metalness: 0.8 });
+  const screenMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x38bdf8, emissiveIntensity: 0.4 });
+
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.015, 0.18), bodyMat);
+  laptop.add(base);
+
+  const lid = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.012), screenMat);
+  lid.position.set(0, 0.08, -0.09);
+  lid.rotation.x = -0.28;
+  laptop.add(lid);
+
+  return laptop;
+}
+
 export interface CreateTowerOptions {
   onFloorHover?: (data: { listing: Listing; rank: number } | null) => void;
   theme?: "dark" | "sunset";
@@ -1052,6 +1178,76 @@ function createMoonTexture(): THREE.CanvasTexture {
   penthouseMesh.position.y = penthouseY + SLAB_HEIGHT + BODY_HEIGHT / 2;
   scene.add(penthouseMesh);
 
+  // Executive CEO Boardroom Conference Table
+  const tableMat = new THREE.MeshStandardMaterial({ color: 0x181a22, roughness: 0.25, metalness: 0.25 });
+  const tableLegMat = new THREE.MeshStandardMaterial({ color: 0xd4d8de, roughness: 0.2, metalness: 0.85 });
+  const tableTop = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.08, 1.8), tableMat);
+  tableTop.position.set(0, penthouseY + SLAB_HEIGHT + 0.68, 0);
+  tableTop.castShadow = true;
+  tableTop.receiveShadow = true;
+  scene.add(tableTop);
+  disposables.push(tableMat, tableLegMat);
+
+  for (const lx of [-1.2, 1.2]) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.64, 12), tableLegMat);
+    leg.position.set(lx, penthouseY + SLAB_HEIGHT + 0.32, 0);
+    leg.castShadow = true;
+    scene.add(leg);
+  }
+
+  // Open Laptops on Boardroom Table
+  const laptopPositions = [
+    { x: -1.0, z: -0.4, rotY: Math.PI },
+    { x: 0.8, z: -0.4, rotY: Math.PI },
+    { x: -0.6, z: 0.4, rotY: 0 },
+    { x: 1.0, z: 0.4, rotY: 0 },
+  ];
+  for (const lp of laptopPositions) {
+    const laptop = makeLaptop();
+    laptop.position.set(lp.x, penthouseY + SLAB_HEIGHT + 0.72, lp.z);
+    laptop.rotation.y = lp.rotY;
+    scene.add(laptop);
+  }
+
+  // Executive Boardroom Swivel Chairs
+  const chairPositions = [
+    { x: -2.1, z: 0, rotY: Math.PI / 2 },
+    { x: 2.1, z: 0, rotY: -Math.PI / 2 },
+    { x: -0.9, z: -1.2, rotY: 0 },
+    { x: 0.9, z: -1.2, rotY: 0 },
+    { x: -0.9, z: 1.2, rotY: Math.PI },
+    { x: 0.9, z: 1.2, rotY: Math.PI },
+  ];
+  for (const cp of chairPositions) {
+    const chair = makeExecutiveChair();
+    chair.position.set(cp.x, penthouseY + SLAB_HEIGHT, cp.z);
+    chair.rotation.y = cp.rotY;
+    scene.add(chair);
+  }
+
+  // Digital Startup Presentation Display (Growth Metrics & Pitch Deck)
+  const pitchDeckTex = createPitchDeckTexture();
+  disposables.push(pitchDeckTex);
+  const screenMat = new THREE.MeshBasicMaterial({ map: pitchDeckTex });
+  const screenFrameMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4 });
+  const screenBoard = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.4, 0.06), [
+    screenFrameMat,
+    screenFrameMat,
+    screenFrameMat,
+    screenFrameMat,
+    screenMat,
+    screenFrameMat,
+  ]);
+  screenBoard.position.set(0, penthouseY + SLAB_HEIGHT + 1.15, -3.8);
+  screenBoard.castShadow = true;
+  scene.add(screenBoard);
+
+  // Modern LED Pendant Chandelier
+  const pendantMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3 });
+  const pendantLight = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.04, 0.7), pendantMat);
+  pendantLight.position.set(0, penthouseY + SLAB_HEIGHT + 1.85, 0);
+  scene.add(pendantLight);
+
   // Penthouse "Claim top floor" Boards on 4 sides
   const claimTex = createClaimButtonTexture();
   disposables.push(claimTex);
@@ -1208,17 +1404,31 @@ function createMoonTexture(): THREE.CanvasTexture {
     () => {}
   );
 
-  // Penthouse Interior Models (Sofa, TV, Desk, Plants, Toilet Paper, Cleaner Man)
+  // Penthouse Executive Team & Luxury Furnishings
   const interiorDefs = [
-    { url: "/models/sofa.glb", height: 0.5, x: -2.3, z: -1.5, rotY: Math.PI / 2 },
-    { url: "/models/tv.glb", height: 0.5, x: -0.9, z: -1.5, rotY: -Math.PI / 2 },
-    { url: "/models/desk.glb", height: 0.55, x: 4.5, z: 4.5, rotY: 0 },
-    { url: "/models/toilet-paper.glb", height: 0.25, x: -2, z: -0.45, rotY: Math.PI / 2 },
-    { url: "/models/plant-fiddle.glb", height: 0.65, x: 4.1, z: 0, rotY: 0 },
-    { url: "/models/plant-house.glb", height: 0.45, x: -4.1, z: 0, rotY: 0.6 },
-    { url: "/models/plant-orchid.glb", height: 0.5, x: 0, z: -4.1, rotY: 0 },
-    { url: "/models/cleaner-man.glb", height: 0.8, x: 0, z: 0, rotY: 0 },
-    { url: "/models/vacuum.glb", height: 0.4, x: 2.6, z: 2.2, rotY: Math.PI / 5 },
+    // 1. CEO Presenting at Head of Conference Table
+    { url: "/models/businessman.glb", height: 0.86, x: -2.0, z: 0, rotY: Math.PI / 2 },
+    // 2. Executive / Board Member at North Side of Table
+    { url: "/models/businessman.glb", height: 0.82, x: 0.9, z: -1.25, rotY: 0 },
+    // 3. Partner / Co-Founder at South Side of Table
+    { url: "/models/businessman.glb", height: 0.82, x: -0.9, z: 1.25, rotY: Math.PI },
+    // 4. Lead Founder with Panoramic Skyline View
+    { url: "/models/businessman.glb", height: 0.85, x: 3.5, z: -3.2, rotY: -Math.PI / 4 },
+    // 5. Executive in VIP Discussion Area
+    { url: "/models/businessman.glb", height: 0.82, x: -3.3, z: 2.6, rotY: -Math.PI / 3 },
+
+    // Corner Executive Desk Suite
+    { url: "/models/desk.glb", height: 0.55, x: 3.4, z: 2.8, rotY: -Math.PI / 2 },
+
+    // Executive VIP Lounge Area
+    { url: "/models/sofa.glb", height: 0.5, x: -3.2, z: 2.2, rotY: Math.PI / 2 },
+    { url: "/models/tv.glb", height: 0.5, x: -1.7, z: 2.2, rotY: -Math.PI / 2 },
+
+    // Lush Office Architecture Plants
+    { url: "/models/plant-fiddle.glb", height: 0.7, x: 4.1, z: 4.1, rotY: 0 },
+    { url: "/models/plant-house.glb", height: 0.5, x: -4.1, z: -4.1, rotY: 0.6 },
+    { url: "/models/plant-orchid.glb", height: 0.45, x: 4.1, z: -4.1, rotY: 0 },
+    { url: "/models/plant-house.glb", height: 0.5, x: -4.1, z: 4.1, rotY: 0 },
   ];
 
   for (const def of interiorDefs) {

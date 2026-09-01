@@ -281,21 +281,135 @@ function createGlassGridTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-function createClaimButtonTexture(): THREE.CanvasTexture {
+function createVideoPlaceholderTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 176;
+  canvas.width = 1920;
+  canvas.height = 1080;
   const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, 1024, 176);
-  ctx.strokeStyle = "#111111";
-  ctx.lineWidth = 10;
-  ctx.strokeRect(5, 5, 1014, 166);
-  ctx.fillStyle = "#111111";
-  ctx.font = "800 88px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+
+  // Dark obsidian-to-slate cinematic gradient background
+  const bgGrad = ctx.createLinearGradient(0, 0, 1920, 1080);
+  bgGrad.addColorStop(0, "#080c14");
+  bgGrad.addColorStop(0.5, "#121927");
+  bgGrad.addColorStop(1, "#080c14");
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, 1920, 1080);
+
+  // Subtle video grid scanlines / film dots
+  ctx.fillStyle = "rgba(255, 255, 255, 0.02)";
+  for (let y = 0; y < 1080; y += 8) {
+    ctx.fillRect(0, y, 1920, 2);
+  }
+
+  // Outer bezel border with BharatHunt vibrant orange accent
+  ctx.strokeStyle = "#ff6b1a";
+  ctx.lineWidth = 14;
+  ctx.strokeRect(10, 10, 1900, 1060);
+
+  // Inner framing border
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(32, 32, 1856, 1016);
+
+  // Top Category / HD Badge Pill
+  ctx.fillStyle = "rgba(255, 107, 26, 0.22)";
+  ctx.beginPath();
+  ctx.roundRect(1920 / 2 - 210, 75, 420, 58, 29);
+  ctx.fill();
+  ctx.strokeStyle = "#ff6b1a";
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  ctx.fillStyle = "#ff8c42";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("Claim top floor", 512, 94);
+  ctx.font = "800 24px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.fillText("▶ 16:9 4K BRAND VIDEO SPACE", 1920 / 2, 104);
+
+  // Central Glowing Play Button Icon
+  const cx = 1920 / 2;
+  const cy = 460;
+  const radius = 88;
+
+  // Outer pulse aura
+  const auraGrad = ctx.createRadialGradient(cx, cy, radius * 0.5, cx, cy, radius * 1.6);
+  auraGrad.addColorStop(0, "rgba(255, 107, 26, 0.45)");
+  auraGrad.addColorStop(1, "rgba(255, 107, 26, 0)");
+  ctx.fillStyle = auraGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius * 1.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Play button circle
+  const btnGrad = ctx.createLinearGradient(cx - radius, cy - radius, cx + radius, cy + radius);
+  btnGrad.addColorStop(0, "#ff8c42");
+  btnGrad.addColorStop(1, "#ff5500");
+  ctx.fillStyle = btnGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 5;
+  ctx.stroke();
+
+  // White Play Triangle ▶
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.moveTo(cx - 24, cy - 40);
+  ctx.lineTo(cx + 44, cy);
+  ctx.lineTo(cx - 24, cy + 40);
+  ctx.closePath();
+  ctx.fill();
+
+  // Main Title Text
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "900 68px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.fillText("CLAIM TOP FLOOR & SHOWCASE VIDEO", 1920 / 2, 640);
+
+  // Subtitle / Prompt
+  ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+  ctx.font = "600 36px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.fillText("Stream your startup promo, demo reel, or product trailer", 1920 / 2, 725);
+
+  // Video Player Bottom Control Bar
+  ctx.fillStyle = "rgba(10, 14, 23, 0.88)";
+  ctx.fillRect(48, 930, 1824, 96);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(48, 930, 1824, 96);
+
+  // Scrubber timeline track
+  ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+  ctx.beginPath();
+  ctx.roundRect(220, 970, 1380, 16, 8);
+  ctx.fill();
+
+  // Scrubber progress
+  const progGrad = ctx.createLinearGradient(220, 0, 720, 0);
+  progGrad.addColorStop(0, "#ff5500");
+  progGrad.addColorStop(1, "#ff8c42");
+  ctx.fillStyle = progGrad;
+  ctx.beginPath();
+  ctx.roundRect(220, 970, 500, 16, 8);
+  ctx.fill();
+
+  // Scrubber knob
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(720, 978, 14, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Player controls icons / text
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "700 30px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("▶  00:00 / 01:30", 72, 978);
+
+  ctx.textAlign = "right";
+  ctx.font = "700 26px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = "#ff8c42";
+  ctx.fillText("4K HD  🔊  ⛶", 1836, 978);
+
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -1744,23 +1858,31 @@ function createMoonTexture(): THREE.CanvasTexture {
   pendantLight.position.set(0, penthouseY + SLAB_HEIGHT + 1.85, 0);
   scene.add(pendantLight);
 
-  // Penthouse "Claim top floor" Boards on 4 sides
-  const claimTex = createClaimButtonTexture();
-  disposables.push(claimTex);
-  const claimBoardMat = new THREE.MeshStandardMaterial({ map: claimTex, roughness: 0.4 });
-  disposables.push(claimBoardMat);
+  // Penthouse 16:9 Brand Video Placeholder Displays (Centered Vertically & Horizontally on 4 sides)
+  const videoTex = createVideoPlaceholderTexture();
+  disposables.push(videoTex);
+  const videoBoardMat = new THREE.MeshStandardMaterial({ map: videoTex, roughness: 0.35 });
+  disposables.push(videoBoardMat);
+  const videoFrameMat = new THREE.MeshStandardMaterial({ color: 0x111622, roughness: 0.4, metalness: 0.8 });
+  disposables.push(videoFrameMat);
+
+  // 16:9 Aspect Ratio Display: Width 4.0, Height 2.25, centered vertically (leaving 0.475m breathing space top and bottom)
+  const videoGeo = new THREE.BoxGeometry(4.0, 2.25, 0.08);
+  disposables.push(videoGeo);
+
   for (let r = 0; r < 4; r++) {
     const boardGroup = new THREE.Group();
     boardGroup.rotation.y = r * (Math.PI / 2);
-    const board = new THREE.Mesh(new THREE.BoxGeometry(6, 1, 0.1), [
-      hiringBackMat,
-      hiringBackMat,
-      hiringBackMat,
-      hiringBackMat,
-      claimBoardMat,
-      hiringBackMat,
+    const board = new THREE.Mesh(videoGeo, [
+      videoFrameMat,
+      videoFrameMat,
+      videoFrameMat,
+      videoFrameMat,
+      videoBoardMat, // Front video display screen
+      videoFrameMat,
     ]);
-    board.position.set(0, penthouseY + SLAB_HEIGHT + 0.5, 5.12);
+    board.position.set(0, penthouseY + SLAB_HEIGHT + 1.6, 5.12);
+    board.castShadow = true;
     boardGroup.add(board);
     scene.add(boardGroup);
   }
@@ -2019,7 +2141,7 @@ function createMoonTexture(): THREE.CanvasTexture {
   const restingTargetY = calculateRestingTargetY();
   let travelY = 1.32; // ground base elevation for intro
   let travelYTarget = restingTargetY;
-  const initialAzimuth = 42 * (Math.PI / 180);
+  const initialAzimuth = -45 * (Math.PI / 180);
   const restingTilt = 8.9 * (Math.PI / 180); // 6.4 deg + 2.5 deg elevation tilt
 
   // Position camera at start

@@ -343,27 +343,6 @@ function createBillboardTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-function createCafeAdTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 384;
-  const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "#ffd21e";
-  ctx.fillRect(0, 0, 1024, 384);
-  ctx.strokeStyle = "#111111";
-  ctx.lineWidth = 8;
-  ctx.strokeRect(4, 4, 1016, 376);
-  ctx.fillStyle = "#111111";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = "800 64px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
-  ctx.fillText("Put your cafe brand here for a month", 512, 150);
-  ctx.font = "600 48px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
-  ctx.fillText("For queries DM Sankalp", 512, 240);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
 
 function createBannerTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
@@ -591,45 +570,245 @@ function makeBirdsFlock(): { group: THREE.Group; wings: THREE.Mesh[] } {
   return { group, wings };
 }
 
-// Procedural Helicopter
-function makeChopper(): { chopper: THREE.Group; rotor: THREE.Mesh } {
+// Realistic VIP Executive Helicopter with Suspended Boarding Ladder
+function makeRealisticHelicopter(): {
+  chopper: THREE.Group;
+  mainRotor: THREE.Group;
+  tailRotor: THREE.Mesh;
+  ladder: THREE.Group;
+} {
   const chopper = new THREE.Group();
-  const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf2f4f6, roughness: 0.5 });
-  const darkMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
-
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 12), whiteMat);
-  body.scale.set(1.1, 0.8, 1.4);
-  chopper.add(body);
-
-  const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 1.2, 8), whiteMat);
-  tail.rotation.x = Math.PI / 2;
-  tail.position.z = 0.85;
-  chopper.add(tail);
-
-  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.5, 0.06), darkMat);
-  fin.position.set(0.08, 0.1, 1.45);
-  chopper.add(fin);
-
-  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.16, 6), darkMat);
-  mast.position.y = 0.32;
-  chopper.add(mast);
-
-  const rotor = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.02, 0.12), darkMat);
-  rotor.position.y = 0.42;
-  chopper.add(rotor);
-
-  for (const sx of [-0.26, 0.26]) {
-    const skid = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.95, 6), darkMat);
-    skid.rotation.x = Math.PI / 2;
-    skid.position.set(sx, -0.38, 0);
-    chopper.add(skid);
-  }
-
-  chopper.traverse((o) => {
-    if (o instanceof THREE.Mesh) o.castShadow = true;
+  const glossBlackMat = new THREE.MeshStandardMaterial({
+    color: 0x181a20,
+    roughness: 0.22,
+    metalness: 0.65,
+  });
+  const orangeStripeMat = new THREE.MeshStandardMaterial({
+    color: 0xff6b1a,
+    roughness: 0.35,
+    metalness: 0.2,
+  });
+  const darkMetalMat = new THREE.MeshStandardMaterial({
+    color: 0x111111,
+    roughness: 0.45,
+    metalness: 0.85,
+  });
+  const cockpitGlassMat = new THREE.MeshPhysicalMaterial({
+    color: 0x050811,
+    roughness: 0.08,
+    metalness: 0.1,
+    transmission: 0.75,
+    transparent: true,
+    opacity: 0.85,
   });
 
-  return { chopper, rotor };
+  // Main Cabin Body
+  const cabinGeo = new THREE.CapsuleGeometry(0.52, 1.4, 8, 16);
+  const cabin = new THREE.Mesh(cabinGeo, glossBlackMat);
+  cabin.rotation.x = Math.PI / 2;
+  cabin.scale.set(1.0, 1.1, 0.9);
+  chopper.add(cabin);
+
+  // Cockpit Glass Canopy
+  const glassGeo = new THREE.SphereGeometry(0.5, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+  const cockpit = new THREE.Mesh(glassGeo, cockpitGlassMat);
+  cockpit.rotation.x = Math.PI / 2;
+  cockpit.position.set(0, 0.05, -0.68);
+  cockpit.scale.set(0.96, 0.96, 0.9);
+  chopper.add(cockpit);
+
+  // Turbine Engine Cowling (Top)
+  const engine = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.32, 1.1), orangeStripeMat);
+  engine.position.set(0, 0.42, 0.1);
+  chopper.add(engine);
+
+  // Twin Turbine Exhaust Ports
+  for (const ex of [-0.18, 0.18]) {
+    const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.24, 8), darkMetalMat);
+    exhaust.rotation.x = Math.PI / 3;
+    exhaust.position.set(ex, 0.44, 0.66);
+    chopper.add(exhaust);
+  }
+
+  // Tail Boom
+  const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.16, 2.2, 8), glossBlackMat);
+  tail.rotation.x = Math.PI / 2;
+  tail.position.set(0, 0.12, 1.7);
+  chopper.add(tail);
+
+  // Vertical Fin / Stabilizer
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.75, 0.38), orangeStripeMat);
+  fin.position.set(0, 0.38, 2.7);
+  fin.rotation.x = -0.2;
+  chopper.add(fin);
+
+  // Horizontal Stabilizer
+  const hStab = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.03, 0.22), glossBlackMat);
+  hStab.position.set(0, 0.18, 2.45);
+  chopper.add(hStab);
+
+  // Main Rotor Assembly (4 Blades)
+  const mainRotor = new THREE.Group();
+  const rotorMast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.28, 8), darkMetalMat);
+  rotorMast.position.y = 0.58;
+  chopper.add(rotorMast);
+
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.06, 12), darkMetalMat);
+  mainRotor.add(hub);
+
+  const bladeMat = new THREE.MeshStandardMaterial({ color: 0x15171c, roughness: 0.4 });
+  for (let b = 0; b < 4; b++) {
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.015, 1.8), bladeMat);
+    blade.position.set(0, 0, 0.9);
+    blade.rotation.y = (b * Math.PI) / 2;
+    blade.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), (b * Math.PI) / 2);
+    mainRotor.add(blade);
+  }
+  mainRotor.position.y = 0.72;
+  chopper.add(mainRotor);
+
+  // Tail Rotor (2 Blades)
+  const tailRotor = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.65, 0.08), darkMetalMat);
+  tailRotor.position.set(0.08, 0.46, 2.76);
+  chopper.add(tailRotor);
+
+  // Landing Skids
+  const skidMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.85 });
+  for (const sx of [-0.44, 0.44]) {
+    const skidTube = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.1, 8), skidMat);
+    skidTube.rotation.x = Math.PI / 2;
+    skidTube.position.set(sx, -0.62, 0);
+    chopper.add(skidTube);
+
+    // Front curved tip
+    const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.3, 8), skidMat);
+    tip.position.set(sx, -0.52, -1.1);
+    tip.rotation.x = Math.PI / 4;
+    chopper.add(tip);
+
+    // Support struts
+    for (const sz of [-0.45, 0.45]) {
+      const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.42, 6), skidMat);
+      strut.position.set(sx * 0.65, -0.42, sz);
+      strut.rotation.z = sx > 0 ? 0.35 : -0.35;
+      chopper.add(strut);
+    }
+  }
+
+  // Suspended Boarding Ladder descending towards roof helipad
+  const ladder = new THREE.Group();
+  const ropeMat = new THREE.MeshStandardMaterial({ color: 0x8a7356, roughness: 0.85 });
+  const rungMat = new THREE.MeshStandardMaterial({ color: 0xd4d8de, roughness: 0.3, metalness: 0.7 });
+
+  const ladderHeight = 3.4;
+  const numRungs = 12;
+  for (const side of [-0.18, 0.18]) {
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, ladderHeight, 6), ropeMat);
+    rope.position.set(side, -ladderHeight / 2, 0);
+    ladder.add(rope);
+  }
+  for (let r = 0; r < numRungs; r++) {
+    const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.4, 6), rungMat);
+    rung.rotation.z = Math.PI / 2;
+    rung.position.set(0, -0.2 - r * (ladderHeight / numRungs), 0);
+    ladder.add(rung);
+  }
+  ladder.position.set(0.48, -0.35, 0);
+  chopper.add(ladder);
+
+  chopper.traverse((o) => {
+    if (o instanceof THREE.Mesh) {
+      o.castShadow = true;
+      o.receiveShadow = true;
+    }
+  });
+
+  return { chopper, mainRotor, tailRotor, ladder };
+}
+
+// Animated Character: Descends from Helicopter ➔ Drinks at Juice Stall ➔ Climbs Back
+function makeJuiceDrinkerCharacter(): {
+  group: THREE.Group;
+  armGroup: THREE.Group;
+  glassMesh: THREE.Mesh;
+} {
+  const group = new THREE.Group();
+  const suitMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.5 });
+  const shirtMat = new THREE.MeshStandardMaterial({ color: 0xff6b1a, roughness: 0.4 });
+  const skinMat = new THREE.MeshStandardMaterial({ color: 0xdfa37a, roughness: 0.6 });
+  const hairMat = new THREE.MeshStandardMaterial({ color: 0x1e1610, roughness: 0.8 });
+  const glassMat = new THREE.MeshPhysicalMaterial({
+    color: 0xff8c1a, // Fresh orange juice!
+    roughness: 0.1,
+    transmission: 0.85,
+    transparent: true,
+    opacity: 0.9,
+  });
+
+  // Torso / Suit Jacket
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.42, 0.2), suitMat);
+  body.position.y = 0.52;
+  body.castShadow = true;
+  group.add(body);
+
+  // Orange shirt & collar
+  const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 0.02), shirtMat);
+  shirt.position.set(0, 0.62, 0.105);
+  group.add(shirt);
+
+  // Head & Hair
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 14, 12), skinMat);
+  head.position.set(0, 0.84, 0);
+  group.add(head);
+
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.115, 14, 12, 0, Math.PI * 2, 0, Math.PI / 2), hairMat);
+  hair.position.set(0, 0.86, 0);
+  group.add(hair);
+
+  // Legs / Trousers
+  for (const lx of [-0.08, 0.08]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.42, 0.14), suitMat);
+    leg.position.set(lx, 0.21, 0);
+    leg.castShadow = true;
+    group.add(leg);
+
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.06, 0.18), new THREE.MeshStandardMaterial({ color: 0x050505 }));
+    shoe.position.set(lx, 0.03, 0.03);
+    group.add(shoe);
+  }
+
+  // Left Arm (Relaxed)
+  const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.38, 0.08), suitMat);
+  leftArm.position.set(-0.21, 0.48, 0);
+  group.add(leftArm);
+
+  // Right Arm (Drinking motion pivot)
+  const armGroup = new THREE.Group();
+  armGroup.position.set(0.21, 0.64, 0);
+
+  const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.34, 0.08), suitMat);
+  rightArm.position.set(0, -0.17, 0.06);
+  armGroup.add(rightArm);
+
+  const hand = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), skinMat);
+  hand.position.set(0, -0.34, 0.08);
+  armGroup.add(hand);
+
+  // Juice Glass / Smoothie Cup with straw
+  const glassMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.025, 0.12, 12), glassMat);
+  glassMesh.position.set(0, -0.32, 0.14);
+  armGroup.add(glassMesh);
+
+  // Straw
+  const straw = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.16, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  straw.position.set(0.01, -0.24, 0.14);
+  straw.rotation.z = 0.2;
+  armGroup.add(straw);
+
+  group.add(armGroup);
+  group.scale.setScalar(0.95);
+
+  return { group, armGroup, glassMesh };
 }
 
 function createPitchDeckTexture(): THREE.CanvasTexture {
@@ -1284,7 +1463,7 @@ function createMoonTexture(): THREE.CanvasTexture {
   scene.add(helipad);
   disposables.push(helipadGeo, helipadMat);
 
-  // Large Top Billboard
+  // Large Top Billboard (Perfect Center with Flush Attached Structural Steel Supports)
   const billboardTex = createBillboardTexture();
   disposables.push(billboardTex);
   const billboardMat = new THREE.MeshStandardMaterial({ map: billboardTex, roughness: 0.5 });
@@ -1297,21 +1476,33 @@ function createMoonTexture(): THREE.CanvasTexture {
     billboardMat,
     billboardMat,
   ]);
-  billboard.position.set(-1.8, roofY + 1.9, 4.4);
-  billboard.rotation.y = 0.12;
+  billboard.position.set(0, roofY + 1.65, 4.6);
+  billboard.rotation.y = 0;
   billboard.castShadow = true;
   scene.add(billboard);
   disposables.push(billboardGeo, billboardMat);
 
-  // Billboard Support Legs
-  const legMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
+  // Heavy Structural Steel Billboard Support Posts & Bracing (Firmly attached to billboard frame)
+  const legMat = new THREE.MeshStandardMaterial({ color: 0x181a20, roughness: 0.35, metalness: 0.8 });
   for (const lx of [-2.8, 2.8]) {
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.8, 0.16), legMat);
-    leg.position.set(-1.8 + lx, roofY + 0.7, 4.4);
-    leg.rotation.y = 0.12;
+    // Vertical structural steel column extending from roof deck directly into billboard bottom frame
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.4, 0.2), legMat);
+    leg.position.set(lx, roofY + 0.95, 4.6);
     leg.castShadow = true;
     scene.add(leg);
+
+    // Diagonal rear reinforcement brace anchoring to roof slab
+    const brace = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.3, 8), legMat);
+    brace.position.set(lx, roofY + 0.95, 4.15);
+    brace.rotation.x = 0.55;
+    brace.castShadow = true;
+    scene.add(brace);
   }
+
+  // Structural crossbar connecting the posts on the back of the billboard
+  const crossBar = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.12, 0.12), legMat);
+  crossBar.position.set(0, roofY + 1.15, 4.54);
+  scene.add(crossBar);
 
   // 6. Height Ruler Strip (Left Side)
   const rulerGroup = new THREE.Group();
@@ -1348,57 +1539,29 @@ function createMoonTexture(): THREE.CanvasTexture {
   const birdsFlock = makeBirdsFlock();
   scene.add(birdsFlock.group);
 
-  // Rooftop Chopper hovering above helipad
-  const chopperObj = makeChopper();
-  chopperObj.chopper.position.set(2.2, roofY + 3.2, 0);
-  chopperObj.chopper.scale.setScalar(1.4);
+  // Realistic VIP Executive Helicopter hovering above helipad with suspended ladder
+  const chopperObj = makeRealisticHelicopter();
+  chopperObj.chopper.position.set(0, roofY + 3.8, 0);
+  chopperObj.chopper.scale.setScalar(1.2);
   scene.add(chopperObj.chopper);
+
+  // Animated Passenger: Descends from Helicopter ➔ Drinks Juice at Cafe ➔ Returns to Helicopter
+  const juiceDrinker = makeJuiceDrinkerCharacter();
+  juiceDrinker.group.position.set(0.48, roofY + 3.4, 0);
+  scene.add(juiceDrinker.group);
 
   // 8. GLTF Model Loader (Asynchronously populate rich GLB models with exact dimensions)
   const gltfLoader = new GLTFLoader();
   const animMixers: THREE.AnimationMixer[] = [];
 
-  // Rooftop Pizza Restaurant (Height = 2.6, Position: x: 3.9, z: -2.6, rotY: 90 deg)
-  const cafeAdTex = createCafeAdTexture();
-  disposables.push(cafeAdTex);
-  const cafeAdMat = new THREE.MeshStandardMaterial({ map: cafeAdTex, roughness: 0.8 });
-  disposables.push(cafeAdMat);
-
+  // Rooftop Juice & Cafe Pavilion (Cleaned, with outdoor dining tables & chairs)
   gltfLoader.load(
     "/models/pizza-restaurant.glb",
     (gltf) => {
       const model = fitModelHeight(gltf.scene, 2.6);
       model.position.set(3.9, roofY + 0.4, -2.6);
       model.rotation.y = Math.PI / 2;
-
-      // Yellow billboard on cafe roof facing front
-      const cafeBoard = new THREE.Mesh(
-        new THREE.BoxGeometry(2.94, 1.12, 0.16),
-        [legMat, legMat, legMat, legMat, cafeAdMat, cafeAdMat]
-      );
-      cafeBoard.position.set(-0.02, 2.16, 0.58);
-      cafeBoard.castShadow = true;
-      model.add(cafeBoard);
-
       scene.add(model);
-    },
-    undefined,
-    () => {}
-  );
-
-  // Rooftop Businessman waving on helipad (Height = 0.85, Position: x: 0.2, z: 0.1)
-  gltfLoader.load(
-    "/models/businessman.glb",
-    (gltf) => {
-      const model = fitModelHeight(gltf.scene, 0.85);
-      model.position.set(0.2, roofY + 0.45, 0.1);
-      scene.add(model);
-      if (gltf.animations.length > 0) {
-        const mixer = new THREE.AnimationMixer(gltf.scene);
-        const action = mixer.clipAction(gltf.animations[0]);
-        action.play();
-        animMixers.push(mixer);
-      }
     },
     undefined,
     () => {}
@@ -1727,8 +1890,88 @@ function createMoonTexture(): THREE.CanvasTexture {
       w.rotation.z = side * Math.sin(t * 12 + b) * 0.5;
     }
 
-    // Chopper spinning rotor
-    chopperObj.rotor.rotation.y += 24 * dt;
+    // Realistic Helicopter Rotors & Atmospheric Hover
+    chopperObj.mainRotor.rotation.y += 28 * dt;
+    chopperObj.tailRotor.rotation.x += 36 * dt;
+
+    const chopperHoverY = roofY + 3.8 + Math.sin(t * 1.8) * 0.08;
+    chopperObj.chopper.position.y = chopperHoverY;
+    chopperObj.chopper.position.x = Math.sin(t * 1.1) * 0.04;
+    chopperObj.chopper.rotation.z = Math.sin(t * 1.4) * 0.015;
+    chopperObj.chopper.rotation.x = Math.cos(t * 1.2) * 0.012;
+
+    // Suspended Ladder breeze sway
+    chopperObj.ladder.rotation.z = Math.sin(t * 2.2) * 0.035;
+
+    // Animated Passenger Helicopter-to-Juice-Stall Loop (22 second periodic cycle)
+    const cycleDuration = 22.0;
+    const loopT = (now * 0.001) % cycleDuration;
+
+    const helipadLadderTopY = chopperHoverY - 0.4;
+    const helipadDeckY = roofY + 0.45;
+    const ladderX = 0.48;
+    const ladderZ = 0.0;
+    const juiceTableX = 2.7;
+    const juiceTableZ = -1.9;
+
+    if (loopT < 4.0) {
+      // Phase 1: Climbing down the ladder from the helicopter
+      const p = loopT / 4.0;
+      juiceDrinker.group.position.set(ladderX, helipadLadderTopY - p * (helipadLadderTopY - helipadDeckY), ladderZ);
+      juiceDrinker.group.rotation.y = -Math.PI / 2;
+      juiceDrinker.armGroup.rotation.x = Math.sin(loopT * 10) * 0.45 - 0.3;
+      juiceDrinker.armGroup.rotation.y = 0;
+      juiceDrinker.armGroup.rotation.z = 0;
+    } else if (loopT < 8.0) {
+      // Phase 2: Walking across helipad to the Juice Stall
+      const p = (loopT - 4.0) / 4.0;
+      const currentX = ladderX + (juiceTableX - ladderX) * p;
+      const currentZ = ladderZ + (juiceTableZ - ladderZ) * p;
+      const walkBob = Math.abs(Math.sin(loopT * 14)) * 0.04;
+      juiceDrinker.group.position.set(currentX, helipadDeckY + walkBob, currentZ);
+      juiceDrinker.group.rotation.y = Math.atan2(juiceTableX - ladderX, juiceTableZ - ladderZ);
+      juiceDrinker.armGroup.rotation.x = Math.sin(loopT * 10) * 0.35;
+      juiceDrinker.armGroup.rotation.y = 0;
+      juiceDrinker.armGroup.rotation.z = 0;
+    } else if (loopT < 15.5) {
+      // Phase 3: Sitting at the Juice Stall & Drinking Juice
+      juiceDrinker.group.position.set(juiceTableX, helipadDeckY - 0.05, juiceTableZ);
+      juiceDrinker.group.rotation.y = Math.PI / 3;
+
+      // Periodic sipping motion
+      const sipCycle = (loopT - 8.0) % 3.0;
+      if (sipCycle < 1.8) {
+        // Lift juice glass to mouth
+        const sipProgress = Math.sin((sipCycle / 1.8) * Math.PI);
+        juiceDrinker.armGroup.rotation.x = -1.45 * sipProgress;
+        juiceDrinker.armGroup.rotation.y = 0.35 * sipProgress;
+        juiceDrinker.armGroup.rotation.z = -0.2 * sipProgress;
+      } else {
+        // Lower glass, enjoy drink
+        juiceDrinker.armGroup.rotation.x = -0.4;
+        juiceDrinker.armGroup.rotation.y = 0.1;
+        juiceDrinker.armGroup.rotation.z = 0;
+      }
+    } else if (loopT < 19.0) {
+      // Phase 4: Walking back to the Helipad Ladder
+      const p = (loopT - 15.5) / 3.5;
+      const currentX = juiceTableX + (ladderX - juiceTableX) * p;
+      const currentZ = juiceTableZ + (ladderZ - juiceTableZ) * p;
+      const walkBob = Math.abs(Math.sin(loopT * 14)) * 0.04;
+      juiceDrinker.group.position.set(currentX, helipadDeckY + walkBob, currentZ);
+      juiceDrinker.group.rotation.y = Math.atan2(ladderX - juiceTableX, ladderZ - juiceTableZ);
+      juiceDrinker.armGroup.rotation.x = Math.sin(loopT * 10) * 0.35;
+      juiceDrinker.armGroup.rotation.y = 0;
+      juiceDrinker.armGroup.rotation.z = 0;
+    } else {
+      // Phase 5: Climbing back up the ladder into the helicopter
+      const p = (loopT - 19.0) / 3.0;
+      juiceDrinker.group.position.set(ladderX, helipadDeckY + p * (helipadLadderTopY - helipadDeckY), ladderZ);
+      juiceDrinker.group.rotation.y = -Math.PI / 2;
+      juiceDrinker.armGroup.rotation.x = Math.sin(loopT * 10) * 0.45 - 0.3;
+      juiceDrinker.armGroup.rotation.y = 0;
+      juiceDrinker.armGroup.rotation.z = 0;
+    }
 
     if (inIntro) {
       const elapsed = now - introStartTime;

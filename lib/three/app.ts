@@ -2238,56 +2238,100 @@ function createMoonTexture(): THREE.CanvasTexture {
   };
   renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
 
-  // Hand grabbing cursor on rotate / drag
+  // Helper: check if a raycast intersection hits the underlined company text area
+  function getFloorTextHit(hit: THREE.Intersection): { floorIndex: number; listing: Listing; rank: number } | null {
+    if (hit.point.y < BASE_HEIGHT || hit.point.y >= roofY) return null;
+    const fIdx = Math.floor((hit.point.y - BASE_HEIGHT) / FLOOR_PITCH);
+    if (fIdx < 0 || fIdx >= floorCount) return null;
+
+    // Validate if the hit is within the front/side face text region (domain title + underline + avatar)
+    // The company domain name and orange underline are drawn at u: 0.16..0.78, v: 0.20..0.85
+    if (hit.uv) {
+      const u = hit.uv.x;
+      const v = hit.uv.y;
+      const isTextRegion = u >= 0.16 && u <= 0.78 && v >= 0.20 && v <= 0.85;
+      if (!isTextRegion) return null;
+    }
+
+    return {
+      floorIndex: fIdx,
+      listing: listings[fIdx],
+      rank: floorCount - fIdx,
+    };
+  }
+
+  // Pointer Interaction (Smooth touch drag without accidental popups, text tap to open)
   let pointerDownPos = { x: 0, y: 0, time: 0 };
+  let isPointerDragging = false;
+
   const onPointerDown = (e: PointerEvent) => {
     pointerDownPos = { x: e.clientX, y: e.clientY, time: performance.now() };
+    isPointerDragging = false;
     renderer.domElement.style.cursor = "grabbing";
     if (typeof document !== "undefined") document.body.classList.add("is-dragging");
   };
+
   const onPointerUp = (e: PointerEvent) => {
     renderer.domElement.style.cursor = "grab";
     if (typeof document !== "undefined") document.body.classList.remove("is-dragging");
 
-    // If tap/click without dragging (< 10px movement and < 350ms)
     const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
     const duration = performance.now() - pointerDownPos.time;
-    if (dist < 10 && duration < 350 && !inIntro) {
+
+    // Intentional tap/click without dragging (< 6px movement and < 350ms)
+    if (!isPointerDragging && dist < 6 && duration < 350 && !inIntro) {
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(scene.children, true);
-      let foundFloor = -1;
+
+      let found = null;
       for (const hit of intersects) {
-        if (hit.point.y >= BASE_HEIGHT && hit.point.y < roofY) {
-          const fIdx = Math.floor((hit.point.y - BASE_HEIGHT) / FLOOR_PITCH);
-          if (fIdx >= 0 && fIdx < floorCount) {
-            foundFloor = fIdx;
-            break;
-          }
-        }
+        found = getFloorTextHit(hit);
+        if (found) break;
       }
-      if (foundFloor >= 0) {
-        currentHoveredFloor = foundFloor;
-        const rank = floorCount - foundFloor;
-        const listing = listings[foundFloor];
-        if (listing && onFloorHover) {
-          onFloorHover({ listing, rank });
-        }
+
+      if (found) {
+        currentHoveredFloor = found.floorIndex;
+        if (onFloorHover) onFloorHover({ listing: found.listing, rank: found.rank });
       }
     }
+
+    isPointerDragging = false;
   };
   renderer.domElement.addEventListener("pointerdown", onPointerDown);
   window.addEventListener("pointerup", onPointerUp);
 
-  // Raycast hover detection for floor product card
+  // Raycast hover detection: ONLY for true mouse pointers on laptops/desktops
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   let currentHoveredFloor = -1;
 
-  const onPointerMoveHover = (e: MouseEvent) => {
+  const onPointerMoveHover = (e: PointerEvent) => {
     if (inIntro) return;
+
+    // Detect drag movement during touch scroll or mouse drag
+    if (pointerDownPos.time > 0) {
+      const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+      if (dist > 6) {
+        isPointerDragging = true;
+      }
+    }
+
+    // STRICT: Hover only works on laptops / desktops with real mouse cursor
+    if (e.pointerType !== "mouse") {
+      return;
+    }
+
+    if (isPointerDragging) {
+      if (currentHoveredFloor !== -1) {
+        currentHoveredFloor = -1;
+        if (onFloorHover) onFloorHover(null);
+      }
+      return;
+    }
+
     const rect = renderer.domElement.getBoundingClientRect();
     mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -2295,32 +2339,29 @@ function createMoonTexture(): THREE.CanvasTexture {
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(scene.children, true);
 
-    let foundFloor = -1;
+    let found = null;
     for (const hit of intersects) {
-      if (hit.point.y >= BASE_HEIGHT && hit.point.y < roofY) {
-        const fIdx = Math.floor((hit.point.y - BASE_HEIGHT) / FLOOR_PITCH);
-        if (fIdx >= 0 && fIdx < floorCount) {
-          foundFloor = fIdx;
-          break;
-        }
-      }
+      found = getFloorTextHit(hit);
+      if (found) break;
     }
 
-    if (foundFloor !== currentHoveredFloor) {
-      currentHoveredFloor = foundFloor;
-      if (foundFloor >= 0) {
-        const rank = floorCount - foundFloor;
-        const listing = listings[foundFloor];
-        if (listing && onFloorHover) {
-          onFloorHover({ listing, rank });
-        }
-      } else {
+    if (found) {
+      renderer.domElement.style.cursor = "pointer";
+      if (found.floorIndex !== currentHoveredFloor) {
+        currentHoveredFloor = found.floorIndex;
+        if (onFloorHover) onFloorHover({ listing: found.listing, rank: found.rank });
+      }
+    } else {
+      if (!isPointerDragging) renderer.domElement.style.cursor = "grab";
+      if (currentHoveredFloor !== -1) {
+        currentHoveredFloor = -1;
         if (onFloorHover) onFloorHover(null);
       }
     }
   };
 
-  const onPointerLeaveHover = () => {
+  const onPointerLeaveHover = (e: PointerEvent) => {
+    if (e.pointerType !== "mouse") return;
     if (currentHoveredFloor !== -1) {
       currentHoveredFloor = -1;
       if (onFloorHover) onFloorHover(null);

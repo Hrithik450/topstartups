@@ -26,34 +26,36 @@ export default function Hero() {
       </h1>
 
       <form className="form" onSubmit={(e) => e.preventDefault()}>
-        <label className="field">
-          <Globe />
-          <input placeholder="yourcompany.com" inputMode="url" />
-        </label>
+        <div className="form-inputs-row">
+          <label className="field url-field">
+            <Globe />
+            <input placeholder="yourcompany.com" inputMode="url" />
+          </label>
 
-        <div style={{ position: "relative" }}>
-          <button type="button" className="field select" onClick={() => setOpen((o) => !o)}>
-            <Building />
-            {category ?? "Choose a category"}
-            <span className="caret">▾</span>
-          </button>
-          {open && (
-            <div className="menu">
-              {CATEGORIES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  className="menu-item"
-                  onClick={() => {
-                    setCategory(c);
-                    setOpen(false);
-                  }}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="category-wrapper" style={{ position: "relative" }}>
+            <button type="button" className="field select category-field" onClick={() => setOpen((o) => !o)}>
+              <Building />
+              <span className="category-label">{category ?? "Category"}</span>
+              <span className="caret">▾</span>
+            </button>
+            {open && (
+              <div className="menu">
+                {CATEGORIES.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    className="menu-item"
+                    onClick={() => {
+                      setCategory(c);
+                      setOpen(false);
+                    }}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <button type="submit" className="claim-btn">

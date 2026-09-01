@@ -67,79 +67,107 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
 
 function drawGlassBackground(ctx: CanvasRenderingContext2D, floorIndex: number, theme: "dark" | "sunset" = "dark") {
   if (theme === "dark") {
-    // Deep luxury midnight sapphire/slate glass
-    const grad = ctx.createLinearGradient(0, 0, 0, 256);
-    grad.addColorStop(0, "#0e1726");
-    grad.addColorStop(0.35, "#080e18");
-    grad.addColorStop(0.7, "#050912");
-    grad.addColorStop(1, "#020408");
-    ctx.fillStyle = grad;
+    // 1. Deep luxury midnight office room background
+    const roomGrad = ctx.createLinearGradient(0, 0, 0, 256);
+    roomGrad.addColorStop(0, "#0b121e");
+    roomGrad.addColorStop(0.35, "#070c15");
+    roomGrad.addColorStop(0.75, "#04070e");
+    roomGrad.addColorStop(1, "#020408");
+    ctx.fillStyle = roomGrad;
     ctx.fillRect(0, 0, 1280, 256);
 
-    // Warm interior office window lights for a lively luxury night apartment atmosphere
-    const isLit = floorIndex % 4 !== 3;
-    if (isLit) {
-      const warmTint = floorIndex % 2 === 0 ? "rgba(255, 210, 130, 0.28)" : "rgba(255, 185, 90, 0.22)";
-      ctx.fillStyle = warmTint;
-      ctx.fillRect(250, 48, 720, 160);
-      ctx.fillStyle = "rgba(255, 235, 170, 0.4)";
-      for (let wx = 270; wx <= 940; wx += 90) {
-        ctx.fillRect(wx, 56, 44, 144);
-      }
+    // 2. Office Room Polished Floor & Ceiling Depth
+    const floorSurfaceGrad = ctx.createLinearGradient(0, 195, 0, 256);
+    floorSurfaceGrad.addColorStop(0, "rgba(18, 28, 44, 0.35)");
+    floorSurfaceGrad.addColorStop(1, "rgba(8, 14, 24, 0.75)");
+    ctx.fillStyle = floorSurfaceGrad;
+    ctx.fillRect(0, 195, 1280, 61);
+
+    // 3. Night Mode Interior Office Room Lighting (Soft, non-dominating warm ambient spotlights)
+    const spotXPositions = [120, 360, 600, 840, 1080];
+    for (const sx of spotXPositions) {
+      // Recessed ceiling micro-fixture
+      ctx.fillStyle = "rgba(255, 235, 180, 0.65)";
+      ctx.fillRect(sx - 7, 2, 14, 3);
+
+      // Soft downward ambient light cone
+      const coneGrad = ctx.createRadialGradient(sx, 5, 2, sx, 110, 130);
+      coneGrad.addColorStop(0, "rgba(255, 215, 135, 0.12)");
+      coneGrad.addColorStop(0.4, "rgba(255, 195, 105, 0.05)");
+      coneGrad.addColorStop(1, "rgba(255, 195, 105, 0)");
+      ctx.fillStyle = coneGrad;
+      ctx.beginPath();
+      ctx.moveTo(sx - 10, 5);
+      ctx.lineTo(sx + 10, 5);
+      ctx.lineTo(sx + 90, 220);
+      ctx.lineTo(sx - 90, 220);
+      ctx.closePath();
+      ctx.fill();
     }
 
-    // Exterior night glass sheen & mullions
-    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
-    ctx.fillRect(0, 0, 1280, 6);
-    ctx.fillRect(0, 250, 1280, 6);
-    ctx.strokeStyle = "rgba(24, 38, 58, 0.85)";
+    // Subtle warm room ambient depth accent (alternating floors)
+    if (floorIndex % 2 === 0) {
+      const lampGrad = ctx.createRadialGradient(1020, 175, 0, 1020, 175, 80);
+      lampGrad.addColorStop(0, "rgba(255, 190, 90, 0.09)");
+      lampGrad.addColorStop(1, "rgba(255, 190, 90, 0)");
+      ctx.fillStyle = lampGrad;
+      ctx.beginPath();
+      ctx.arc(1020, 175, 80, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 4. Modern Architectural Window Mullions & Glass Frame
+    ctx.strokeStyle = "rgba(28, 42, 64, 0.75)";
     ctx.lineWidth = 4;
-    for (let x = 0; x <= 1280; x += 128) {
+    for (let x = 0; x <= 1280; x += 160) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, 256);
       ctx.stroke();
     }
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, 128);
-    ctx.lineTo(1280, 128);
-    ctx.stroke();
-  } else {
-    // Matching sunset amber-terracotta architectural glass
-    const grad = ctx.createLinearGradient(0, 0, 0, 256);
-    grad.addColorStop(0, "#d97334");
-    grad.addColorStop(0.4, "#bd5b22");
-    grad.addColorStop(0.75, "#9c4212");
-    grad.addColorStop(1, "#752c06");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 1280, 256);
 
-    // Warm glass reflection
-    ctx.fillStyle = "rgba(255, 255, 255, 0.16)";
+    // Top ceiling rail & bottom baseboard
+    ctx.fillStyle = "rgba(10, 16, 26, 0.9)";
     ctx.fillRect(0, 0, 1280, 8);
     ctx.fillRect(0, 248, 1280, 8);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
-    ctx.fillRect(0, 124, 1280, 4);
 
-    // Vertical window mullions
+    // Subtle glass reflection sheen on window surface
+    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.fillRect(0, 8, 1280, 4);
+    ctx.fillRect(0, 244, 1280, 4);
+  } else {
+    // Sunset / Evening Mode: Clean daylight architectural office room
+    const roomGrad = ctx.createLinearGradient(0, 0, 0, 256);
+    roomGrad.addColorStop(0, "#d97334");
+    roomGrad.addColorStop(0.4, "#bd5b22");
+    roomGrad.addColorStop(0.75, "#9c4212");
+    roomGrad.addColorStop(1, "#752c06");
+    ctx.fillStyle = roomGrad;
+    ctx.fillRect(0, 0, 1280, 256);
+
+    // Polished office floor surface
+    ctx.fillStyle = "rgba(60, 20, 5, 0.25)";
+    ctx.fillRect(0, 195, 1280, 61);
+
+    // Clean architectural window mullions
     ctx.strokeStyle = "rgba(55, 18, 4, 0.4)";
     ctx.lineWidth = 4;
-    for (let x = 0; x <= 1280; x += 128) {
+    for (let x = 0; x <= 1280; x += 160) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, 256);
       ctx.stroke();
     }
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, 128);
-    ctx.lineTo(1280, 128);
-    ctx.stroke();
 
-    ctx.fillStyle = "rgba(55, 18, 4, 0.5)";
-    ctx.fillRect(0, 0, 1280, 6);
-    ctx.fillRect(0, 250, 1280, 6);
+    // Top and bottom frame rails
+    ctx.fillStyle = "rgba(55, 18, 4, 0.6)";
+    ctx.fillRect(0, 0, 1280, 8);
+    ctx.fillRect(0, 248, 1280, 8);
+
+    // Subtle daylight glass sheen
+    ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.fillRect(0, 8, 1280, 4);
+    ctx.fillRect(0, 244, 1280, 4);
   }
 }
 
@@ -188,14 +216,14 @@ function paintFloorTexture(
   drawGlassBackground(ctx, floorIndex, theme);
   drawAvatar(ctx, logoImg, listing.title, listing.id);
 
-  // Domain
+  // Domain Name (Primary Heading)
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
   ctx.save();
-  ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 3;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+  ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 4;
+  ctx.fillStyle = "#ffffff";
   ctx.font = "700 64px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
 
   const domain = listing.url_or_handle.replace(/^https?:\/\//i, "").replace(/\/$/, "");
@@ -203,22 +231,22 @@ function paintFloorTexture(
   ctx.fillText(titleText, 260, 128);
 
   const textWidth = ctx.measureText(titleText).width;
-  ctx.globalAlpha = 0.5;
+  ctx.fillStyle = "rgba(255, 107, 26, 0.85)";
   ctx.fillRect(260, 142, textWidth, 3);
 
-  // Subtitle
-  ctx.globalAlpha = 0.75;
+  // Subtitle / Description
+  ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
   ctx.font = "500 36px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
   ctx.fillText(truncateText(ctx, listing.description || listing.title, 700), 260, 186);
   ctx.restore();
 
   // Rank and price
   ctx.save();
-  ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 3;
+  ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 4;
   ctx.textAlign = "right";
-  ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+  ctx.fillStyle = "#ffffff";
   ctx.font = "800 84px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
   ctx.fillText(`#${rank}`, 1232, 108);
   ctx.fillText(`₹${listing.total_paid}`, 1232, 204);

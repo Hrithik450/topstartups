@@ -11,7 +11,7 @@ export interface LiveStatsData {
   countriesCount: number;
 }
 
-export const BASELINE_VISITORS = 18028;
+export const BASELINE_VISITORS = 0;
 
 /**
  * Record a page visit or heartbeat ping from a visitor session.
@@ -38,13 +38,13 @@ export async function recordVisitAndPing(
         .insert(siteStats)
         .values({
           key: "global",
-          totalViews: BASELINE_VISITORS + 1,
+          totalViews: 1,
           updatedAt: new Date(),
         })
         .onConflictDoUpdate({
           target: siteStats.key,
           set: {
-            totalViews: sql`GREATEST(COALESCE(${siteStats.totalViews}, ${BASELINE_VISITORS}), ${BASELINE_VISITORS}) + 1`,
+            totalViews: sql`COALESCE(${siteStats.totalViews}, 0) + 1`,
             updatedAt: new Date(),
           },
         });
@@ -123,8 +123,7 @@ export async function getLiveStats(): Promise<LiveStatsData> {
       .where(eq(siteStats.key, "global"))
       .limit(1);
 
-    const rawViews = Number(statsRes[0]?.totalViews || 0);
-    const totalViews = Math.max(BASELINE_VISITORS, rawViews || BASELINE_VISITORS);
+    const totalViews = Number(statsRes[0]?.totalViews || 0);
 
     // 4. Real distinct unique countries count
     const countriesRes = await db
@@ -149,7 +148,7 @@ export async function getLiveStats(): Promise<LiveStatsData> {
       heightFt: 731,
       claimedFloors: 0,
       totalFloors: 50,
-      totalViews: BASELINE_VISITORS,
+      totalViews: 0,
       countriesCount: 1,
     };
   }

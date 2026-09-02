@@ -43,11 +43,11 @@ async function resetDb() {
     await pool.query(`DELETE FROM active_sessions;`);
     await pool.query(`DELETE FROM visitor_countries;`);
     
-    console.log("2. Resetting site stats (18,028 baseline visitors)...");
+    console.log("2. Resetting site stats (0 baseline visitors)...");
     await pool.query(`
       INSERT INTO site_stats (key, total_views, updated_at)
-      VALUES ('global', 18028, NOW())
-      ON CONFLICT (key) DO UPDATE SET total_views = GREATEST(site_stats.total_views, 18028), updated_at = NOW();
+      VALUES ('global', 0, NOW())
+      ON CONFLICT (key) DO UPDATE SET total_views = 0, updated_at = NOW();
     `);
 
     console.log("3. Resetting 50 skyscraper floors to pristine mock state...");

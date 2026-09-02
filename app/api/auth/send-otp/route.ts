@@ -45,8 +45,8 @@ export async function POST(req: NextRequest) {
     const code = crypto.randomInt(100000, 999999).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Delete existing stale OTPs for this email
-    await db.delete(emailOtps).where(sql`LOWER(${emailOtps.email}) = ${cleanEmail}`);
+    // Delete existing stale OTPs for this email using pure Drizzle
+    await db.delete(emailOtps).where(eq(emailOtps.email, cleanEmail));
 
     // Insert new OTP record
     await db.insert(emailOtps).values({

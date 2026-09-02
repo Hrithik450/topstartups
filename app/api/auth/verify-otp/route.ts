@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { emailOtps } from "@/lib/db/schema";
 import { getFloorsByEmail } from "@/lib/db/floors";
-import { sql } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -27,12 +27,16 @@ export async function POST(req: NextRequest) {
     const cleanEmail = email.toLowerCase().trim();
     const cleanCode = code.toString().trim();
 
-    // Verify OTP against database
+    // Verify OTP against database using pure Drizzle
     const matching = await db
       .select()
       .from(emailOtps)
       .where(
-        sql`LOWER(${emailOtps.email}) = ${cleanEmail} AND ${emailOtps.code} = ${cleanCode} AND ${emailOtps.expiresAt} > NOW()`
+        and(
+          eq(emailOtps.email, cleanEmail),
+          eq(emailOtps.code, cleanCode),
+          gt(emailOtps.expiresAt, new Date())
+        )
       )
       .limit(1);
 
@@ -43,8 +47,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Delete used OTP
-    await db.delete(emailOtps).where(sql`LOWER(${emailOtps.email}) = ${cleanEmail}`);
+    // Delete used OTP using pure Drizzle
+    await db.delete(emailOtps).where(eq(emailOtps.email, cleanEmail));
 
     // Create session verification token
     const token = createSessionSignature(cleanEmail);

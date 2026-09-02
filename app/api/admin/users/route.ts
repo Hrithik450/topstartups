@@ -3,7 +3,7 @@ import { verifyAdminToken } from "@/lib/admin-auth";
 import { getAllUsersWithProducts } from "@/lib/db/users";
 import { db } from "@/lib/db/client";
 import { floors } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -21,19 +21,21 @@ export async function GET(req: NextRequest) {
 
     const users = await getAllUsersWithProducts();
 
-    // Calculate high-level stats
+    // Calculate high-level stats using pure Drizzle
     const totalClaimedFloors = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(floors)
-      .where(eq(floors.isClaimed, true));
-
-    const totalRevenueRes = await db
-      .select({ total: sql<number>`coalesce(sum(${floors.pricePaid}), 0)` })
+      .select({ count: count() })
       .from(floors)
       .where(eq(floors.isClaimed, true));
 
     const claimedCount = Number(totalClaimedFloors[0]?.count || 0);
-    const revenue = Number(totalRevenueRes[0]?.total || 0);
+
+    // Sum revenue from claimed floors
+    const allClaimed = await db
+      .select({ pricePaid: floors.pricePaid })
+      .from(floors)
+      .where(eq(floors.isClaimed, true));
+
+    const revenue = allClaimed.reduce((sum, f) => sum + (f.pricePaid || 0), 0);
 
     return NextResponse.json({
       success: true,

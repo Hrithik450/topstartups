@@ -92,8 +92,19 @@ export function useLiveStats(initialHeightFt = 731) {
       }
     };
 
-    // 1. Initial page load = record 1 page visit and sync live stats
-    pingAndSyncStats(true);
+    // Record 1 visit per visitor session (prevents duplicate increments on reloads)
+    let isNewSession = false;
+    try {
+      if (!sessionStorage.getItem("gtf_visit_recorded")) {
+        isNewSession = true;
+        sessionStorage.setItem("gtf_visit_recorded", "true");
+      }
+    } catch {
+      isNewSession = true;
+    }
+
+    // 1. Initial page load: sync stats (and increment only if new session)
+    pingAndSyncStats(isNewSession);
 
     // 2. Re-ping every 35 seconds to maintain real online presence (without incrementing view count)
     const interval = setInterval(() => pingAndSyncStats(false), 35000);

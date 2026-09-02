@@ -126,47 +126,6 @@ export default function StatChips({
   const { user, ownedFloors, login } = useUserAuth();
 
   const chips = [
-    {
-      key: "online",
-      className: "online",
-      render: () => (
-        <>
-          <span className="dot" /> <span className="num">{stats.mounted ? stats.online : 1}</span> online
-        </>
-      ),
-    },
-    {
-      key: "tall",
-      render: () => (
-        <>
-          <RulerTall /> <span className="num">{stats.heightFt.toLocaleString()}</span> ft tall
-        </>
-      ),
-    },
-    {
-      key: "claimed",
-      render: () => (
-        <>
-          <Stack /> <span className="num">{stats.mounted ? stats.claimedFloors : 0}</span> floors claimed
-        </>
-      ),
-    },
-    {
-      key: "viewed",
-      render: () => (
-        <>
-          <Eye /> <span className="num" suppressHydrationWarning>{stats.mounted ? stats.totalViews.toLocaleString() : "1"}</span> views
-        </>
-      ),
-    },
-    {
-      key: "countries",
-      render: () => (
-        <>
-          <Globe /> <span className="num">{stats.mounted ? stats.countriesCount : 1}</span> {stats.countriesCount === 1 ? "country" : "countries"} visited from
-        </>
-      ),
-    },
     ...(user
       ? [
           {
@@ -256,6 +215,47 @@ export default function StatChips({
             ),
           },
         ]),
+    {
+      key: "online",
+      className: "online",
+      render: () => (
+        <>
+          <span className="dot" /> <span className="num">{stats.mounted ? stats.online : 1}</span> online
+        </>
+      ),
+    },
+    {
+      key: "tall",
+      render: () => (
+        <>
+          <RulerTall /> <span className="num">{stats.heightFt.toLocaleString()}</span> ft tall
+        </>
+      ),
+    },
+    {
+      key: "claimed",
+      render: () => (
+        <>
+          <Stack /> <span className="num">{stats.mounted ? stats.claimedFloors : 0}</span> floors claimed
+        </>
+      ),
+    },
+    {
+      key: "viewed",
+      render: () => (
+        <>
+          <Eye /> <span className="num" suppressHydrationWarning>{stats.mounted ? stats.totalViews.toLocaleString() : "1"}</span> views
+        </>
+      ),
+    },
+    {
+      key: "countries",
+      render: () => (
+        <>
+          <Globe /> <span className="num">{stats.mounted ? stats.countriesCount : 1}</span> {stats.countriesCount === 1 ? "country" : "countries"} visited from
+        </>
+      ),
+    },
     {
       key: "backed",
       render: () => (

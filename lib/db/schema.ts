@@ -28,6 +28,7 @@ export const floors = pgTable(
     logoUrl: text("logo_url"),
     pricePaid: integer("price_paid").notNull().default(0), // in INR
     manageToken: varchar("manage_token", { length: 128 }),
+    ownerEmail: varchar("owner_email", { length: 255 }),
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -36,11 +37,32 @@ export const floors = pgTable(
     rankIdx: index("floors_rank_idx").on(table.rank),
     isClaimedIdx: index("floors_is_claimed_idx").on(table.isClaimed),
     manageTokenIdx: index("floors_manage_token_idx").on(table.manageToken),
+    ownerEmailIdx: index("floors_owner_email_idx").on(table.ownerEmail),
   })
 );
 
 export type Floor = typeof floors.$inferSelect;
 export type NewFloor = typeof floors.$inferInsert;
+
+/**
+ * Email OTPs for passwordless, token-free floor management verification.
+ */
+export const emailOtps = pgTable(
+  "email_otps",
+  {
+    id: serial("id").primaryKey(),
+    email: varchar("email", { length: 255 }).notNull(),
+    code: varchar("code", { length: 6 }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    emailIdx: index("email_otps_email_idx").on(table.email),
+  })
+);
+
+export type EmailOtp = typeof emailOtps.$inferSelect;
+export type NewEmailOtp = typeof emailOtps.$inferInsert;
 
 /**
  * Claims / Payments ledger:

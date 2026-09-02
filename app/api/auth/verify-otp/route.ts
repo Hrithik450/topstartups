@@ -1,0 +1,68 @@
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db/client";
+import { emailOtps } from "@/lib/db/schema";
+import { getFloorsByEmail } from "@/lib/db/floors";
+import { sql } from "drizzle-orm";
+import crypto from "crypto";
+
+export const dynamic = "force-dynamic";
+
+function createSessionSignature(email: string): string {
+  const secret = process.env.SESSION_SECRET || "getopfloor_secure_session_secret";
+  return crypto.createHmac("sha256", secret).update(email.toLowerCase().trim()).digest("hex");
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { email, code } = body;
+
+    if (!email || !code) {
+      return NextResponse.json(
+        { error: "Email and verification code are required" },
+        { status: 400 }
+      );
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanCode = code.toString().trim();
+
+    // Verify OTP against database
+    const matching = await db
+      .select()
+      .from(emailOtps)
+      .where(
+        sql`LOWER(${emailOtps.email}) = ${cleanEmail} AND ${emailOtps.code} = ${cleanCode} AND ${emailOtps.expiresAt} > NOW()`
+      )
+      .limit(1);
+
+    if (matching.length === 0) {
+      return NextResponse.json(
+        { error: "Invalid or expired verification code. Please request a new code." },
+        { status: 401 }
+      );
+    }
+
+    // Delete used OTP
+    await db.delete(emailOtps).where(sql`LOWER(${emailOtps.email}) = ${cleanEmail}`);
+
+    // Create session verification token
+    const token = createSessionSignature(cleanEmail);
+
+    // Fetch all floors owned by this email
+    const floors = await getFloorsByEmail(cleanEmail);
+
+    return NextResponse.json({
+      success: true,
+      email: cleanEmail,
+      sessionToken: token,
+      floors,
+    });
+  } catch (err) {
+    console.error("Error verifying OTP:", err);
+    return NextResponse.json(
+      { error: "Failed to verify code. Please try again." },
+      { status: 500 }
+    );
+  }
+}

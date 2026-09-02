@@ -184,6 +184,7 @@ export async function claimTopFloorTransactional(
         logo_url,
         price_paid,
         manage_token,
+        owner_email,
         claimed_at,
         created_at,
         updated_at
@@ -198,6 +199,7 @@ export async function claimTopFloorTransactional(
         ${input.logoUrl || null},
         ${finalPrice},
         ${token},
+        ${input.customerEmail?.toLowerCase().trim() || null},
         NOW(),
         NOW(),
         NOW()
@@ -327,3 +329,102 @@ export async function deleteFloorByManageToken(
     message: `Floor #${current.rank} (${current.companyName}) has been vacated and reset to an available slot.`,
   };
 }
+
+/**
+ * Fetch all claimed floors owned by a verified email.
+ */
+export async function getFloorsByEmail(email: string) {
+  if (!email?.trim()) return [];
+  const cleanEmail = email.toLowerCase().trim();
+  return await db
+    .select()
+    .from(floors)
+    .where(sql`LOWER(${floors.ownerEmail}) = ${cleanEmail} AND ${floors.isClaimed} = true`)
+    .orderBy(floors.rank);
+}
+
+/**
+ * Update a floor owned by a verified email.
+ */
+export async function updateFloorByEmail(
+  floorId: number,
+  email: string,
+  updates: {
+    companyName?: string;
+    url?: string;
+    category?: string;
+    tagline?: string;
+    description?: string;
+    logoUrl?: string;
+  }
+) {
+  const cleanEmail = email.toLowerCase().trim();
+  const existing = await db
+    .select()
+    .from(floors)
+    .where(sql`${floors.id} = ${floorId} AND LOWER(${floors.ownerEmail}) = ${cleanEmail}`)
+    .limit(1);
+
+  if (existing.length === 0) return null;
+
+  const setPayload: Record<string, any> = {
+    updatedAt: new Date(),
+  };
+
+  if (updates.companyName?.trim()) setPayload.companyName = updates.companyName.trim();
+  if (updates.url?.trim()) {
+    let cleanUrl = updates.url.trim();
+    if (!cleanUrl.startsWith("http")) cleanUrl = `https://${cleanUrl}`;
+    setPayload.url = cleanUrl;
+  }
+  if (updates.category?.trim()) setPayload.category = updates.category.trim();
+  if (updates.tagline?.trim()) setPayload.tagline = updates.tagline.trim();
+  if (updates.description?.trim()) setPayload.description = updates.description.trim();
+  if (updates.logoUrl !== undefined) setPayload.logoUrl = updates.logoUrl?.trim() || null;
+
+  await db.update(floors).set(setPayload).where(eq(floors.id, floorId));
+
+  const updated = await db.select().from(floors).where(eq(floors.id, floorId)).limit(1);
+  return updated[0] || null;
+}
+
+/**
+ * Vacate a floor owned by a verified email.
+ */
+export async function deleteFloorByEmail(floorId: number, email: string) {
+  const cleanEmail = email.toLowerCase().trim();
+  const existing = await db
+    .select()
+    .from(floors)
+    .where(sql`${floors.id} = ${floorId} AND LOWER(${floors.ownerEmail}) = ${cleanEmail}`)
+    .limit(1);
+
+  if (existing.length === 0) {
+    return { success: false, message: "Floor not found or you are not authorized to manage it." };
+  }
+
+  const current = existing[0];
+
+  await db
+    .update(floors)
+    .set({
+      isClaimed: false,
+      companyName: `Tower Floor #${current.rank} — Spot Reserved`,
+      url: "https://getopfloor.com",
+      category: "Available Floor",
+      tagline: "Spot reserved for your startup — Outbid & claim top floor",
+      description: "Claim this floor to put your company on the world stage.",
+      logoUrl: null,
+      manageToken: null,
+      ownerEmail: null,
+      claimedAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(floors.id, floorId));
+
+  return {
+    success: true,
+    message: `Floor #${current.rank} (${current.companyName}) has been vacated and reset to an available slot.`,
+  };
+}
+

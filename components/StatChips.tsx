@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RulerTall, Bank, Stack, Plane, Eye, Globe, Close, BarChart } from "./icons";
+import { RulerTall, Stack, Eye, Globe, Close, BarChart } from "./icons";
 
 export function useLiveStats(initialHeightFt = 731) {
   const [online, setOnline] = useState(52);
@@ -35,19 +35,9 @@ export default function StatChips({ heightFt = 731 }: { heightFt?: number | stri
       ),
     },
     { key: "tall", render: () => (<><RulerTall /> <span className="num">{stats.heightFt.toLocaleString()}</span> ft tall</>) },
-    { key: "sale", render: () => (<><Bank /> <span className="num">₹823</span> sale made</>) },
     { key: "claimed", render: () => (<><Stack /> <span className="num">58</span> floors claimed</>) },
-    { key: "aerial", render: () => (<><Plane /> <span className="num">13</span> aerial hours booked</>) },
-    { key: "viewed", render: () => (<><Eye /> <span className="num" suppressHydrationWarning>{stats.viewed.toLocaleString()}</span> floors viewed</>) },
+    { key: "viewed", render: () => (<><Eye /> <span className="num" suppressHydrationWarning>{stats.viewed.toLocaleString()}</span> views</>) },
     { key: "countries", render: () => (<><Globe /> <span className="num">127</span> countries visited from</>) },
-    {
-      key: "built",
-      render: () => (
-        <>
-          <span className="avatar" style={{ background: "linear-gradient(135deg,#ff8f4d,#ff5500)" }} /> Built by You
-        </>
-      ),
-    },
     {
       key: "backed",
       render: () => (
@@ -123,15 +113,6 @@ export function MobileStatsSheet({
 
           <div className="mobile-stat-card">
             <div className="stat-card-top">
-              <Bank />
-              <span className="stat-card-badge">FLOOR SALES</span>
-            </div>
-            <div className="stat-card-value">₹823</div>
-            <div className="stat-card-label">Total Volume Transacted</div>
-          </div>
-
-          <div className="mobile-stat-card">
-            <div className="stat-card-top">
               <Stack />
               <span className="stat-card-badge">OCCUPANCY</span>
             </div>
@@ -141,20 +122,11 @@ export function MobileStatsSheet({
 
           <div className="mobile-stat-card">
             <div className="stat-card-top">
-              <Plane />
-              <span className="stat-card-badge">AIR TRAFFIC</span>
-            </div>
-            <div className="stat-card-value">13 Hours</div>
-            <div className="stat-card-label">Aerial Billboard Flight Time</div>
-          </div>
-
-          <div className="mobile-stat-card">
-            <div className="stat-card-top">
               <Eye />
               <span className="stat-card-badge">IMPRESSIONS</span>
             </div>
             <div className="stat-card-value" suppressHydrationWarning>{stats.viewed.toLocaleString()}</div>
-            <div className="stat-card-label">Floors Viewed & Explored</div>
+            <div className="stat-card-label">Total Skyscraper Views</div>
           </div>
 
           <div className="mobile-stat-card full-span">
@@ -168,9 +140,6 @@ export function MobileStatsSheet({
         </div>
 
         <div className="mobile-sheet-footer">
-          <div className="badge-pill">
-            <span className="avatar" style={{ background: "linear-gradient(135deg,#ff8f4d,#ff5500)" }} /> Built by You
-          </div>
           <div className="badge-pill">
             <span className="avatar" style={{ background: "linear-gradient(135deg,#ffd27c,#ff9f43)" }} /> Backed by BharatHunt
           </div>

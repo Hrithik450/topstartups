@@ -297,6 +297,8 @@ body.home-tower-scrolled .tower-top-fade {
 }
 
 .form {
+  position: relative;
+  z-index: 60;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -306,6 +308,8 @@ body.home-tower-scrolled .tower-top-fade {
 }
 
 .form-inputs-row {
+  position: relative;
+  z-index: 60;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -356,6 +360,10 @@ body.home-tower-scrolled .tower-top-fade {
 .field.select .caret {
   margin-left: 6px;
   color: var(--ink-faint);
+  transition: transform 0.2s ease;
+}
+.field.select.open .caret {
+  transform: rotate(180deg);
 }
 
 .claim-btn {
@@ -387,6 +395,8 @@ body.home-tower-scrolled .tower-top-fade {
 }
 
 .subtitle {
+  position: relative;
+  z-index: 1;
   margin-top: 16px;
   color: var(--ink-soft);
   font-size: 14px;
@@ -394,35 +404,51 @@ body.home-tower-scrolled .tower-top-fade {
 }
 
 /* category dropdown */
+.category-wrapper {
+  position: relative;
+}
+
 .menu {
   position: absolute;
   top: calc(100% + 8px);
-  left: 0;
-  min-width: 220px;
+  right: 0;
+  left: auto;
+  min-width: 180px;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 32px));
   padding: 6px;
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  box-shadow: var(--card-shadow);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  z-index: 5;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 150;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  animation: cardFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .menu-item {
   text-align: left;
   border: none;
   background: transparent;
-  padding: 9px 12px;
-  border-radius: 10px;
+  padding: 9px 14px;
+  border-radius: 12px;
   font-size: 14px;
+  font-weight: 500;
   color: var(--ink);
-  transition: background 0.12s;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
 }
 .menu-item:hover {
   background: rgba(255, 107, 26, 0.15);
+  color: var(--brand-orange);
+}
+.menu-item.selected {
+  background: var(--brand-orange-soft);
+  color: var(--brand-orange);
+  font-weight: 700;
 }
 
 /* ---------- Stat chips (left) ---------- */

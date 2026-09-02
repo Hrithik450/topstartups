@@ -7,8 +7,6 @@ import {
   Plus,
   Minus,
   Ruler,
-  SoundOn,
-  SoundOff,
   Moon,
   Sun,
   ChevLeft,
@@ -33,7 +31,6 @@ export default function Controls({
   onOpenStats?: () => void;
 }) {
   const [ruler, setRuler] = useState(false);
-  const [sound, setSound] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const h = () => handleRef.current;
 
@@ -78,11 +75,6 @@ export default function Controls({
         <button className={`ctrl ${ruler ? "active" : ""}`} onClick={() => setRuler(h()?.toggleRuler() ?? false)}>
           <Ruler />
           <span>Ruler {ruler ? "off" : "on"}</span>
-        </button>
-
-        <button className={`ctrl ${sound ? "active" : ""}`} onClick={() => setSound((s) => !s)}>
-          {sound ? <SoundOn /> : <SoundOff />}
-          <span>Sound {sound ? "off" : "on"}</span>
         </button>
 
         <div className="ctrl group">

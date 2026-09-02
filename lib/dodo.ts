@@ -47,6 +47,9 @@ export async function createDodoCheckout(
     };
   }
 
+  const productId =
+    process.env.DODO_PAYMENTS_PRODUCT_ID?.trim() || "pdt_0Nmk416j1IPMQxU2qgfrP";
+
   // Real Dodo Payments REST API call
   try {
     const response = await fetch(`${DODO_API_URL}/checkouts`, {
@@ -62,9 +65,8 @@ export async function createDodoCheckout(
         },
         product_cart: [
           {
+            product_id: productId,
             amount: input.price * 100, // Dodo amounts in subunits (paise / cents)
-            currency: "INR",
-            name: `GeTopFloor Skyscraper Top Floor — ${input.companyName}`,
             quantity: 1,
           },
         ],
@@ -88,7 +90,7 @@ export async function createDodoCheckout(
 
     const data = await response.json();
     return {
-      paymentId: data.payment_id || data.id,
+      paymentId: data.session_id || data.payment_id || data.id,
       checkoutUrl: data.checkout_url || data.url,
       isMock: false,
     };

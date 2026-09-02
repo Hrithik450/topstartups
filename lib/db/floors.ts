@@ -7,6 +7,7 @@ export type { Floor, NewFloor };
 
 export interface ClaimFloorInput {
   paymentId: string;
+  checkoutSessionId?: string;
   companyName: string;
   url: string;
   category?: string;
@@ -112,7 +113,9 @@ export async function claimTopFloorTransactional(
     const existingClaim = await tx
       .select()
       .from(claims)
-      .where(eq(claims.paymentId, input.paymentId))
+      .where(
+        sql`${claims.paymentId} = ${input.paymentId} OR (${input.checkoutSessionId ? sql`${claims.paymentId} = ${input.checkoutSessionId}` : sql`false`})`
+      )
       .limit(1);
 
     if (existingClaim.length > 0 && existingClaim[0].status === "succeeded") {
@@ -204,6 +207,19 @@ export async function claimTopFloorTransactional(
           completedAt: new Date(),
         },
       });
+
+    if (input.checkoutSessionId && input.checkoutSessionId !== input.paymentId) {
+      await tx
+        .update(claims)
+        .set({
+          status: "succeeded",
+          manageToken: token,
+          customerPhone: cleanPhone || undefined,
+          userId: userId || undefined,
+          completedAt: new Date(),
+        })
+        .where(eq(claims.paymentId, input.checkoutSessionId));
+    }
 
     return {
       success: true,

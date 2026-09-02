@@ -87,16 +87,21 @@ export default function Hero() {
     if (typeof window === "undefined") return;
 
     const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get("session_id") || params.get("checkout_id") || params.get("payment_id");
+    const paymentId = params.get("payment_id");
+    const sessionId = params.get("session_id") || params.get("checkout_id") || paymentId;
 
     // Check if returning from a real Dodo checkout session
-    if (sessionId && !sessionId.startsWith("mock_")) {
+    if ((paymentId || sessionId) && !sessionId?.startsWith("mock_")) {
+      const targetQuery = paymentId
+        ? `payment_id=${encodeURIComponent(paymentId)}`
+        : `session_id=${encodeURIComponent(sessionId || "")}`;
+
       setPaymentNotice({
         type: "info",
         message: "Verifying payment confirmation with Dodo Payments...",
       });
 
-      fetch(`/api/checkout/verify?session_id=${encodeURIComponent(sessionId)}`)
+      fetch(`/api/checkout/verify?${targetQuery}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.status === "succeeded") {
@@ -105,8 +110,11 @@ export default function Hero() {
             if (data.customerEmail) {
               localStorage.setItem("getopfloor_manage_email", data.customerEmail);
             }
-            // Trigger 3D tower reload
+            // Trigger 3D tower reload immediately and after a short tick
             window.dispatchEvent(new CustomEvent("floors-refresh"));
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent("floors-refresh"));
+            }, 1200);
           } else if (data.status === "failed") {
             setPaymentNotice({
               type: "error",

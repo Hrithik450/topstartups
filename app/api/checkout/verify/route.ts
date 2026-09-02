@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { claims } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { claimTopFloorTransactional } from "@/lib/db/floors";
 
 export const dynamic = "force-dynamic";
@@ -15,11 +15,14 @@ const DODO_API_URL =
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const sessionId = searchParams.get("session_id") || searchParams.get("checkout_id");
+    const paymentIdParam = searchParams.get("payment_id")?.trim();
+    const sessionIdParam = (searchParams.get("session_id") || searchParams.get("checkout_id"))?.trim();
 
-    if (!sessionId) {
+    const targetId = paymentIdParam || sessionIdParam;
+
+    if (!targetId || targetId === "{CHECKOUT_ID}") {
       return NextResponse.json(
-        { error: "session_id parameter is required" },
+        { error: "payment_id or session_id parameter is required" },
         { status: 400 }
       );
     }
@@ -32,33 +35,86 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 1. Fetch checkout status from Dodo Payments
-    const dodoRes = await fetch(`${DODO_API_URL}/checkouts/${sessionId}`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    });
+    let paymentStatus = "unknown";
+    let paymentId = paymentIdParam || null;
+    let checkoutSessionId = sessionIdParam || null;
+    let customerName: string | null = null;
+    let customerEmail: string | null = null;
+    let customerPhone: string | null = null;
+    let metadata: any = {};
 
-    if (!dodoRes.ok) {
-      console.warn("Could not query Dodo checkout session:", dodoRes.status);
-      return NextResponse.json(
-        { status: "unknown", message: "Could not verify payment session with gateway." },
-        { status: 200 }
-      );
+    // 1. If targetId starts with "pay_", query the /payments endpoint
+    if (targetId.startsWith("pay_")) {
+      const res = await fetch(`${DODO_API_URL}/payments/${targetId}`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        paymentId = data.payment_id || targetId;
+        checkoutSessionId = data.checkout_session_id || checkoutSessionId;
+        paymentStatus = data.status; // "succeeded", "failed", "pending"
+        customerName = data.customer?.name || null;
+        customerEmail = data.customer?.email || null;
+        customerPhone = data.customer?.phone_number || null;
+        metadata = data.metadata || {};
+      } else {
+        console.warn(`Could not query Dodo /payments/${targetId}:`, res.status);
+      }
     }
 
-    const sessionData = await dodoRes.json();
-    const paymentStatus = sessionData.payment_status; // "succeeded", "failed", "pending", etc.
+    // 2. If targetId starts with "cks_" or status is still unknown, query /checkouts endpoint
+    if (paymentStatus === "unknown" && (targetId.startsWith("cks_") || !targetId.startsWith("pay_"))) {
+      const checkId = checkoutSessionId || targetId;
+      const res = await fetch(`${DODO_API_URL}/checkouts/${checkId}`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
 
-    // 2. Look up claim in our database
-    const existingClaims = await db
+      if (res.ok) {
+        const data = await res.json();
+        paymentId = data.payment_id || paymentId;
+        checkoutSessionId = data.id || checkId;
+        paymentStatus = data.payment_status || data.status;
+        customerName = data.customer_name || data.customer?.name || customerName;
+        customerEmail = data.customer_email || data.customer?.email || customerEmail;
+        customerPhone = data.customer?.phone_number || customerPhone;
+        metadata = data.metadata || metadata;
+      } else {
+        console.warn(`Could not query Dodo /checkouts/${checkId}:`, res.status);
+      }
+    }
+
+    // 3. Fallback: query /payments if we only had cks_ and Dodo returned payment_id
+    if (paymentId && paymentStatus === "unknown") {
+      const res = await fetch(`${DODO_API_URL}/payments/${paymentId}`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        paymentStatus = data.status;
+        customerName = data.customer?.name || customerName;
+        customerEmail = data.customer?.email || customerEmail;
+        customerPhone = data.customer?.phone_number || customerPhone;
+        metadata = data.metadata || metadata;
+      }
+    }
+
+    // 4. Look up matching claim in our database (by either paymentId or checkoutSessionId)
+    const matchingClaims = await db
       .select()
       .from(claims)
-      .where(eq(claims.paymentId, sessionId))
+      .where(
+        or(
+          ...(paymentId ? [eq(claims.paymentId, paymentId)] : []),
+          ...(checkoutSessionId ? [eq(claims.paymentId, checkoutSessionId)] : []),
+          eq(claims.paymentId, targetId)
+        )
+      )
       .limit(1);
 
-    const pendingClaim = existingClaims[0];
+    const pendingClaim = matchingClaims[0];
 
+    // If payment failed
     if (paymentStatus === "failed") {
       if (pendingClaim && pendingClaim.status === "pending") {
         await db
@@ -72,40 +128,57 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // If payment succeeded
     if (paymentStatus === "succeeded") {
-      const customerEmail = (pendingClaim?.customerEmail || sessionData.customer_email || sessionData.customer?.email)?.toLowerCase().trim() || null;
-      const customerPhone = (pendingClaim?.customerPhone || sessionData.customer?.phone_number || sessionData.customer_phone || sessionData.billing?.phone)?.trim() || null;
-      const companyName = pendingClaim?.companyName || sessionData.customer_name || sessionData.customer?.name || "New Startup";
-      const url = pendingClaim?.url || "https://getopfloor.com";
-      const category = pendingClaim?.category || "Startup";
-      const price = pendingClaim?.amount || 50;
+      const finalEmail = (
+        pendingClaim?.customerEmail ||
+        customerEmail ||
+        metadata.customer_email
+      )?.toLowerCase().trim() || null;
 
-      // If already claimed, return confirmation
+      const finalPhone = (
+        pendingClaim?.customerPhone ||
+        customerPhone ||
+        metadata.customer_phone
+      )?.trim() || null;
+
+      const companyName =
+        pendingClaim?.companyName ||
+        metadata.company_name ||
+        customerName ||
+        "New Startup";
+
+      const url = pendingClaim?.url || metadata.url || "https://getopfloor.com";
+      const category = pendingClaim?.category || metadata.category || "Startup";
+      const price = pendingClaim?.amount || Number(metadata.price) || 50;
+
+      // If already claimed, return immediate confirmation
       if (pendingClaim && pendingClaim.status === "succeeded") {
         return NextResponse.json({
           status: "succeeded",
           rank: 1,
           companyName: pendingClaim.companyName,
-          customerEmail,
+          customerEmail: finalEmail,
         });
       }
 
       // Claim top floor atomically
       const result = await claimTopFloorTransactional({
-        paymentId: sessionId,
+        paymentId: paymentId || targetId,
+        checkoutSessionId: checkoutSessionId || undefined,
         companyName,
         url,
         category,
         price,
-        customerEmail: customerEmail || undefined,
-        customerPhone: customerPhone || undefined,
+        customerEmail: finalEmail || undefined,
+        customerPhone: finalPhone || undefined,
       });
 
       return NextResponse.json({
         status: "succeeded",
         rank: result.rank,
         companyName,
-        customerEmail,
+        customerEmail: finalEmail,
       });
     }
 
@@ -113,7 +186,7 @@ export async function GET(req: NextRequest) {
       status: paymentStatus || "pending",
       message: "Payment is being processed.",
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error verifying payment:", err);
     return NextResponse.json(
       { error: "Failed to verify payment status." },

@@ -12,11 +12,13 @@ export default function TowerScene({
   onFloorHover,
   theme = "dark",
   listings,
+  onLoaded,
 }: {
   handleRef: React.MutableRefObject<TowerHandle | null>;
   onFloorHover?: (data: HoverData | null) => void;
   theme?: "dark" | "sunset";
   listings?: Listing[];
+  onLoaded?: () => void;
 }) {
   const mount = useRef<HTMLDivElement>(null);
 
@@ -26,7 +28,12 @@ export default function TowerScene({
 
     import("@/lib/three/app").then(({ createTower }) => {
       if (disposed || !mount.current) return;
-      handle = createTower(mount.current, { onFloorHover, theme, listings });
+      handle = createTower(mount.current, {
+        onFloorHover,
+        theme,
+        listings,
+        onLoaded,
+      });
       handleRef.current = handle;
     });
 
@@ -35,7 +42,7 @@ export default function TowerScene({
       handle?.dispose();
       handleRef.current = null;
     };
-  }, [handleRef, onFloorHover, theme, listings]);
+  }, [handleRef, onFloorHover, theme, listings, onLoaded]);
 
   return <div ref={mount} className="scene-canvas" />;
 }

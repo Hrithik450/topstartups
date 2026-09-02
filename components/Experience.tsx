@@ -8,6 +8,7 @@ import StatChips, { MobileStatsSheet, useLiveStats } from "./StatChips";
 import Controls from "./Controls";
 import FloorHoverCard, { type HoverData } from "./FloorHoverCard";
 import ManageFloorModal from "./ManageFloorModal";
+import BuildingLoader from "./BuildingLoader";
 import { Moon, Sun, BarChart } from "./icons";
 import type { Listing } from "@/lib/three/listings";
 
@@ -19,8 +20,15 @@ export default function Experience() {
   const [theme, setTheme] = useState<"dark" | "sunset">("dark");
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+  const [isBuildingLoading, setIsBuildingLoading] = useState(true);
   const [listings, setListings] = useState<Listing[] | undefined>(undefined);
   const stats = useLiveStats(731);
+
+  // Safety fallback so loading screen never hangs on slow or restricted networks
+  useEffect(() => {
+    const timer = setTimeout(() => setIsBuildingLoading(false), 3500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -61,7 +69,14 @@ export default function Experience() {
 
   return (
     <div className="stage" data-theme={theme}>
-      <TowerScene handleRef={handleRef} onFloorHover={setHoveredData} theme={theme} listings={listings} />
+      <BuildingLoader isLoading={isBuildingLoading} />
+      <TowerScene
+        handleRef={handleRef}
+        onFloorHover={setHoveredData}
+        theme={theme}
+        listings={listings}
+        onLoaded={() => setIsBuildingLoading(false)}
+      />
       <div className="tower-top-fade" aria-hidden="true" />
       <div className="tower-cloud-fade" aria-hidden="true" />
       <div className="ui">
@@ -115,6 +130,28 @@ export default function Experience() {
           isOpen={isManageModalOpen}
           onClose={() => setIsManageModalOpen(false)}
         />
+
+        {/* Semantic SEO Directory for Search Engine Crawlers & Screen Readers */}
+        <section className="sr-only" aria-label="GeTopFloor Skyscraper Directory & Company Listings">
+          <h2>GeTopFloor — Internet&apos;s Tallest 3D Startup Skyscraper</h2>
+          <p>
+            A real-time attention market and virtual skyscraper where startups and founders claim floors to outbid competitors, showcase their products, and reach thousands of global investors.
+          </p>
+          <ol>
+            {(listings || []).map((floor, idx) => (
+              <li key={floor.id || idx}>
+                <h3>
+                  Floor #{floor.rank || idx + 1}: {floor.title}
+                </h3>
+                <p>Category: {floor.category}</p>
+                <p>{floor.description}</p>
+                <a href={floor.url_or_handle} rel="noopener noreferrer">
+                  Visit {floor.title}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
       </div>
     </div>
   );

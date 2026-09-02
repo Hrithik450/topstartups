@@ -1999,4 +1999,229 @@ body.home-tower-scrolled .tower-top-fade {
   box-shadow: 0 4px 14px rgba(255, 107, 26, 0.4);
 }
 
+/* ---------- Premium Building Loader ---------- */
+.building-loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: radial-gradient(circle at center, #09101f 0%, #050811 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.building-loader-overlay.fade-out {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(1.04);
+}
+
+.building-loader-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 36px 44px;
+  background: rgba(14, 23, 40, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75), 0 0 50px rgba(255, 107, 26, 0.16);
+  max-width: 360px;
+  width: 100%;
+}
+
+/* Skyscraper Graphic */
+.skyscraper-anim {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 120px;
+  padding: 10px 0;
+}
+
+.skyscraper-spire {
+  width: 3px;
+  height: 22px;
+  background: #f97316;
+  position: relative;
+  border-radius: 2px;
+}
+
+.skyscraper-beacon {
+  width: 8px;
+  height: 8px;
+  background: #fbbf24;
+  border-radius: 50%;
+  position: absolute;
+  top: -4px;
+  left: -2.5px;
+  box-shadow: 0 0 12px #fbbf24, 0 0 24px #f97316;
+  animation: beaconPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes beaconPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 1;
+    box-shadow: 0 0 20px #fbbf24, 0 0 35px #ff6b1a;
+  }
+}
+
+.skyscraper-floor {
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: floorGlow 2s infinite ease-in-out;
+}
+
+.skyscraper-floor.penthouse {
+  width: 72px;
+  height: 24px;
+  background: linear-gradient(135deg, #ff8c37, #ea580c);
+  border: 1px solid #ffedd5;
+  box-shadow: 0 0 20px rgba(255, 107, 26, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: penthousePulse 1.5s infinite alternate ease-in-out;
+}
+
+.floor-gold-badge {
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.05em;
+}
+
+@keyframes penthousePulse {
+  from {
+    box-shadow: 0 0 14px rgba(255, 107, 26, 0.4);
+  }
+  to {
+    box-shadow: 0 0 28px rgba(255, 107, 26, 0.85);
+  }
+}
+
+.skyscraper-floor.floor-4 {
+  width: 82px;
+  height: 16px;
+  animation-delay: 0.15s;
+}
+
+.skyscraper-floor.floor-3 {
+  width: 92px;
+  height: 18px;
+  animation-delay: 0.3s;
+}
+
+.skyscraper-floor.floor-2 {
+  width: 102px;
+  height: 20px;
+  animation-delay: 0.45s;
+}
+
+.skyscraper-floor.floor-base {
+  width: 116px;
+  height: 24px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  animation-delay: 0.6s;
+}
+
+@keyframes floorGlow {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  50% {
+    border-color: rgba(255, 140, 60, 0.35);
+    background: rgba(255, 140, 60, 0.12);
+  }
+}
+
+/* Info Text */
+.building-loader-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.building-loader-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.building-loader-message {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fb923c;
+  margin: 0;
+  min-height: 18px;
+  animation: cardFadeIn 0.3s ease;
+}
+
+/* Progress bar */
+.building-loader-bar-track {
+  width: 180px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.building-loader-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, #ff6b1a, #fbbf24, transparent);
+  border-radius: 999px;
+  animation: loadingBeam 1.3s infinite ease-in-out;
+}
+
+@keyframes loadingBeam {
+  0% {
+    left: -40%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .building-loader-card {
+    padding: 28px 24px;
+    max-width: 300px;
+  }
+}
+
+/* Accessible & Crawler-Friendly Screen Reader Only Class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+
 

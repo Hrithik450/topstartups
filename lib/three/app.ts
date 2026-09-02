@@ -1411,6 +1411,7 @@ export interface CreateTowerOptions {
   listings?: Listing[];
   onFloorHover?: (data: { listing: Listing; rank: number } | null) => void;
   theme?: "dark" | "sunset";
+  onLoaded?: () => void;
 }
 
 export function createTower(container: HTMLElement, options?: CreateTowerOptions): TowerHandle {
@@ -2664,6 +2665,11 @@ function createMoonTexture(): THREE.CanvasTexture {
   };
   const ro = new ResizeObserver(onResize);
   ro.observe(container);
+
+  // Notify listeners that 3D building and scene are initialized
+  requestAnimationFrame(() => {
+    options?.onLoaded?.();
+  });
 
   return {
     zoom(dir) {

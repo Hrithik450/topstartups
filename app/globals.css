@@ -2024,15 +2024,15 @@ body.home-tower-scrolled .tower-top-fade {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  padding: 36px 44px;
-  background: rgba(14, 23, 40, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  gap: 16px;
+  padding: 36px 36px 28px;
+  background: rgba(10, 16, 28, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 28px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75), 0 0 50px rgba(255, 107, 26, 0.16);
-  max-width: 360px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 0 0 50px rgba(255, 107, 26, 0.2);
+  max-width: 320px;
   width: 100%;
 }
 
@@ -2043,152 +2043,24 @@ body.home-tower-scrolled .tower-top-fade {
 }
 
 .building-loader-logo {
-  width: 76px;
-  height: 76px;
-  border-radius: 18px;
+  width: 108px;
+  height: 108px;
+  border-radius: 22px;
   object-fit: cover;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 24px rgba(255, 107, 26, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 32px rgba(255, 107, 26, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   animation: logoPulse 2s infinite ease-in-out;
 }
 
 @keyframes logoPulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 18px rgba(255, 107, 26, 0.25);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(255, 107, 26, 0.3);
   }
   50% {
-    transform: scale(1.05);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6), 0 0 32px rgba(255, 107, 26, 0.55);
+    transform: scale(1.04);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 44px rgba(255, 107, 26, 0.6);
   }
-}
-
-/* Skyscraper Graphic */
-.skyscraper-anim {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  width: 120px;
-  padding: 10px 0;
-}
-
-.skyscraper-spire {
-  width: 3px;
-  height: 22px;
-  background: #f97316;
-  position: relative;
-  border-radius: 2px;
-}
-
-.skyscraper-beacon {
-  width: 8px;
-  height: 8px;
-  background: #fbbf24;
-  border-radius: 50%;
-  position: absolute;
-  top: -4px;
-  left: -2.5px;
-  box-shadow: 0 0 12px #fbbf24, 0 0 24px #f97316;
-  animation: beaconPulse 1.2s infinite ease-in-out;
-}
-
-@keyframes beaconPulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.6);
-    opacity: 1;
-    box-shadow: 0 0 20px #fbbf24, 0 0 35px #ff6b1a;
-  }
-}
-
-.skyscraper-floor {
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  animation: floorGlow 2s infinite ease-in-out;
-}
-
-.skyscraper-floor.penthouse {
-  width: 72px;
-  height: 24px;
-  background: linear-gradient(135deg, #ff8c37, #ea580c);
-  border: 1px solid #ffedd5;
-  box-shadow: 0 0 20px rgba(255, 107, 26, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: penthousePulse 1.5s infinite alternate ease-in-out;
-}
-
-.floor-gold-badge {
-  font-size: 11px;
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: 0.05em;
-}
-
-@keyframes penthousePulse {
-  from {
-    box-shadow: 0 0 14px rgba(255, 107, 26, 0.4);
-  }
-  to {
-    box-shadow: 0 0 28px rgba(255, 107, 26, 0.85);
-  }
-}
-
-.skyscraper-floor.floor-4 {
-  width: 82px;
-  height: 16px;
-  animation-delay: 0.15s;
-}
-
-.skyscraper-floor.floor-3 {
-  width: 92px;
-  height: 18px;
-  animation-delay: 0.3s;
-}
-
-.skyscraper-floor.floor-2 {
-  width: 102px;
-  height: 20px;
-  animation-delay: 0.45s;
-}
-
-.skyscraper-floor.floor-base {
-  width: 116px;
-  height: 24px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.12);
-  animation-delay: 0.6s;
-}
-
-@keyframes floorGlow {
-  0%, 100% {
-    border-color: rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.06);
-  }
-  50% {
-    border-color: rgba(255, 140, 60, 0.35);
-    background: rgba(255, 140, 60, 0.12);
-  }
-}
-
-/* Info Text */
-.building-loader-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.building-loader-title {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #ffffff;
 }
 
 .building-loader-message {

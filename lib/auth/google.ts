@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { db } from "@/lib/db/config/client";
 import { users, type User } from "@/lib/db/config/schema";
 
@@ -174,11 +175,11 @@ export async function handleGoogleOAuthCallback(req: Request) {
 
   if (errorParam) {
     console.warn("Google OAuth canceled or denied:", errorParam);
-    return Response.redirect(new URL(`${returnTo}?auth_error=${encodeURIComponent(errorParam)}`, req.url));
+    return NextResponse.redirect(new URL(`${returnTo}?auth_error=${encodeURIComponent(errorParam)}`, req.url));
   }
 
   if (!code) {
-    return Response.redirect(new URL(`${returnTo}?auth_error=missing_code`, req.url));
+    return NextResponse.redirect(new URL(`${returnTo}?auth_error=missing_code`, req.url));
   }
 
   // Exact callback URI matching the request
@@ -202,22 +203,17 @@ export async function handleGoogleOAuthCallback(req: Request) {
     avatarUrl: dbUser.avatarUrl,
   });
 
-  // 5. Set HTTP-only Cookie and Redirect
-  const response = Response.redirect(new URL(returnTo, req.url));
+  // 5. Set HTTP-only Cookie and Redirect via NextResponse
+  const response = NextResponse.redirect(new URL(returnTo, req.url));
   const isProd = process.env.NODE_ENV === "production";
 
-  // Use headers to set cookie
-  const cookieOptions = [
-    `user_session=${sessionToken}`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-    `Max-Age=${30 * 24 * 60 * 60}`,
-    isProd ? "Secure" : "",
-  ]
-    .filter(Boolean)
-    .join("; ");
+  response.cookies.set("user_session", sessionToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  });
 
-  response.headers.set("Set-Cookie", cookieOptions);
   return response;
 }

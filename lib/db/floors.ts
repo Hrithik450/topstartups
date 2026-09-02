@@ -14,6 +14,7 @@ export interface ClaimFloorInput {
   description?: string;
   logoUrl?: string;
   customerEmail?: string;
+  customerPhone?: string;
   manageToken?: string;
 }
 
@@ -171,11 +172,14 @@ export async function claimTopFloorTransactional(
     // 3. Upsert user in 'users' table if customer email is provided
     let userId: number | null = null;
     const cleanEmail = input.customerEmail?.toLowerCase().trim() || null;
+    const cleanPhone = input.customerPhone?.trim() || null;
     if (cleanEmail) {
       const userRes = await tx.execute(sql`
-        INSERT INTO users (email, name, created_at, updated_at)
-        VALUES (${cleanEmail}, ${input.companyName || 'Founder'}, NOW(), NOW())
-        ON CONFLICT (email) DO UPDATE SET updated_at = NOW()
+        INSERT INTO users (email, name, phone, created_at, updated_at)
+        VALUES (${cleanEmail}, ${input.companyName || 'Founder'}, ${cleanPhone}, NOW(), NOW())
+        ON CONFLICT (email) DO UPDATE SET
+          phone = COALESCE(users.phone, EXCLUDED.phone),
+          updated_at = NOW()
         RETURNING id;
       `);
       if (userRes.rows && userRes.rows.length > 0) {
@@ -239,6 +243,7 @@ export async function claimTopFloorTransactional(
         amount: finalPrice,
         currency: "INR",
         customerEmail: cleanEmail || undefined,
+        customerPhone: cleanPhone || undefined,
         userId: userId || undefined,
         manageToken: token,
         completedAt: new Date(),
@@ -248,6 +253,7 @@ export async function claimTopFloorTransactional(
         set: {
           status: "succeeded",
           manageToken: token,
+          customerPhone: cleanPhone || undefined,
           userId: userId || undefined,
           completedAt: new Date(),
         },

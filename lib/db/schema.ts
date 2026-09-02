@@ -19,6 +19,7 @@ export const users = pgTable(
     id: serial("id").primaryKey(),
     email: varchar("email", { length: 255 }).notNull().unique(),
     name: varchar("name", { length: 255 }),
+    phone: varchar("phone", { length: 50 }),
     avatarUrl: text("avatar_url"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -104,6 +105,7 @@ export const claims = pgTable(
     amount: integer("amount").notNull(), // amount in INR
     currency: varchar("currency", { length: 10 }).notNull().default("INR"),
     customerEmail: varchar("customer_email", { length: 255 }),
+    customerPhone: varchar("customer_phone", { length: 50 }),
     userId: integer("user_id").references(() => users.id),
     manageToken: varchar("manage_token", { length: 128 }),
     checkoutUrl: text("checkout_url"),

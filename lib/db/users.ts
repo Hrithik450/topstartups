@@ -1,14 +1,19 @@
 import { db } from "./client";
-import { users, type User, type NewUser } from "./schema";
-import { eq } from "drizzle-orm";
+import { users, floors, type User, type NewUser } from "./schema";
+import { eq, desc } from "drizzle-orm";
 
 /**
  * Find or create a user by email address.
  * Automatically trims and lowercases email for consistency.
  */
-export async function getOrCreateUser(email: string, name?: string): Promise<User> {
+export async function getOrCreateUser(
+  email: string,
+  name?: string,
+  phone?: string
+): Promise<User> {
   const cleanEmail = email.toLowerCase().trim();
   const cleanName = name?.trim() || null;
+  const cleanPhone = phone?.trim() || null;
 
   const existing = await db
     .select()
@@ -17,16 +22,20 @@ export async function getOrCreateUser(email: string, name?: string): Promise<Use
     .limit(1);
 
   if (existing.length > 0) {
-    // If name is newly provided and wasn't set, update it
-    if (cleanName && !existing[0].name) {
+    const user = existing[0];
+    const updates: Partial<NewUser> = {};
+    if (cleanName && !user.name) updates.name = cleanName;
+    if (cleanPhone && !user.phone) updates.phone = cleanPhone;
+
+    if (Object.keys(updates).length > 0) {
       const [updated] = await db
         .update(users)
-        .set({ name: cleanName, updatedAt: new Date() })
-        .where(eq(users.id, existing[0].id))
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(users.id, user.id))
         .returning();
-      return updated || existing[0];
+      return updated || user;
     }
-    return existing[0];
+    return user;
   }
 
   const [created] = await db
@@ -34,6 +43,7 @@ export async function getOrCreateUser(email: string, name?: string): Promise<Use
     .values({
       email: cleanEmail,
       name: cleanName,
+      phone: cleanPhone,
     })
     .returning();
 
@@ -56,16 +66,17 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 }
 
 /**
- * Update user details (name, avatar).
+ * Update user details (name, phone, avatar).
  */
 export async function updateUser(
   id: number,
-  data: { name?: string; avatarUrl?: string }
+  data: { name?: string; phone?: string; avatarUrl?: string }
 ): Promise<User | null> {
   const [updated] = await db
     .update(users)
     .set({
       ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+      ...(data.phone !== undefined ? { phone: data.phone.trim() } : {}),
       ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl.trim() } : {}),
       updatedAt: new Date(),
     })
@@ -73,4 +84,64 @@ export async function updateUser(
     .returning();
 
   return updated || null;
+}
+
+export interface UserWithProducts {
+  id: number;
+  email: string;
+  name: string | null;
+  phone: string | null;
+  createdAt: Date;
+  productCount: number;
+  products: {
+    id: number;
+    rank: number;
+    companyName: string;
+    url: string;
+    category: string | null;
+    pricePaid: number;
+    claimedAt: Date | null;
+  }[];
+}
+
+/**
+ * Admin helper: Fetch all users along with their claimed products / floors.
+ */
+export async function getAllUsersWithProducts(): Promise<UserWithProducts[]> {
+  const allUsers = await db
+    .select()
+    .from(users)
+    .orderBy(desc(users.createdAt));
+
+  const allClaimedFloors = await db
+    .select()
+    .from(floors)
+    .where(eq(floors.isClaimed, true))
+    .orderBy(floors.rank);
+
+  return allUsers.map((u) => {
+    const userFloors = allClaimedFloors.filter(
+      (f) =>
+        f.userId === u.id ||
+        (f.ownerEmail && f.ownerEmail.toLowerCase().trim() === u.email.toLowerCase().trim())
+    );
+
+    return {
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      phone: u.phone,
+      createdAt: u.createdAt,
+      productCount: userFloors.length,
+      products: userFloors.map((f) => ({
+        id: f.id,
+        rank: f.rank,
+        companyName: f.companyName,
+        url: f.url,
+        category: f.category,
+        pricePaid: f.pricePaid,
+        claimedAt: f.claimedAt,
+      })),
+    };
+  });
 }

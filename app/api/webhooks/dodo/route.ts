@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
       const category = metadata.category || "Startup";
       const price = Number(metadata.price) || Math.round(Number(data.total_amount || data.amount || 4600) / 100);
       const customerEmail = data.customer?.email || metadata.customer_email;
+      const customerPhone = data.customer?.phone_number || data.customer_phone || data.billing?.phone;
 
       console.log(`Processing verified payment success for ${companyName} (${paymentId})...`);
 
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
         category,
         price,
         customerEmail,
+        customerPhone,
       });
 
       console.log("Transaction result:", result);

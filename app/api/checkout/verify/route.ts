@@ -73,8 +73,9 @@ export async function GET(req: NextRequest) {
     }
 
     if (paymentStatus === "succeeded") {
-      const customerEmail = (pendingClaim?.customerEmail || sessionData.customer_email)?.toLowerCase().trim() || null;
-      const companyName = pendingClaim?.companyName || sessionData.customer_name || "New Startup";
+      const customerEmail = (pendingClaim?.customerEmail || sessionData.customer_email || sessionData.customer?.email)?.toLowerCase().trim() || null;
+      const customerPhone = (pendingClaim?.customerPhone || sessionData.customer?.phone_number || sessionData.customer_phone || sessionData.billing?.phone)?.trim() || null;
+      const companyName = pendingClaim?.companyName || sessionData.customer_name || sessionData.customer?.name || "New Startup";
       const url = pendingClaim?.url || "https://getopfloor.com";
       const category = pendingClaim?.category || "Startup";
       const price = pendingClaim?.amount || 50;
@@ -97,6 +98,7 @@ export async function GET(req: NextRequest) {
         category,
         price,
         customerEmail: customerEmail || undefined,
+        customerPhone: customerPhone || undefined,
       });
 
       return NextResponse.json({

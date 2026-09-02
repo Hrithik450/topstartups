@@ -1408,6 +1408,52 @@ body.home-tower-scrolled .tower-top-fade {
   color: var(--ink-soft);
 }
 
+.floor-hover-card-action {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--pill-border);
+}
+
+.floor-hover-card-visit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #ff7a29, #ff5500);
+  color: #ffffff !important;
+  font-size: 14.5px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(255, 107, 26, 0.45);
+  transition: transform 0.12s var(--ease-out), filter 0.15s, box-shadow 0.15s;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.floor-hover-card-visit-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(255, 107, 26, 0.6);
+}
+
+.floor-hover-card-visit-btn:active {
+  transform: scale(0.97);
+}
+
+.floor-hover-card-visit-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.4;
+  transition: transform 0.15s;
+}
+
+.floor-hover-card-visit-btn:hover svg {
+  transform: translate(2px, -2px);
+}
+
 @media (max-width: 900px) {
   .floor-hover-card-wrapper {
     top: auto;

@@ -232,10 +232,6 @@ function paintFloorTexture(
   const titleText = truncateText(ctx, domain, 700);
   ctx.fillText(titleText, 260, 128);
 
-  const textWidth = ctx.measureText(titleText).width;
-  ctx.fillStyle = "rgba(255, 107, 26, 0.85)";
-  ctx.fillRect(260, 142, textWidth, 3);
-
   // Subtitle / Description
   ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
   ctx.font = "500 36px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
@@ -2239,20 +2235,11 @@ function createMoonTexture(): THREE.CanvasTexture {
   };
   renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
 
-  // Helper: check if a raycast intersection hits the underlined company text area
-  function getFloorTextHit(hit: THREE.Intersection): { floorIndex: number; listing: Listing; rank: number } | null {
+  // Helper: check if a raycast intersection hits a tower floor
+  function getFloorHit(hit: THREE.Intersection): { floorIndex: number; listing: Listing; rank: number } | null {
     if (hit.point.y < BASE_HEIGHT || hit.point.y >= roofY) return null;
     const fIdx = Math.floor((hit.point.y - BASE_HEIGHT) / FLOOR_PITCH);
     if (fIdx < 0 || fIdx >= floorCount) return null;
-
-    // Validate if the hit is within the front/side face text region (domain title + underline + avatar)
-    // The company domain name and orange underline are drawn at u: 0.16..0.78, v: 0.20..0.85
-    if (hit.uv) {
-      const u = hit.uv.x;
-      const v = hit.uv.y;
-      const isTextRegion = u >= 0.16 && u <= 0.78 && v >= 0.20 && v <= 0.85;
-      if (!isTextRegion) return null;
-    }
 
     return {
       floorIndex: fIdx,
@@ -2282,8 +2269,6 @@ function createMoonTexture(): THREE.CanvasTexture {
   };
 
   const onPointerMove = (e: PointerEvent) => {
-    if (inIntro) return;
-
     // 1. Drag / Swipe Scroll Handling (For mobile touch and mouse drag)
     if (pointerDownPos.time > 0) {
       const deltaY = e.clientY - lastPointerPos.y;
@@ -2292,6 +2277,7 @@ function createMoonTexture(): THREE.CanvasTexture {
 
       if (totalDist > 5) {
         isPointerDragging = true;
+        inIntro = false;
         if (dragAxis === "none") {
           dragAxis = Math.abs(deltaY) >= Math.abs(deltaX) ? "vertical" : "horizontal";
         }
@@ -2321,8 +2307,10 @@ function createMoonTexture(): THREE.CanvasTexture {
       if (isPointerDragging) return;
     }
 
+    if (inIntro) return;
+
     // 2. Hover detection: STRICTLY for laptop/desktop mouse pointers only (never touch)
-    if (e.pointerType !== "mouse") {
+    if (e.pointerType && e.pointerType !== "mouse") {
       return;
     }
 
@@ -2335,7 +2323,7 @@ function createMoonTexture(): THREE.CanvasTexture {
 
     let found = null;
     for (const hit of intersects) {
-      found = getFloorTextHit(hit);
+      found = getFloorHit(hit);
       if (found) break;
     }
 
@@ -2366,8 +2354,9 @@ function createMoonTexture(): THREE.CanvasTexture {
       if (dragAxis === "vertical" && Math.abs(scrollVelocityY) > 0.05) {
         travelYTarget = THREE.MathUtils.clamp(travelYTarget + scrollVelocityY * 4.0, 1.32, roofY);
       }
-    } else if (dist < 6 && duration < 350 && !inIntro) {
-      // Intentional clean tap/click on underlined company text: open overview popup
+    } else if (dist < 12 && duration < 650) {
+      inIntro = false;
+      // Intentional clean tap/click on floor: open overview popup
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -2376,7 +2365,7 @@ function createMoonTexture(): THREE.CanvasTexture {
 
       let found = null;
       for (const hit of intersects) {
-        found = getFloorTextHit(hit);
+        found = getFloorHit(hit);
         if (found) break;
       }
 

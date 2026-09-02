@@ -58,6 +58,13 @@ export interface HoverData {
   rank: number;
 }
 
+export const ExternalLink = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="7" y1="17" x2="17" y2="7" />
+    <polyline points="7 7 17 7 17 17" />
+  </svg>
+);
+
 export default function FloorHoverCard({
   data,
   onClose,
@@ -69,6 +76,7 @@ export default function FloorHoverCard({
   const { listing, rank } = data;
 
   const cleanDomain = listing.url_or_handle.replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./, "");
+  const targetUrl = listing.url_or_handle.startsWith("http") ? listing.url_or_handle : `https://${listing.url_or_handle}`;
   const hasLogo = AVAILABLE_LOGOS.has(cleanDomain);
   const flag = getFlagEmoji(listing.country_code);
   const timeAgo = getTimeAgo(listing.created_at);
@@ -92,12 +100,7 @@ export default function FloorHoverCard({
           </button>
         )}
 
-        <a
-          href={listing.url_or_handle}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="floor-hover-card"
-        >
+        <div className="floor-hover-card">
           {listing.hiring && (
             <div className="floor-hover-card-header">
               HIRING ACTIVELY
@@ -162,8 +165,24 @@ export default function FloorHoverCard({
                 </div>
               )}
             </div>
+
+            {/* Dedicated Visit Website Button */}
+            <div className="floor-hover-card-action">
+              <a
+                href={targetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="floor-hover-card-visit-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                <span>Visit Website</span>
+                <ExternalLink />
+              </a>
+            </div>
           </div>
-        </a>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type { TowerHandle } from "@/lib/three/app";
 import Hero from "./Hero";
@@ -23,6 +23,62 @@ export default function Experience() {
   const [isBuildingLoading, setIsBuildingLoading] = useState(true);
   const [listings, setListings] = useState<Listing[] | undefined>(undefined);
   const stats = useLiveStats(731);
+
+  const isCardHoveredRef = useRef(false);
+  const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isPinnedRef = useRef(false);
+
+  const handleFloorHover = useCallback((data: HoverData | null) => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+
+    if (data) {
+      if (data.pinned) {
+        isPinnedRef.current = true;
+      }
+      setHoveredData(data);
+    } else {
+      // If pinned open via tap/click, keep open until explicit close
+      if (isPinnedRef.current) return;
+
+      // 600ms grace period so mouse can easily travel into the card
+      closeTimerRef.current = setTimeout(() => {
+        if (!isCardHoveredRef.current && !isPinnedRef.current) {
+          setHoveredData(null);
+        }
+      }, 600);
+    }
+  }, []);
+
+  const handleCardMouseEnter = useCallback(() => {
+    isCardHoveredRef.current = true;
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const handleCardMouseLeave = useCallback(() => {
+    isCardHoveredRef.current = false;
+    if (isPinnedRef.current) return;
+    closeTimerRef.current = setTimeout(() => {
+      if (!isCardHoveredRef.current && !isPinnedRef.current) {
+        setHoveredData(null);
+      }
+    }, 450);
+  }, []);
+
+  const handleCloseCard = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    isPinnedRef.current = false;
+    isCardHoveredRef.current = false;
+    setHoveredData(null);
+  }, []);
 
   // Safety fallback so loading screen is snappy and never hangs
   useEffect(() => {
@@ -72,7 +128,7 @@ export default function Experience() {
       <BuildingLoader isLoading={isBuildingLoading} />
       <TowerScene
         handleRef={handleRef}
-        onFloorHover={setHoveredData}
+        onFloorHover={handleFloorHover}
         theme={theme}
         listings={listings}
         onLoaded={() => setIsBuildingLoading(false)}
@@ -122,8 +178,10 @@ export default function Experience() {
         />
         <FloorHoverCard
           data={hoveredData}
-          onClose={() => setHoveredData(null)}
+          onClose={handleCloseCard}
           onManage={() => setIsManageModalOpen(true)}
+          onMouseEnter={handleCardMouseEnter}
+          onMouseLeave={handleCardMouseLeave}
         />
         <MobileStatsSheet open={isMobileStatsOpen} onClose={() => setIsMobileStatsOpen(false)} />
         <ManageFloorModal

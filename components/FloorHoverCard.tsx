@@ -56,6 +56,7 @@ function stringToColor(str: string): string {
 export interface HoverData {
   listing: Listing;
   rank: number;
+  pinned?: boolean;
 }
 
 export const ExternalLink = () => (
@@ -69,10 +70,14 @@ export default function FloorHoverCard({
   data,
   onClose,
   onManage,
+  onMouseEnter,
+  onMouseLeave,
 }: {
   data: HoverData | null;
   onClose?: () => void;
   onManage?: (listing: Listing) => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }) {
   if (!data) return null;
   const { listing, rank } = data;
@@ -84,7 +89,11 @@ export default function FloorHoverCard({
   const timeAgo = getTimeAgo(listing.created_at);
 
   return (
-    <div className="floor-hover-card-wrapper animate-card-fade">
+    <div
+      className="floor-hover-card-wrapper animate-card-fade"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <div className="floor-hover-card-container">
         {onClose && (
           <button

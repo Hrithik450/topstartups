@@ -1409,7 +1409,7 @@ function makeLaptop(): THREE.Group {
 
 export interface CreateTowerOptions {
   listings?: Listing[];
-  onFloorHover?: (data: { listing: Listing; rank: number } | null) => void;
+  onFloorHover?: (data: { listing: Listing; rank: number; pinned?: boolean } | null) => void;
   theme?: "dark" | "sunset";
   onLoaded?: () => void;
 }
@@ -2415,7 +2415,10 @@ function createMoonTexture(): THREE.CanvasTexture {
 
       if (found) {
         currentHoveredFloor = found.floorIndex;
-        if (onFloorHover) onFloorHover({ listing: found.listing, rank: found.rank });
+        if (onFloorHover) onFloorHover({ listing: found.listing, rank: found.rank, pinned: true });
+      } else {
+        currentHoveredFloor = -1;
+        if (onFloorHover) onFloorHover(null);
       }
     }
 

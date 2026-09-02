@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
       const companyName =
         metadata.company_name || data.customer?.name || "Anonymous Startup";
-      const url = metadata.url || "https://bharathunt.com";
+      const url = metadata.url || "https://getopfloor.com";
       const category = metadata.category || "Startup";
       const price = Number(metadata.price) || Math.round(Number(data.total_amount || data.amount || 4600) / 100);
       const customerEmail = data.customer?.email || metadata.customer_email;
@@ -47,14 +47,16 @@ export async function POST(req: NextRequest) {
       });
 
       console.log("Transaction result:", result);
-      return NextResponse.json({ success: true, result });
+      // SECURITY: Never return manage_token or sensitive data in webhook response
+      return NextResponse.json({ success: true, rank: result.rank });
     }
 
     return NextResponse.json({ received: true, eventType });
   } catch (err: any) {
     console.error("Error processing Dodo Payments webhook:", err);
+    // SECURITY: Never expose internal error messages
     return NextResponse.json(
-      { error: err?.message || "Webhook processing failed" },
+      { error: "Webhook processing failed" },
       { status: 500 }
     );
   }

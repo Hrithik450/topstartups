@@ -67,7 +67,7 @@ export async function PATCH(req: NextRequest) {
   } catch (err: any) {
     console.error("Error updating floor:", err);
     return NextResponse.json(
-      { error: err?.message || "Failed to update floor" },
+      { error: "Failed to update floor" },
       { status: 500 }
     );
   }
@@ -104,7 +104,7 @@ export async function DELETE(req: NextRequest) {
   } catch (err: any) {
     console.error("Error deleting floor:", err);
     return NextResponse.json(
-      { error: err?.message || "Failed to delete floor" },
+      { error: "Failed to delete floor" },
       { status: 500 }
     );
   }

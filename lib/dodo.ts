@@ -47,8 +47,10 @@ export async function createDodoCheckout(
     };
   }
 
-  const productId =
-    process.env.DODO_PAYMENTS_PRODUCT_ID?.trim() || "pdt_0Nmk416j1IPMQxU2qgfrP";
+  const productId = process.env.DODO_PAYMENTS_PRODUCT_ID?.trim();
+  if (!productId) {
+    throw new Error("DODO_PAYMENTS_PRODUCT_ID is not configured");
+  }
 
   // Real Dodo Payments REST API call
   try {
@@ -84,8 +86,9 @@ export async function createDodoCheckout(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Dodo Payments API error:", errorText);
-      throw new Error(`Dodo Payments error: ${response.status} ${errorText}`);
+      console.error("Dodo Payments API error:", response.status, errorText);
+      // SECURITY: Don't expose Dodo API error details to clients
+      throw new Error("Payment processing failed. Please try again.");
     }
 
     const data = await response.json();
@@ -102,6 +105,7 @@ export async function createDodoCheckout(
 
 /**
  * Verify Dodo Payments webhook signature using HMAC SHA256.
+ * SECURITY: Always reject if webhook secret is not configured.
  */
 export function verifyDodoWebhookSignature(
   rawBody: string,
@@ -109,8 +113,10 @@ export function verifyDodoWebhookSignature(
 ): boolean {
   const webhookSecret = process.env.DODO_PAYMENTS_WEBHOOK_SECRET?.trim();
   if (!webhookSecret) {
-    // If webhook secret not yet configured, allow in dev mode
-    return process.env.NODE_ENV !== "production";
+    console.error(
+      "DODO_PAYMENTS_WEBHOOK_SECRET is not configured — rejecting webhook"
+    );
+    return false;
   }
 
   if (!signatureHeader) return false;
@@ -121,12 +127,15 @@ export function verifyDodoWebhookSignature(
       .update(rawBody)
       .digest("hex");
 
-    return crypto.timingSafeEqual(
-      Buffer.from(computedSignature, "utf8"),
-      Buffer.from(signatureHeader, "utf8")
-    );
+    // SECURITY: Check length match before timingSafeEqual to prevent crash
+    const computedBuf = Buffer.from(computedSignature, "utf8");
+    const receivedBuf = Buffer.from(signatureHeader, "utf8");
+    if (computedBuf.length !== receivedBuf.length) return false;
+
+    return crypto.timingSafeEqual(computedBuf, receivedBuf);
   } catch (err) {
     console.error("Error verifying Dodo webhook signature:", err);
     return false;
   }
 }
+

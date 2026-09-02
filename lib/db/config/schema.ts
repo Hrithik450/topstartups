@@ -121,3 +121,43 @@ export const claims = pgTable(
 
 export type Claim = typeof claims.$inferSelect;
 export type NewClaim = typeof claims.$inferInsert;
+
+/**
+ * Site statistics for tracking real cumulative views.
+ */
+export const siteStats = pgTable("site_stats", {
+  key: varchar("key", { length: 64 }).primaryKey(), // 'global'
+  totalViews: integer("total_views").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type SiteStat = typeof siteStats.$inferSelect;
+export type NewSiteStat = typeof siteStats.$inferInsert;
+
+/**
+ * Real unique countries visited from.
+ */
+export const visitorCountries = pgTable("visitor_countries", {
+  countryCode: varchar("country_code", { length: 10 }).primaryKey(),
+  countryName: varchar("country_name", { length: 100 }),
+  visitCount: integer("visit_count").notNull().default(1),
+  lastVisitedAt: timestamp("last_visited_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type VisitorCountry = typeof visitorCountries.$inferSelect;
+export type NewVisitorCountry = typeof visitorCountries.$inferInsert;
+
+/**
+ * Active sessions for tracking real live concurrent online users.
+ * Online = active within the last 2 minutes.
+ */
+export const activeSessions = pgTable("active_sessions", {
+  sessionId: varchar("session_id", { length: 128 }).primaryKey(),
+  countryCode: varchar("country_code", { length: 10 }),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type ActiveSession = typeof activeSessions.$inferSelect;
+export type NewActiveSession = typeof activeSessions.$inferInsert;
+

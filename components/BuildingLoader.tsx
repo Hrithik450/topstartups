@@ -3,26 +3,35 @@
 import { useEffect, useState } from "react";
 
 export default function BuildingLoader({ isLoading }: { isLoading: boolean }) {
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [stage, setStage] = useState(0);
   const [shouldRender, setShouldRender] = useState(true);
 
-  // Cycle loading status text
+  // Guarantee branded loader is visible for at least 1.4s so user clearly sees logo and progress
   useEffect(() => {
     const t1 = setTimeout(() => setStage(1), 500);
     const t2 = setTimeout(() => setStage(2), 1000);
+    const minTimer = setTimeout(() => {
+      setMinTimeElapsed(true);
+    }, 1400);
+
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
+      clearTimeout(minTimer);
     };
   }, []);
 
-  // Graceful unmount after fade-out transition
+  // Dismiss only when minimum time has passed AND loading is complete
+  const isVisible = !(minTimeElapsed && !isLoading);
+
+  // Gracefully unmount after fade-out transition finishes
   useEffect(() => {
-    if (!isLoading) {
-      const timer = setTimeout(() => setShouldRender(false), 500);
+    if (!isVisible) {
+      const timer = setTimeout(() => setShouldRender(false), 600);
       return () => clearTimeout(timer);
     }
-  }, [isLoading]);
+  }, [isVisible]);
 
   if (!shouldRender) return null;
 
@@ -34,7 +43,7 @@ export default function BuildingLoader({ isLoading }: { isLoading: boolean }) {
 
   return (
     <div
-      className={`building-loader-overlay ${!isLoading ? "fade-out" : ""}`}
+      className={`building-loader-overlay ${!isVisible ? "fade-out" : ""}`}
       aria-label="Loading GeTopFloor"
       role="status"
     >

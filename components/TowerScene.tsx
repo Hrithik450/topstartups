@@ -42,8 +42,6 @@ export default function TowerScene({
         onLoaded: () => onLoadedRef.current?.(),
       });
       handleRef.current = handle;
-      // Immediately notify parent so loader can safely exit
-      onLoadedRef.current?.();
     });
 
     return () => {

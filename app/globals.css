@@ -2003,7 +2003,7 @@ body.home-tower-scrolled .tower-top-fade {
 .building-loader-overlay {
   position: fixed;
   inset: 0;
-  z-index: 999;
+  z-index: 99999;
   background: radial-gradient(circle at center, #09101f 0%, #050811 100%);
   display: flex;
   align-items: center;

@@ -2399,5 +2399,57 @@ body.home-tower-scrolled .tower-top-fade {
   border-width: 0;
 }
 
+/* ─── Profile Chip & Bouncing Login Hint ─── */
+@keyframes loginBounceHint {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  70% {
+    transform: translateY(-2px);
+  }
+}
+
+.login-chip-bounce {
+  animation: loginBounceHint 3s cubic-bezier(0.34, 1.56, 0.64, 1) infinite !important;
+  background: linear-gradient(135deg, rgba(255, 159, 67, 0.16), rgba(238, 82, 83, 0.16)) !important;
+  border-color: rgba(255, 159, 67, 0.45) !important;
+  color: #ff9f43 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.login-chip-bounce:hover {
+  animation-play-state: paused !important;
+  background: linear-gradient(135deg, rgba(255, 159, 67, 0.28), rgba(238, 82, 83, 0.28)) !important;
+  border-color: rgba(255, 159, 67, 0.7) !important;
+  transform: translateY(-2px) scale(1.03) !important;
+}
+
+.mobile-login-bounce {
+  animation: loginBounceHint 3s cubic-bezier(0.34, 1.56, 0.64, 1) infinite !important;
+  border-color: rgba(255, 159, 67, 0.6) !important;
+  background: rgba(255, 159, 67, 0.14) !important;
+}
+
+.user-profile-chip {
+  cursor: pointer !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  transition: all 0.2s ease !important;
+}
+
+.user-profile-chip:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 159, 67, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+
 
 

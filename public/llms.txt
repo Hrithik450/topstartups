@@ -1,0 +1,65 @@
+# GeTopFloor
+
+> GeTopFloor is an interactive 3D virtual skyscraper and live attention market. Startups and founders claim floors on the digital tower to showcase their companies, earn backlinks, and gain high-intent visibility from founders and investors worldwide.
+
+## Overview
+- **Website**: https://getopfloor.com
+- **Type**: Interactive 3D WebGL Platform / Startup Discovery / Digital Sponsorship
+- **Pricing**: Dynamic starting from ₹50 INR (one-time placement fee)
+- **Fulfillment**: 100% instant, automated digital delivery upon checkout
+- **Payment Provider**: Dodo Payments (Cards, UPI, International Payments)
+
+## Core Concepts
+
+### 1. The 50-Floor Skyscraper
+GeTopFloor features exactly 50 visible floors rendered in high-performance Three.js 3D WebGL.
+- **Penthouse Floor #1**: The summit of the skyscraper, commanding maximum visibility, attention, and traffic.
+- **Dynamic Outbid Hierarchy**: Any founder can outbid the current price to claim Floor #1. When a new company claims Floor #1, all existing floors shift down one rank atomically in PostgreSQL.
+- **Floor Discard**: When all 50 floors are filled, claiming Top Floor #1 gently pushes the bottom-most floor out of the active skyscraper.
+
+### 2. Startup Categories (27 Main Industries)
+1. Agencies, Studios & Services
+2. AI Agents & Infrastructure
+3. AI Media Generation
+4. Audio, Voice & Podcasting
+5. Business, Finance & Legal
+6. Crypto, Web3 & Investing
+7. Design & Creative
+8. Developer Tools
+9. Directories, Launch & Discovery
+10. Domains & Web Assets
+11. Ecommerce & Retail
+12. Education & Learning
+13. Games & Entertainment
+14. Health, Fitness & Wellness
+15. Hiring, Jobs & Careers
+16. Leaderboards & Attention Markets
+17. Marketing & Advertising
+18. Media & News
+19. People & Profiles
+20. Productivity & Personal Tools
+21. Real Estate & Property
+22. Sales & Lead Generation
+23. Security, Privacy & Compliance
+24. SEO & AI Visibility
+25. Social Media & Creator Tools
+26. Travel, Local & Lifestyle
+27. Writing & Content
+
+### 3. Self-Service Management (CRUD)
+Every claim generates a secret `manage_token` stored in the user's browser:
+- **View Floor**: Retrieve live floor rank, price paid, and click impressions.
+- **Update Details**: Update company title, website destination URL, tagline, category, description, and logo.
+- **Vacate Floor**: Reset floor back to an available premium slot at any time.
+
+## API Endpoints
+- `GET /api/floors`: Returns current active 50 floors with company names, ranks, categories, and URLs.
+- `POST /api/checkout`: Initiates Dodo Payments checkout session with custom amount and return URL.
+- `GET /api/floors/manage?token=...`: Fetches private floor details for verified owner.
+- `PATCH /api/floors/manage`: Updates floor copy, URL, and category using secret manage token.
+- `DELETE /api/floors/manage?token=...`: Vacates floor.
+
+## Resources
+- [Main Website](https://getopfloor.com)
+- [XML Sitemap](https://getopfloor.com/sitemap.xml)
+- [Robots.txt](https://getopfloor.com/robots.txt)

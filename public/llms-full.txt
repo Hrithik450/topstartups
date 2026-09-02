@@ -1,0 +1,33 @@
+# GeTopFloor — Full LLM Context & Platform Guide
+
+GeTopFloor is a modern, high-performance web platform combining WebGL 3D visualization, real-time attention economics, and digital startup advertising.
+
+## Architecture
+- **Framework**: Next.js 14 App Router with React 18, TypeScript, and Tailwind/Vanilla CSS.
+- **3D Graphics**: Three.js WebGL rendering with custom procedural shaders, bloom post-processing, smooth orbital camera controls, and dynamic 2D canvas textures.
+- **Database**: PostgreSQL with Drizzle ORM and `pg` connection pooler, fully compatible with Supabase transaction pooler (port 6543) and serverless isolation.
+- **Payments**: Dodo Payments integration supporting international credit cards, debit cards, UPI, and instant webhooks.
+- **Deployment**: Multi-stage standalone Dockerfile with Alpine Linux runtime (~120MB image) suitable for VPS, Railway, Render, or Vercel.
+
+## The Attention Economy & Floor Mechanics
+1. **Floor Slots**: Exactly 50 floors exist at all times.
+2. **Penthouse Floor #1**: Highest visibility position on the tower.
+3. **Atomic Rank Shifting**: When a floor is claimed, an ACID PostgreSQL transaction executes:
+   ```sql
+   UPDATE floors SET rank = -rank;
+   UPDATE floors SET rank = (-rank) + 1;
+   INSERT INTO floors (rank, is_claimed, company_name, url, ...) VALUES (1, true, ...);
+   DELETE FROM floors WHERE rank > 50;
+   ```
+   This sequential two-step shift eliminates unique constraint collisions while preserving atomic displacement.
+4. **CRUD Management**: Floor owners receive a private UUID `manage_token` enabling self-service updates to their listing without account passwords or tedious sign-in flows.
+
+## Frequently Asked Questions
+- **Q: How much does it cost?**
+  A: Bidding starts from ₹50 INR.
+- **Q: How long does my company stay on the tower?**
+  A: Your company remains on the tower until 50 subsequent companies outbid and displace it down the 50 ranks.
+- **Q: Can I change my link or logo later?**
+  A: Yes, via the Manage Floor modal using your private token.
+- **Q: Is fulfillment automated?**
+  A: Yes, webhook events update the live database and 3D skyscraper within milliseconds of payment.

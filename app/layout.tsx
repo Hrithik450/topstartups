@@ -83,6 +83,13 @@ export const metadata: Metadata = {
   category: "technology",
 };
 
+import {
+  OrganizationJsonLd,
+  WebsiteJsonLd,
+  SoftwareApplicationJsonLd,
+  FAQJsonLd,
+} from "./jsonld";
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -95,49 +102,13 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "WebSite",
-        "@id": "https://getopfloor.com/#website",
-        url: "https://getopfloor.com",
-        name: "GeTopFloor",
-        description:
-          "Claim the top floor of the internet's tallest interactive 3D tower. Outbid the last owner and showcase your startup.",
-        publisher: {
-          "@type": "Organization",
-          name: "GeTopFloor",
-          url: "https://getopfloor.com",
-          logo: {
-            "@type": "ImageObject",
-            url: "https://getopfloor.com/logo.png",
-          },
-        },
-      },
-      {
-        "@type": "SoftwareApplication",
-        "@id": "https://getopfloor.com/#application",
-        name: "GeTopFloor Skyscraper",
-        applicationCategory: "BusinessApplication",
-        operatingSystem: "Web, iOS, Android",
-        offers: {
-          "@type": "Offer",
-          price: "50",
-          priceCurrency: "INR",
-          description: "Minimum starting bid to claim a floor on the skyscraper",
-        },
-      },
-    ],
-  };
-
   return (
     <html lang="en" className={bricolage.variable}>
       <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        <OrganizationJsonLd />
+        <WebsiteJsonLd />
+        <SoftwareApplicationJsonLd />
+        <FAQJsonLd />
       </head>
       <body className={bricolage.className}>{children}</body>
     </html>

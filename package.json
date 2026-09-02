@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "db:setup": "drizzle-kit push && tsx lib/db/seed.ts",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx lib/db/seed.ts",
     "db:generate": "drizzle-kit generate",

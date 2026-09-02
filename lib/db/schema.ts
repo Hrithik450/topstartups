@@ -10,6 +10,28 @@ import {
 } from "drizzle-orm/pg-core";
 
 /**
+ * Users table:
+ * Represents startup founders and floor owners.
+ */
+export const users = pgTable(
+  "users",
+  {
+    id: serial("id").primaryKey(),
+    email: varchar("email", { length: 255 }).notNull().unique(),
+    name: varchar("name", { length: 255 }),
+    avatarUrl: text("avatar_url"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    emailIdx: index("users_email_idx").on(table.email),
+  })
+);
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+
+/**
  * Floors table representing the 50 floors of the BharatHunt skyscraper.
  * Rank 1 is the top penthouse floor.
  * Unclaimed floors are premium placeholders waiting to be claimed.
@@ -29,6 +51,7 @@ export const floors = pgTable(
     pricePaid: integer("price_paid").notNull().default(0), // in INR
     manageToken: varchar("manage_token", { length: 128 }),
     ownerEmail: varchar("owner_email", { length: 255 }),
+    userId: integer("user_id").references(() => users.id),
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -38,6 +61,7 @@ export const floors = pgTable(
     isClaimedIdx: index("floors_is_claimed_idx").on(table.isClaimed),
     manageTokenIdx: index("floors_manage_token_idx").on(table.manageToken),
     ownerEmailIdx: index("floors_owner_email_idx").on(table.ownerEmail),
+    userIdIdx: index("floors_user_id_idx").on(table.userId),
   })
 );
 
@@ -80,6 +104,7 @@ export const claims = pgTable(
     amount: integer("amount").notNull(), // amount in INR
     currency: varchar("currency", { length: 10 }).notNull().default("INR"),
     customerEmail: varchar("customer_email", { length: 255 }),
+    userId: integer("user_id").references(() => users.id),
     manageToken: varchar("manage_token", { length: 128 }),
     checkoutUrl: text("checkout_url"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -88,6 +113,7 @@ export const claims = pgTable(
   (table) => ({
     paymentIdIdx: index("claims_payment_id_idx").on(table.paymentId),
     statusIdx: index("claims_status_idx").on(table.status),
+    userIdIdx: index("claims_user_id_idx").on(table.userId),
   })
 );
 

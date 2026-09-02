@@ -52,10 +52,19 @@ export async function POST(req: NextRequest) {
     // Fetch all floors owned by this email
     const floors = await getFloorsByEmail(cleanEmail);
 
+    // Fetch or create user record in users table
+    const { getOrCreateUser } = await import("@/lib/db/users");
+    const user = await getOrCreateUser(cleanEmail);
+
     return NextResponse.json({
       success: true,
       email: cleanEmail,
       sessionToken: token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
       floors,
     });
   } catch (err) {

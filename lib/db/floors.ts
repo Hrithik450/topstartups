@@ -168,7 +168,22 @@ export async function claimTopFloorTransactional(
     await tx.execute(sql`UPDATE floors SET rank = -rank`);
     await tx.execute(sql`UPDATE floors SET rank = (-rank) + 1`);
 
-    // 3. Insert the newly claimed startup at Rank 1 (Penthouse Floor)
+    // 3. Upsert user in 'users' table if customer email is provided
+    let userId: number | null = null;
+    const cleanEmail = input.customerEmail?.toLowerCase().trim() || null;
+    if (cleanEmail) {
+      const userRes = await tx.execute(sql`
+        INSERT INTO users (email, name, created_at, updated_at)
+        VALUES (${cleanEmail}, ${input.companyName || 'Founder'}, NOW(), NOW())
+        ON CONFLICT (email) DO UPDATE SET updated_at = NOW()
+        RETURNING id;
+      `);
+      if (userRes.rows && userRes.rows.length > 0) {
+        userId = Number((userRes.rows[0] as any).id);
+      }
+    }
+
+    // 4. Insert the newly claimed startup at Rank 1 (Penthouse Floor)
     // Enforce minimum price of 50 INR
     const finalPrice = Math.max(50, input.price);
 
@@ -185,6 +200,7 @@ export async function claimTopFloorTransactional(
         price_paid,
         manage_token,
         owner_email,
+        user_id,
         claimed_at,
         created_at,
         updated_at
@@ -199,18 +215,19 @@ export async function claimTopFloorTransactional(
         ${input.logoUrl || null},
         ${finalPrice},
         ${token},
-        ${input.customerEmail?.toLowerCase().trim() || null},
+        ${cleanEmail},
+        ${userId},
         NOW(),
         NOW(),
         NOW()
       )
     `);
 
-    // 4. Prune floors beyond rank 50 to maintain 50 floors
+    // 5. Prune floors beyond rank 50 to maintain 50 floors
     await tx.execute(sql`DELETE FROM floors WHERE rank > 50 AND is_claimed = false`);
     await tx.execute(sql`DELETE FROM floors WHERE rank > 50`);
 
-    // 5. Update claim ledger to succeeded
+    // 6. Update claim ledger to succeeded
     await tx
       .insert(claims)
       .values({
@@ -221,7 +238,8 @@ export async function claimTopFloorTransactional(
         category: input.category || "Startup",
         amount: finalPrice,
         currency: "INR",
-        customerEmail: input.customerEmail,
+        customerEmail: cleanEmail || undefined,
+        userId: userId || undefined,
         manageToken: token,
         completedAt: new Date(),
       })
@@ -230,6 +248,7 @@ export async function claimTopFloorTransactional(
         set: {
           status: "succeeded",
           manageToken: token,
+          userId: userId || undefined,
           completedAt: new Date(),
         },
       });

@@ -70,26 +70,6 @@ export type Floor = typeof floors.$inferSelect;
 export type NewFloor = typeof floors.$inferInsert;
 
 /**
- * Email OTPs for passwordless, token-free floor management verification.
- */
-export const emailOtps = pgTable(
-  "email_otps",
-  {
-    id: serial("id").primaryKey(),
-    email: varchar("email", { length: 255 }).notNull(),
-    code: varchar("code", { length: 6 }).notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => ({
-    emailIdx: index("email_otps_email_idx").on(table.email),
-  })
-);
-
-export type EmailOtp = typeof emailOtps.$inferSelect;
-export type NewEmailOtp = typeof emailOtps.$inferInsert;
-
-/**
  * Claims / Payments ledger:
  * Tracks Dodo Payments checkout sessions and verified webhook transactions.
  */

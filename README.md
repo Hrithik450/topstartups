@@ -60,7 +60,7 @@
 | **ORM** | [Drizzle ORM](https://orm.drizzle.team/) (100% Type-Safe SQL queries) |
 | **Database** | PostgreSQL (Tested with [Supabase](https://supabase.com/) & self-hosted VPS PostgreSQL) |
 | **Payments** | [Dodo Payments](https://dodopayments.com/) (Merchant of Record with UPI & Cards) |
-| **Transactional Email** | [Brevo (Sendinblue)](https://www.brevo.com/) REST API |
+| **Authentication** | Direct Google OAuth 2.0 (Zero external auth libraries) |
 | **Styling** | Modern CSS Variables, Custom Theme Switching, Responsive Layouts |
 
 ---
@@ -73,38 +73,43 @@ outbid/
 │   ├── admin/                    # 📊 Admin Dashboard & Login Gate (/admin)
 │   ├── api/                      # ⚡ REST API Endpoints
 │   │   ├── admin/                # Admin login, logout, and founder queries
-│   │   ├── auth/                 # Send & verify Brevo Email OTPs
+│   │   ├── auth/                 # Direct Google OAuth 2.0 (url, callback, me, logout)
 │   │   ├── checkout/             # Dodo payment session creation & verification
 │   │   ├── floors/               # Active skyscraper floors & founder CRUD
+│   │   ├── stats/                # Real-time live statistics ping & session metrics
 │   │   └── webhooks/dodo/        # Cryptographically verified Dodo webhook handler
 │   ├── globals.css               # Theme styling (Dark & Sunset themes)
-│   ├── layout.tsx                # Metadata, OpenGraph, JSON-LD schema, and analytics
+│   ├── layout.tsx                # Metadata, OpenGraph, JSON-LD schema, and UserAuthProvider
 │   ├── page.tsx                  # Skyscraper landing page
 │   ├── robots.txt/sitemap.xml    # Automated SEO crawlers
 │
 ├── components/
 │   ├── Experience.tsx            # Three.js canvas mount & UI state synchronizer
-│   ├── Hero.tsx                  # Navigation header, payment celebration banner, claim modal
-│   ├── FloorHoverCard.tsx        # 3D raycast hover card with startup preview & visit CTA
-│   ├── ManageFloorModal.tsx      # Brevo OTP login & multi-product management modal
+│   ├── Hero.tsx                  # Interactive claim form & direct Google payment flow
+│   ├── FloorHoverCard.tsx        # 3D raycast hover card with startup preview & owner controls
+│   ├── StatChips.tsx             # Real-time live metrics & profile avatar / login chip
+│   ├── ManageFloorModal.tsx      # Google-authenticated multi-product management drawer
 │   └── BuildingLoader.tsx        # 3D building initialization progress indicator
 │
 ├── lib/
+│   ├── auth/                     # 🔐 Direct Google OAuth 2.0 & Session Management
+│   │   ├── google.ts             # Direct Google OAuth 2.0 token exchange & userinfo fetch
+│   │   ├── session.ts            # Tamper-proof HMAC user session tokens
+│   │   └── use-user-auth.tsx     # Client auth provider & user hook
 │   ├── db/
 │   │   ├── config/               # ⚙️ Infrastructure & Configuration
 │   │   │   ├── client.ts         # Lazy connection pooler compatible with Supabase & VPS
-│   │   │   ├── schema.ts         # Drizzle schemas (users, floors, claims, email_otps)
+│   │   │   ├── schema.ts         # Drizzle schemas (users, floors, claims, site_stats)
 │   │   │   ├── pool-config.ts    # Multi-tier connection pooler (:5432 & :6543)
 │   │   │   ├── ssl.ts            # Auto-detecting SSL for VPS, Docker & Cloud
 │   │   │   └── seed.ts           # 50-floor skyscraper database seeder
 │   │   ├── floors.ts             # Skyscraper business logic & queries (pure Drizzle)
 │   │   ├── users.ts              # Founder accounts & directory queries (pure Drizzle)
-│   │   └── index.ts              # Clean DB barrel export
-│   ├── email/
-│   │   └── brevo.ts              # Brevo transactional email sender
+│   │   └── stats.ts              # Real-time live statistics queries (pure Drizzle)
 │   ├── three/
 │   │   ├── app.ts                # Complete Three.js 3D Skyscraper engine
 │   │   └── listings.ts           # Client-side placeholder definitions
+│   ├── validation/               # 🛡️ Live domain & SSL security reachability checker
 │   ├── admin-auth.ts             # Admin authentication & timing-safe token helpers
 │   └── dodo.ts                   # Dodo Payments SDK client & webhook validator
 │

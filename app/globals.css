@@ -669,6 +669,8 @@ body.home-tower-scrolled .tower-top-fade {
   flex-direction: column;
   gap: 10px;
   max-width: 260px;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 .chip {
@@ -687,6 +689,23 @@ body.home-tower-scrolled .tower-top-fade {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   white-space: nowrap;
+  user-select: none;
+}
+
+button.chip {
+  cursor: pointer !important;
+  font-family: inherit;
+  outline: none;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+button.chip:hover {
+  cursor: pointer !important;
+}
+
+button.chip:focus-visible {
+  outline: 2px solid var(--brand-orange);
+  outline-offset: 2px;
 }
 .chip svg {
   width: 15px;

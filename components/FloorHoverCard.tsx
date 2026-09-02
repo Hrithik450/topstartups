@@ -146,38 +146,63 @@ export default function FloorHoverCard({
             </div>
 
             <div className="floor-hover-card-main-info">
-              <h3 className="floor-hover-card-title">{listing.title}</h3>
-              <div className="floor-hover-card-price">
-                Claimed floor at ₹{listing.total_paid}
+              <h3 className="floor-hover-card-title">
+                {listing.is_claimed ? listing.title : `Floor #${rank} — Available`}
+              </h3>
+              <div
+                className="floor-hover-card-price"
+                style={{
+                  color: listing.is_claimed ? "#ff9f43" : "#22c55e",
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  marginTop: "3px",
+                }}
+              >
+                {listing.is_claimed ? (
+                  <>✨ Claimed Floor · ₹{listing.total_paid}</>
+                ) : (
+                  <>🟢 Open Floor · ₹50 to Claim</>
+                )}
               </div>
             </div>
 
             <div className="floor-hover-card-meta-list">
               <div className="floor-hover-card-meta-item">
                 <span className="meta-icon">🏷️</span>
-                <span className="meta-label">Category:</span>
-                <span className="meta-value">{listing.category || "AI Agents & Infrastructure"}</span>
+                <span className="meta-label">Status:</span>
+                <span className="meta-value">
+                  {listing.is_claimed ? (listing.category || "Startup") : "Available for Claim"}
+                </span>
               </div>
 
-              <div className="floor-hover-card-meta-item">
-                <span className="meta-icon">📍</span>
-                <span className="meta-label">Location:</span>
-                <span className="meta-value">{flag} {listing.country_name || "India"}</span>
-              </div>
+              {listing.is_claimed && (
+                <>
+                  <div className="floor-hover-card-meta-item">
+                    <span className="meta-icon">📍</span>
+                    <span className="meta-label">Location:</span>
+                    <span className="meta-value">{flag} {listing.country_name || "India"}</span>
+                  </div>
 
-              <div className="floor-hover-card-meta-item">
-                <span className="meta-icon">🗓️</span>
-                <span className="meta-label">Listed:</span>
-                <span className="meta-value">{timeAgo}</span>
-              </div>
-
-              {listing.description && (
-                <div className="floor-hover-card-meta-item meta-about">
-                  <span className="meta-icon">📄</span>
-                  <span className="meta-label">About:</span>
-                  <span className="meta-value">{listing.description}</span>
-                </div>
+                  <div className="floor-hover-card-meta-item">
+                    <span className="meta-icon">🗓️</span>
+                    <span className="meta-label">Listed:</span>
+                    <span className="meta-value">{timeAgo}</span>
+                  </div>
+                </>
               )}
+
+              <div className="floor-hover-card-meta-item meta-about">
+                <span className="meta-icon">📄</span>
+                <span className="meta-label">About:</span>
+                <span className="meta-value">
+                  {listing.is_claimed
+                    ? (listing.description || "Claimed floor on GeTopFloor skyscraper.")
+                    : "This floor is waiting for an ambitious startup. Claim top floor now to showcase your product to global founders and investors."}
+                </span>
+              </div>
             </div>
 
             {/* Action Buttons: Visit Website / Claim Floor / Edit Floor (Owner Only) */}
@@ -197,7 +222,14 @@ export default function FloorHoverCard({
                 <button
                   type="button"
                   className="floor-hover-card-visit-btn claim-action-btn"
-                  style={{ background: "linear-gradient(135deg,#ff9f43,#ee5253)", color: "#fff", fontWeight: 600 }}
+                  style={{
+                    background: "linear-gradient(135deg,#ff9f43,#ee5253)",
+                    color: "#fff",
+                    fontWeight: 600,
+                    border: "none",
+                    cursor: "pointer",
+                    width: "100%",
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
                     const inputEl = document.querySelector<HTMLInputElement>(".url-field input");
@@ -207,7 +239,7 @@ export default function FloorHoverCard({
                     }
                   }}
                 >
-                  <span>Claim Floor #{rank}</span>
+                  <span>🚀 Claim Top Floor for ₹50</span>
                 </button>
               )}
 

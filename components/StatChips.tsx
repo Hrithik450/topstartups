@@ -131,23 +131,10 @@ export default function StatChips({
           {
             key: "user-profile",
             className: "user-profile-chip",
+            onClick: onOpenManage,
+            title: "Manage your claimed startup floors",
             render: () => (
-              <button
-                type="button"
-                onClick={onOpenManage}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "inherit",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: 0,
-                  cursor: "pointer",
-                  font: "inherit",
-                }}
-                title="Manage your claimed startup floors"
-              >
+              <>
                 {user.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
@@ -178,7 +165,7 @@ export default function StatChips({
                     {ownedFloors.length}
                   </span>
                 )}
-              </button>
+              </>
             ),
           },
         ]
@@ -186,27 +173,13 @@ export default function StatChips({
           {
             key: "manage-chip",
             className: "login-chip-bounce",
+            onClick: () => login(),
+            title: "Manage your skyscraper startups",
             render: () => (
-              <button
-                type="button"
-                onClick={() => login()}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "inherit",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: 0,
-                  cursor: "pointer",
-                  font: "inherit",
-                  fontWeight: 600,
-                }}
-                title="Manage your skyscraper startups"
-              >
+              <>
                 <ManageIcon />
                 <span>Manage</span>
-              </button>
+              </>
             ),
           },
         ]),
@@ -268,11 +241,28 @@ export default function StatChips({
 
   return (
     <div className="stats desktop-stats">
-      {chips.map((c, i) => (
-        <span key={c.key} className={`chip ${c.className ?? ""}`} style={{ ["--i" as string]: i }}>
-          {c.render()}
-        </span>
-      ))}
+      {chips.map((c, i) => {
+        if ("onClick" in c && c.onClick) {
+          return (
+            <button
+              key={c.key}
+              type="button"
+              onClick={c.onClick}
+              title={c.title}
+              className={`chip ${c.className ?? ""}`}
+              style={{ ["--i" as string]: i }}
+            >
+              {c.render()}
+            </button>
+          );
+        }
+
+        return (
+          <span key={c.key} className={`chip ${c.className ?? ""}`} style={{ ["--i" as string]: i }}>
+            {c.render()}
+          </span>
+        );
+      })}
     </div>
   );
 }

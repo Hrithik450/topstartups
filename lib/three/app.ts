@@ -2316,7 +2316,7 @@ function createMoonTexture(): THREE.CanvasTexture {
 
   // Helper: check if a raycast intersection hits a tower floor
   function getFloorHit(hit: THREE.Intersection): { floorIndex: number; listing: Listing; rank: number } | null {
-    if (hit.point.y < BASE_HEIGHT || hit.point.y >= roofY) return null;
+    if (hit.point.y < BASE_HEIGHT || hit.point.y >= penthouseY) return null;
     const fIdx = Math.floor((hit.point.y - BASE_HEIGHT) / FLOOR_PITCH);
     if (fIdx < 0 || fIdx >= floorCount) return null;
 

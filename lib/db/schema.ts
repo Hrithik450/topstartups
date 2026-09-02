@@ -27,6 +27,7 @@ export const floors = pgTable(
     description: text("description"),
     logoUrl: text("logo_url"),
     pricePaid: integer("price_paid").notNull().default(0), // in INR
+    manageToken: varchar("manage_token", { length: 128 }),
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -34,6 +35,7 @@ export const floors = pgTable(
   (table) => ({
     rankIdx: index("floors_rank_idx").on(table.rank),
     isClaimedIdx: index("floors_is_claimed_idx").on(table.isClaimed),
+    manageTokenIdx: index("floors_manage_token_idx").on(table.manageToken),
   })
 );
 
@@ -56,6 +58,7 @@ export const claims = pgTable(
     amount: integer("amount").notNull(), // amount in INR
     currency: varchar("currency", { length: 10 }).notNull().default("INR"),
     customerEmail: varchar("customer_email", { length: 255 }),
+    manageToken: varchar("manage_token", { length: 128 }),
     checkoutUrl: text("checkout_url"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     completedAt: timestamp("completed_at", { withTimezone: true }),

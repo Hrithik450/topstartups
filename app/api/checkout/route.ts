@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     const cleanUrl = url.trim().startsWith("http") ? url.trim() : `https://${url.trim()}`;
     const name = companyName?.trim() || cleanUrl.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-    const amount = Number(price) > 0 ? Number(price) : 46;
+    const amount = Math.max(50, Number(price) || 50);
 
     // Determine return origin
     const host = req.headers.get("host") || "localhost:3000";

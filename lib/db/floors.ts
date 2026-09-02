@@ -1,7 +1,8 @@
 import { db } from "./client";
 import { floors, claims, type Floor } from "./schema";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { sql } from "drizzle-orm";
+import crypto from "crypto";
 
 export interface ClaimFloorInput {
   paymentId: string;
@@ -11,7 +12,18 @@ export interface ClaimFloorInput {
   price: number;
   tagline?: string;
   description?: string;
+  logoUrl?: string;
   customerEmail?: string;
+  manageToken?: string;
+}
+
+export interface UpdateFloorInput {
+  companyName?: string;
+  url?: string;
+  category?: string;
+  tagline?: string;
+  description?: string;
+  logoUrl?: string;
 }
 
 /**
@@ -35,6 +47,7 @@ export async function getActiveFloors(): Promise<Floor[]> {
 
 /**
  * Ensures floors table and 50 premium placeholder floors exist.
+ * Minimum starting price is ₹50 (not ₹1).
  */
 export async function initializeFloorsIfEmpty() {
   try {
@@ -49,13 +62,15 @@ export async function initializeFloorsIfEmpty() {
         tagline TEXT,
         description TEXT,
         logo_url TEXT,
-        price_paid INTEGER NOT NULL DEFAULT 0,
+        price_paid INTEGER NOT NULL DEFAULT 50,
+        manage_token VARCHAR(128),
         claimed_at TIMESTAMP WITH TIME ZONE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
       );
       CREATE UNIQUE INDEX IF NOT EXISTS floors_rank_unique_idx ON floors (rank);
       CREATE INDEX IF NOT EXISTS floors_is_claimed_idx ON floors (is_claimed);
+      CREATE INDEX IF NOT EXISTS floors_manage_token_idx ON floors (manage_token);
 
       CREATE TABLE IF NOT EXISTS claims (
         id SERIAL PRIMARY KEY,
@@ -67,10 +82,17 @@ export async function initializeFloorsIfEmpty() {
         amount INTEGER NOT NULL,
         currency VARCHAR(10) NOT NULL DEFAULT 'INR',
         customer_email VARCHAR(255),
+        manage_token VARCHAR(128),
         checkout_url TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
         completed_at TIMESTAMP WITH TIME ZONE
       );
+    `);
+
+    // Ensure manage_token column exists in case table was created earlier
+    await db.execute(sql`
+      ALTER TABLE floors ADD COLUMN IF NOT EXISTS manage_token VARCHAR(128);
+      ALTER TABLE claims ADD COLUMN IF NOT EXISTS manage_token VARCHAR(128);
     `);
 
     const countRes: any = await db.execute(sql`SELECT COUNT(*)::int as cnt FROM floors`);
@@ -78,7 +100,8 @@ export async function initializeFloorsIfEmpty() {
 
     if (count < 50) {
       for (let rank = count + 1; rank <= 50; rank++) {
-        const price = Math.max(1, 46 - Math.floor((rank - 1) * 0.9));
+        // Minimum amount starts from 50 INR!
+        const price = Math.max(50, 95 - (rank - 1));
         const title =
           rank === 1
             ? "Penthouse Floor #1 — Open for Claim"
@@ -111,15 +134,17 @@ export async function initializeFloorsIfEmpty() {
  * High-reliability atomic transactional floor claim:
  * When a user completes a payment:
  * 1. Checks payment idempotency.
- * 2. Shifts existing floor ranks down atomically (rank = rank + 1).
- * 3. Places the newly claimed company at Rank 1 (Top Penthouse Floor).
- * 4. Trims lowest placeholder so tower cleanly maintains active 50 floors.
- * 5. Marks claim status as 'succeeded'.
+ * 2. Generates a secure manage_token.
+ * 3. Shifts existing floor ranks down atomically (rank = rank + 1).
+ * 4. Places the newly claimed company at Rank 1 (Top Penthouse Floor).
+ * 5. Trims lowest placeholder so tower cleanly maintains active 50 floors.
+ * 6. Marks claim status as 'succeeded' and returns manageToken.
  */
 export async function claimTopFloorTransactional(
   input: ClaimFloorInput
-): Promise<{ success: boolean; rank: number; message: string }> {
+): Promise<{ success: boolean; rank: number; manageToken: string; message: string }> {
   await initializeFloorsIfEmpty();
+  const token = input.manageToken || crypto.randomUUID().replace(/-/g, "");
 
   return await db.transaction(async (tx) => {
     // 1. Idempotency Check: if this payment was already processed, don't double shift
@@ -133,6 +158,7 @@ export async function claimTopFloorTransactional(
       return {
         success: true,
         rank: 1,
+        manageToken: existingClaim[0].manageToken || token,
         message: "Payment already successfully processed.",
       };
     }
@@ -143,6 +169,9 @@ export async function claimTopFloorTransactional(
     await tx.execute(sql`UPDATE floors SET rank = (-rank) + 1`);
 
     // 3. Insert the newly claimed startup at Rank 1 (Penthouse Floor)
+    // Enforce minimum price of 50 INR
+    const finalPrice = Math.max(50, input.price);
+
     await tx.execute(sql`
       INSERT INTO floors (
         rank,
@@ -152,7 +181,9 @@ export async function claimTopFloorTransactional(
         category,
         tagline,
         description,
+        logo_url,
         price_paid,
+        manage_token,
         claimed_at,
         created_at,
         updated_at
@@ -163,8 +194,10 @@ export async function claimTopFloorTransactional(
         ${input.url},
         ${input.category || "Startup"},
         ${input.tagline || `${input.companyName} — Official Skyscraper Floor`},
-        ${input.description || `Claimed top floor at ₹${input.price}`},
-        ${input.price},
+        ${input.description || `Claimed top floor at ₹${finalPrice}`},
+        ${input.logoUrl || null},
+        ${finalPrice},
+        ${token},
         NOW(),
         NOW(),
         NOW()
@@ -184,15 +217,17 @@ export async function claimTopFloorTransactional(
         companyName: input.companyName,
         url: input.url,
         category: input.category || "Startup",
-        amount: input.price,
+        amount: finalPrice,
         currency: "INR",
         customerEmail: input.customerEmail,
+        manageToken: token,
         completedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: claims.paymentId,
         set: {
           status: "succeeded",
+          manageToken: token,
           completedAt: new Date(),
         },
       });
@@ -200,7 +235,95 @@ export async function claimTopFloorTransactional(
     return {
       success: true,
       rank: 1,
+      manageToken: token,
       message: `Successfully claimed Top Floor (Rank 1) for ${input.companyName}!`,
     };
   });
+}
+
+/**
+ * CRUD: Get a claimed floor using its secure manage_token
+ */
+export async function getFloorByManageToken(token: string): Promise<Floor | null> {
+  if (!token?.trim()) return null;
+  const res = await db
+    .select()
+    .from(floors)
+    .where(eq(floors.manageToken, token.trim()))
+    .limit(1);
+  return res[0] || null;
+}
+
+/**
+ * CRUD: Update a claimed floor details using its secure manage_token
+ */
+export async function updateFloorByManageToken(
+  token: string,
+  updates: UpdateFloorInput
+): Promise<Floor | null> {
+  if (!token?.trim()) return null;
+
+  const current = await getFloorByManageToken(token);
+  if (!current) return null;
+
+  const updatedName = updates.companyName?.trim() || current.companyName;
+  const updatedUrl = updates.url?.trim() || current.url;
+  const updatedCat = updates.category?.trim() || current.category;
+  const updatedTagline = updates.tagline !== undefined ? updates.tagline.trim() : current.tagline;
+  const updatedDesc = updates.description !== undefined ? updates.description.trim() : current.description;
+  const updatedLogo = updates.logoUrl !== undefined ? updates.logoUrl.trim() : current.logoUrl;
+
+  await db
+    .update(floors)
+    .set({
+      companyName: updatedName,
+      url: updatedUrl,
+      category: updatedCat,
+      tagline: updatedTagline,
+      description: updatedDesc,
+      logoUrl: updatedLogo,
+      updatedAt: new Date(),
+    })
+    .where(eq(floors.manageToken, token.trim()));
+
+  return await getFloorByManageToken(token);
+}
+
+/**
+ * CRUD: Delete / Vacate a claimed floor using its secure manage_token.
+ * Resets the slot back to a premium available placeholder so the tower structure remains intact.
+ */
+export async function deleteFloorByManageToken(
+  token: string
+): Promise<{ success: boolean; message: string }> {
+  if (!token?.trim()) {
+    return { success: false, message: "Invalid or missing token" };
+  }
+
+  const current = await getFloorByManageToken(token);
+  if (!current) {
+    return { success: false, message: "Floor not found with this token" };
+  }
+
+  // Reset this floor to an unclaimed placeholder
+  await db
+    .update(floors)
+    .set({
+      isClaimed: false,
+      companyName: `Tower Floor #${current.rank} — Spot Reserved`,
+      url: "https://bharathunt.com",
+      category: "Available Floor",
+      tagline: "Spot reserved for your startup — Outbid & claim top floor",
+      description: "Claim this floor to put your company on the world stage.",
+      logoUrl: null,
+      manageToken: null,
+      claimedAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(floors.manageToken, token.trim()));
+
+  return {
+    success: true,
+    message: `Floor #${current.rank} (${current.companyName}) has been vacated and reset to an available slot.`,
+  };
 }

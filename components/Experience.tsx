@@ -7,6 +7,7 @@ import Hero from "./Hero";
 import StatChips, { MobileStatsSheet, useLiveStats } from "./StatChips";
 import Controls from "./Controls";
 import FloorHoverCard, { type HoverData } from "./FloorHoverCard";
+import ManageFloorModal from "./ManageFloorModal";
 import { Moon, Sun, BarChart } from "./icons";
 import type { Listing } from "@/lib/three/listings";
 
@@ -17,6 +18,7 @@ export default function Experience() {
   const [hoveredData, setHoveredData] = useState<HoverData | null>(null);
   const [theme, setTheme] = useState<"dark" | "sunset">("dark");
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [listings, setListings] = useState<Listing[] | undefined>(undefined);
   const stats = useLiveStats(731);
 
@@ -103,8 +105,16 @@ export default function Experience() {
           onToggleTheme={toggleTheme}
           onOpenStats={() => setIsMobileStatsOpen(true)}
         />
-        <FloorHoverCard data={hoveredData} onClose={() => setHoveredData(null)} />
+        <FloorHoverCard
+          data={hoveredData}
+          onClose={() => setHoveredData(null)}
+          onManage={() => setIsManageModalOpen(true)}
+        />
         <MobileStatsSheet open={isMobileStatsOpen} onClose={() => setIsMobileStatsOpen(false)} />
+        <ManageFloorModal
+          isOpen={isManageModalOpen}
+          onClose={() => setIsManageModalOpen(false)}
+        />
       </div>
     </div>
   );

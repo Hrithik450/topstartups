@@ -51,13 +51,15 @@ export async function seedFloors() {
       tagline TEXT,
       description TEXT,
       logo_url TEXT,
-      price_paid INTEGER NOT NULL DEFAULT 0,
+      price_paid INTEGER NOT NULL DEFAULT 50,
+      manage_token VARCHAR(128),
       claimed_at TIMESTAMP WITH TIME ZONE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
     );
     CREATE INDEX IF NOT EXISTS floors_rank_idx ON floors (rank);
     CREATE INDEX IF NOT EXISTS floors_is_claimed_idx ON floors (is_claimed);
+    CREATE INDEX IF NOT EXISTS floors_manage_token_idx ON floors (manage_token);
 
     CREATE TABLE IF NOT EXISTS claims (
       id SERIAL PRIMARY KEY,
@@ -69,6 +71,7 @@ export async function seedFloors() {
       amount INTEGER NOT NULL,
       currency VARCHAR(10) NOT NULL DEFAULT 'INR',
       customer_email VARCHAR(255),
+      manage_token VARCHAR(128),
       checkout_url TEXT,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
       completed_at TIMESTAMP WITH TIME ZONE
@@ -89,8 +92,8 @@ export async function seedFloors() {
   console.log(`Generating 50 premium placeholder floors...`);
   const placeholderFloors = Array.from({ length: 50 }, (_, i) => {
     const rank = i + 1;
-    // Price curve: rank 1 starts at ₹46, stepping down to ₹1
-    const price = Math.max(1, 46 - Math.floor((rank - 1) * 0.9));
+    // Price curve: minimum amount starts from 50 INR!
+    const price = Math.max(50, 95 - (rank - 1));
     return {
       rank,
       isClaimed: false,

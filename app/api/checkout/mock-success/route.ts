@@ -9,12 +9,12 @@ export async function GET(req: NextRequest) {
   const url = searchParams.get("url") || "https://example.com";
   const category = searchParams.get("category") || "Developer Tools";
   const companyName = searchParams.get("company_name") || "Mock Startup";
-  const price = Number(searchParams.get("price")) || 46;
+  const price = Math.max(50, Number(searchParams.get("price")) || 50);
   const returnUrl = searchParams.get("return_url") || "/";
 
   try {
     console.log(`Executing test mock payment for ${companyName} at ₹${price}...`);
-    await claimTopFloorTransactional({
+    const result = await claimTopFloorTransactional({
       paymentId,
       companyName,
       url,
@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     target.searchParams.set("claimed", "true");
     target.searchParams.set("company", companyName);
     target.searchParams.set("rank", "1");
+    target.searchParams.set("manage_token", result.manageToken);
 
     return NextResponse.redirect(target);
   } catch (err: any) {

@@ -3,12 +3,14 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Globe, Building, Arrow, Minus, Plus, Search, Close, Check } from "./icons";
 import { MAIN_CATEGORIES, SPECIAL_OPTIONS, IndustryCategory } from "@/lib/categories";
+import ManageFloorModal from "./ManageFloorModal";
 
 export default function Hero() {
-  const [price, setPrice] = useState(46);
+  const [price, setPrice] = useState(50);
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<IndustryCategory | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isManageOpen, setIsManageOpen] = useState(false);
 
   const categoryWrapperRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -81,6 +83,10 @@ export default function Hero() {
       const params = new URLSearchParams(window.location.search);
       if (params.get("claimed") === "true") {
         setJustClaimed(params.get("company") || "Your company");
+        const token = params.get("manage_token");
+        if (token) {
+          localStorage.setItem("bharathunt_manage_token", token);
+        }
         // Clear params from address bar without reloading
         window.history.replaceState({}, "", window.location.pathname);
       }
@@ -102,7 +108,7 @@ export default function Hero() {
         body: JSON.stringify({
           url: url.trim(),
           category: selectedCategory?.name || "Startup",
-          price,
+          price: Math.max(50, price),
         }),
       });
 
@@ -124,6 +130,23 @@ export default function Hero() {
       {justClaimed && (
         <div className="claimed-banner" role="status">
           <span>🏆 Congratulations! <strong>{justClaimed}</strong> has claimed Top Floor (#1)!</span>
+          <button
+            type="button"
+            className="claimed-edit-btn"
+            onClick={() => setIsManageOpen(true)}
+            style={{
+              background: "rgba(255, 255, 255, 0.2)",
+              color: "#fff",
+              padding: "3px 10px",
+              borderRadius: "6px",
+              fontWeight: 600,
+              fontSize: "12px",
+              cursor: "pointer",
+              border: "none",
+            }}
+          >
+            Edit Floor
+          </button>
           <button type="button" onClick={() => setJustClaimed(null)} aria-label="Close">✕</button>
         </div>
       )}
@@ -131,7 +154,7 @@ export default function Hero() {
       <h1 className="headline">
         Claim top floor for
         <span className="price-stepper">
-          <button className="step-btn" onClick={() => setPrice((p) => Math.max(1, p - 1))} aria-label="Lower bid">
+          <button className="step-btn" onClick={() => setPrice((p) => Math.max(50, p - 1))} aria-label="Lower bid">
             <Minus />
           </button>
           <span className="price">₹{price}</span>
@@ -140,6 +163,8 @@ export default function Hero() {
           </button>
         </span>
       </h1>
+
+      <ManageFloorModal isOpen={isManageOpen} onClose={() => setIsManageOpen(false)} />
 
       <form className="form" onSubmit={handleSubmit}>
         <div className="form-inputs-row">

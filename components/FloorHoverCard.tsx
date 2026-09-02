@@ -68,9 +68,11 @@ export const ExternalLink = () => (
 export default function FloorHoverCard({
   data,
   onClose,
+  onManage,
 }: {
   data: HoverData | null;
   onClose?: () => void;
+  onManage?: (listing: Listing) => void;
 }) {
   if (!data) return null;
   const { listing, rank } = data;
@@ -166,7 +168,7 @@ export default function FloorHoverCard({
               )}
             </div>
 
-            {/* Dedicated Visit Website Button */}
+            {/* Dedicated Visit Website & Manage Buttons */}
             <div className="floor-hover-card-action">
               <a
                 href={targetUrl}
@@ -180,6 +182,19 @@ export default function FloorHoverCard({
                 <span>Visit Website</span>
                 <ExternalLink />
               </a>
+              {onManage && (
+                <button
+                  type="button"
+                  className="floor-hover-card-manage-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onManage(listing);
+                  }}
+                  title="Update or delete this floor"
+                >
+                  Manage
+                </button>
+              )}
             </div>
           </div>
         </div>

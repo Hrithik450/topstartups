@@ -16,6 +16,7 @@ export type TowerHandle = {
   toggleSound?: () => boolean;
   toggleTheme: () => "dark" | "sunset";
   setTheme: (theme: "dark" | "sunset") => void;
+  updateListings?: (listings: Listing[]) => void;
   dispose: () => void;
 };
 
@@ -1445,7 +1446,7 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
 
   // Tower Geometry Parameters (100% Dynamic to any listings count)
   const rawListings = options?.listings ?? INITIAL_LISTINGS;
-  const listings: Listing[] = [...rawListings].reverse();
+  let listings: Listing[] = [...rawListings].reverse();
   const floorCount = listings.length;
   const BASE_HEIGHT = 2.4;
   const FLOOR_PITCH = 2.45;
@@ -2719,6 +2720,11 @@ function createMoonTexture(): THREE.CanvasTexture {
     },
     setTheme(theme) {
       applyTheme(theme);
+    },
+    updateListings(newListings: Listing[]) {
+      if (Array.isArray(newListings) && newListings.length > 0) {
+        listings = [...newListings].reverse();
+      }
     },
     dispose() {
       cancelAnimationFrame(raf);

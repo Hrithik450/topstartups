@@ -25,6 +25,10 @@ export default function TowerScene({
   const onFloorHoverRef = useRef(onFloorHover);
   onFloorHoverRef.current = onFloorHover;
 
+  const listingsRef = useRef(listings);
+  listingsRef.current = listings;
+
+  // 1. Mount Three.js Tower EXACTLY ONCE on initial load
   useEffect(() => {
     let handle: TowerHandle | null = null;
     let disposed = false;
@@ -34,7 +38,7 @@ export default function TowerScene({
       handle = createTower(mount.current, {
         onFloorHover: (data) => onFloorHoverRef.current?.(data),
         theme,
-        listings,
+        listings: listingsRef.current,
         onLoaded: () => onLoadedRef.current?.(),
       });
       handleRef.current = handle;
@@ -47,7 +51,21 @@ export default function TowerScene({
       handle?.dispose();
       handleRef.current = null;
     };
-  }, [handleRef, theme, listings]);
+  }, []); // Strictly empty dependency array: NEVER re-mount or restart intro animation!
+
+  // 2. Reactively update listings when loaded without recreating the scene
+  useEffect(() => {
+    if (listings && handleRef.current?.updateListings) {
+      handleRef.current.updateListings(listings);
+    }
+  }, [listings, handleRef]);
+
+  // 3. Reactively update theme without recreating the scene
+  useEffect(() => {
+    if (handleRef.current) {
+      handleRef.current.setTheme(theme);
+    }
+  }, [theme, handleRef]);
 
   return <div ref={mount} className="scene-canvas" />;
 }

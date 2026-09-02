@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateGoogleAuthUrl } from "@/lib/auth/google";
+import { generateGoogleAuthUrl, getGoogleRedirectUri } from "@/lib/auth/google";
 
 export const dynamic = "force-dynamic";
 
@@ -8,10 +8,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const returnTo = searchParams.get("return_to") || "/";
 
-    // Determine current host for redirect_uri
-    const host = req.headers.get("host") || "localhost:3000";
-    const proto = req.headers.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
-    const redirectUri = `${proto}://${host}/api/auth/google/callback`;
+    // Matches Google Cloud Console configured redirect URI
+    const redirectUri = getGoogleRedirectUri(req);
 
     // Encode return_to into state
     const state = Buffer.from(JSON.stringify({ returnTo })).toString("base64url");

@@ -132,3 +132,92 @@ export async function syncGoogleUserToDb(profile: GoogleProfile): Promise<User> 
 
   return upserted;
 }
+
+/**
+ * Compute the exact callback URL for Google OAuth matching user config.
+ */
+export function getGoogleRedirectUri(req: Request | { headers: Headers }): string {
+  // If explicitly overridden in environment variables
+  if (process.env.GOOGLE_REDIRECT_URI?.trim()) {
+    return process.env.GOOGLE_REDIRECT_URI.trim();
+  }
+
+  const headers = req.headers;
+  const host = headers.get("x-forwarded-host") || headers.get("host") || "localhost:3000";
+  const proto = headers.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+
+  // Matches Google Cloud Console standard callback path: /api/auth/callback/google
+  return `${proto}://${host}/api/auth/callback/google`;
+}
+
+/**
+ * Shared handler for Google OAuth 2.0 callback across all alias routes.
+ */
+export async function handleGoogleOAuthCallback(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const code = searchParams.get("code");
+  const stateParam = searchParams.get("state");
+  const errorParam = searchParams.get("error");
+
+  // Decode state
+  let returnTo = "/";
+  if (stateParam) {
+    try {
+      const decoded = JSON.parse(Buffer.from(stateParam, "base64url").toString("utf8"));
+      if (decoded.returnTo && typeof decoded.returnTo === "string" && decoded.returnTo.startsWith("/")) {
+        returnTo = decoded.returnTo;
+      }
+    } catch {
+      returnTo = "/";
+    }
+  }
+
+  if (errorParam) {
+    console.warn("Google OAuth canceled or denied:", errorParam);
+    return Response.redirect(new URL(`${returnTo}?auth_error=${encodeURIComponent(errorParam)}`, req.url));
+  }
+
+  if (!code) {
+    return Response.redirect(new URL(`${returnTo}?auth_error=missing_code`, req.url));
+  }
+
+  // Exact callback URI matching the request
+  const redirectUri = getGoogleRedirectUri(req);
+
+  // 1. Direct Token Exchange
+  const { accessToken } = await exchangeGoogleCodeForTokens(code, redirectUri);
+
+  // 2. Direct Profile Fetch from Google
+  const profile = await fetchGoogleUserProfile(accessToken);
+
+  // 3. Upsert user in PostgreSQL DB via Drizzle
+  const dbUser = await syncGoogleUserToDb(profile);
+
+  // 4. Create signed HMAC session token
+  const { createUserSessionToken } = await import("@/lib/auth/session");
+  const sessionToken = createUserSessionToken({
+    id: dbUser.id,
+    email: dbUser.email,
+    name: dbUser.name,
+    avatarUrl: dbUser.avatarUrl,
+  });
+
+  // 5. Set HTTP-only Cookie and Redirect
+  const response = Response.redirect(new URL(returnTo, req.url));
+  const isProd = process.env.NODE_ENV === "production";
+
+  // Use headers to set cookie
+  const cookieOptions = [
+    `user_session=${sessionToken}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    `Max-Age=${30 * 24 * 60 * 60}`,
+    isProd ? "Secure" : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
+
+  response.headers.set("Set-Cookie", cookieOptions);
+  return response;
+}

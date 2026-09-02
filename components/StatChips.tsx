@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RulerTall, Stack, Eye, Globe, Close, BarChart, ManageIcon } from "./icons";
+import { useUserAuth } from "@/lib/auth/use-user-auth";
 
 interface LiveStatsState {
   online: number;
@@ -56,17 +57,6 @@ export function useLiveStats(initialHeightFt = 731) {
       sessionId = "sess_fallback_" + Date.now();
     }
 
-    // Check if this tab session has already recorded its view
-    let isInitialView = false;
-    try {
-      if (!sessionStorage.getItem("gtf_tab_view_recorded")) {
-        isInitialView = true;
-        sessionStorage.setItem("gtf_tab_view_recorded", "true");
-      }
-    } catch {
-      isInitialView = true;
-    }
-
     const countryGuess = getClientCountryGuess();
 
     // Ping server with visitor heartbeat and fetch real database stats
@@ -102,8 +92,8 @@ export function useLiveStats(initialHeightFt = 731) {
       }
     };
 
-    // 1. Initial tab open = 1 new view
-    pingAndSyncStats(isInitialView);
+    // 1. Initial page load = record 1 page visit and sync live stats
+    pingAndSyncStats(true);
 
     // 2. Re-ping every 35 seconds to maintain real online presence (without incrementing view count)
     const interval = setInterval(() => pingAndSyncStats(false), 35000);
@@ -112,8 +102,6 @@ export function useLiveStats(initialHeightFt = 731) {
 
   return stats;
 }
-
-import { useUserAuth } from "@/lib/auth/use-user-auth";
 
 export default function StatChips({
   heightFt = 731,

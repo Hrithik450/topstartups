@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { MAIN_CATEGORIES } from "@/lib/categories";
+import { validateWebsiteSyntax } from "@/lib/validation/domain";
 
 interface ManageFloorModalProps {
   isOpen: boolean;
@@ -195,6 +196,14 @@ export default function ManageFloorModal({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFloorId || !sessionToken || !email) return;
+
+    if (formData.url?.trim()) {
+      const check = validateWebsiteSyntax(formData.url.trim());
+      if (!check.valid) {
+        setStatusMsg({ type: "error", text: check.error || "Please enter a valid, secure website URL." });
+        return;
+      }
+    }
 
     setSaving(true);
     setStatusMsg(null);

@@ -4,6 +4,7 @@ import {
   updateFloorByEmail,
   deleteFloorByEmail,
 } from "@/lib/db/floors";
+import { verifyWebsiteLive } from "@/lib/validation/domain";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -73,9 +74,21 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized session" }, { status: 401 });
     }
 
+    let verifiedUrl: string | undefined = undefined;
+    if (url && typeof url === "string" && url.trim()) {
+      const verification = await verifyWebsiteLive(url.trim());
+      if (!verification.valid || !verification.cleanUrl) {
+        return NextResponse.json(
+          { error: verification.error || "Insecure or invalid website URL" },
+          { status: 400 }
+        );
+      }
+      verifiedUrl = verification.cleanUrl;
+    }
+
     const updated = await updateFloorByEmail(Number(floorId), cleanEmail, {
       companyName,
-      url,
+      url: verifiedUrl,
       category,
       tagline,
       description,

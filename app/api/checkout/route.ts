@@ -2,18 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createDodoCheckout } from "@/lib/dodo";
 import { db } from "@/lib/db/client";
 import { claims } from "@/lib/db/schema";
+import { verifyWebsiteLive } from "@/lib/validation/domain";
 
 export const dynamic = "force-dynamic";
-
-/** SECURITY: Validate that a string is a proper HTTP(S) URL */
-function isValidHttpUrl(str: string): boolean {
-  try {
-    const url = new URL(str);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
 
 /** SECURITY: Strip HTML/script tags and limit length */
 function sanitizeText(input: string, maxLength = 255): string {
@@ -32,17 +23,20 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { url, category, companyName, price, customerEmail } = body;
 
-    // Input validation
+    // Input validation & Live Security Verification
     if (!url || typeof url !== "string") {
       return NextResponse.json({ error: "Website URL is required" }, { status: 400 });
     }
 
-    const cleanUrl = url.trim().startsWith("http") ? url.trim() : `https://${url.trim()}`;
-
-    // SECURITY: Validate URL format — block javascript:, data:, etc.
-    if (!isValidHttpUrl(cleanUrl)) {
-      return NextResponse.json({ error: "Invalid URL format" }, { status: 400 });
+    const verification = await verifyWebsiteLive(url);
+    if (!verification.valid || !verification.cleanUrl) {
+      return NextResponse.json(
+        { error: verification.error || "Insecure or invalid website URL" },
+        { status: 400 }
+      );
     }
+
+    const cleanUrl = verification.cleanUrl;
 
     // SECURITY: Validate and sanitize text inputs
     const name = sanitizeText(

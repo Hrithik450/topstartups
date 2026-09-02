@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Globe, Building, Arrow, Minus, Plus, Search, Close, Check } from "./icons";
 import { MAIN_CATEGORIES, SPECIAL_OPTIONS, IndustryCategory } from "@/lib/categories";
+import { validateWebsiteSyntax } from "@/lib/validation/domain";
 import ManageFloorModal from "./ManageFloorModal";
 
 export default function Hero() {
@@ -140,17 +141,32 @@ export default function Hero() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) {
-      alert("Please enter your website URL (e.g. yourcompany.com)");
+      setPaymentNotice({
+        type: "error",
+        message: "Please enter your startup website URL (e.g. acme.ai or yourcompany.com).",
+      });
+      return;
+    }
+
+    // Client-side domain & syntax validation filter
+    const syntaxCheck = validateWebsiteSyntax(url.trim());
+    if (!syntaxCheck.valid) {
+      setPaymentNotice({
+        type: "error",
+        message: syntaxCheck.error || "Please enter a valid, secure HTTPS website.",
+      });
       return;
     }
 
     setIsSubmitting(true);
+    setPaymentNotice(null);
+
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          url: url.trim(),
+          url: syntaxCheck.cleanUrl || url.trim(),
           category: selectedCategory?.name || "Startup",
           price: Math.max(50, price),
         }),
@@ -164,7 +180,10 @@ export default function Hero() {
       window.location.href = data.checkoutUrl;
     } catch (err: any) {
       console.error("Checkout error:", err);
-      alert(err.message || "Could not start checkout. Please try again.");
+      setPaymentNotice({
+        type: "error",
+        message: err.message || "Could not start checkout. Please try again.",
+      });
       setIsSubmitting(false);
     }
   };
@@ -391,7 +410,6 @@ export default function Hero() {
 
       <p className="subtitle">
         To claim top floor again, use the same URL you used earlier.
-        <br />
         You&apos;ll pay the difference &amp; claim top floor.
       </p>
     </section>

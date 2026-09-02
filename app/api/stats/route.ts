@@ -22,8 +22,9 @@ export async function POST(req: NextRequest) {
       null;
 
     const countryName = body.countryName || null;
+    const isNewSession = Boolean(body.isNewSession ?? body.isInitialView);
 
-    await recordVisitAndPing(sessionId, countryCode, countryName);
+    await recordVisitAndPing(sessionId, countryCode, countryName, isNewSession);
     const stats = await getLiveStats();
 
     return NextResponse.json({ success: true, stats });

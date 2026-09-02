@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import type { Floor } from "@/lib/db/schema";
+import type { Floor } from "@/lib/db/config/schema";
 
 export interface AuthUser {
   id: number;

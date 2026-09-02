@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createDodoCheckout } from "@/lib/dodo";
-import { db } from "@/lib/db/client";
-import { claims } from "@/lib/db/schema";
+import { db } from "@/lib/db/config/client";
+import { claims } from "@/lib/db/config/schema";
 import { verifyWebsiteLive } from "@/lib/validation/domain";
 import { getAuthenticatedUser } from "@/lib/auth/session";
 

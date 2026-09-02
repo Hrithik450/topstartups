@@ -1,5 +1,5 @@
-import { db } from "./client";
-import { floors, claims, users, type Floor, type NewFloor } from "./schema";
+import { db } from "./config/client";
+import { floors, claims, users, type Floor, type NewFloor } from "./config/schema";
 import { eq, asc, and, gt, sql } from "drizzle-orm";
 import crypto from "crypto";
 

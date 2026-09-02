@@ -1,5 +1,5 @@
-import { db } from "./client";
-import { users, floors, type User, type NewUser } from "./schema";
+import { db } from "./config/client";
+import { users, floors, type User, type NewUser } from "./config/schema";
 import { eq, desc } from "drizzle-orm";
 
 export type { User, NewUser };

@@ -4,6 +4,21 @@ import { claimTopFloorTransactional } from "@/lib/db/floors";
 
 export const dynamic = "force-dynamic";
 
+export async function GET() {
+  return NextResponse.json({ status: "Dodo Payments webhook listener is active", timestamp: new Date().toISOString() });
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, webhook-signature, dodo-signature, x-dodo-signature",
+    },
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
@@ -27,19 +42,21 @@ export async function POST(req: NextRequest) {
       const data = payload.data || payload;
       const metadata = data.metadata || {};
       const paymentId = data.payment_id || data.id || payload.id;
+      const checkoutSessionId = data.checkout_session_id || data.checkout_id || payload.checkout_session_id;
 
       const companyName =
         metadata.company_name || data.customer?.name || "Anonymous Startup";
       const url = metadata.url || "https://getopfloor.com";
       const category = metadata.category || "Startup";
-      const price = Number(metadata.price) || Math.round(Number(data.total_amount || data.amount || 4600) / 100);
+      const price = Number(metadata.price) || Math.round(Number(data.total_amount || data.amount || 5000) / 100);
       const customerEmail = data.customer?.email || metadata.customer_email;
       const customerPhone = data.customer?.phone_number || data.customer_phone || data.billing?.phone;
 
-      console.log(`Processing verified payment success for ${companyName} (${paymentId})...`);
+      console.log(`Processing verified webhook payment for ${companyName} (${paymentId})...`);
 
       const result = await claimTopFloorTransactional({
         paymentId,
+        checkoutSessionId,
         companyName,
         url,
         category,
@@ -48,15 +65,13 @@ export async function POST(req: NextRequest) {
         customerPhone,
       });
 
-      console.log("Transaction result:", result);
-      // SECURITY: Never return manage_token or sensitive data in webhook response
+      console.log("Webhook transaction result:", result);
       return NextResponse.json({ success: true, rank: result.rank });
     }
 
     return NextResponse.json({ received: true, eventType });
   } catch (err: any) {
     console.error("Error processing Dodo Payments webhook:", err);
-    // SECURITY: Never expose internal error messages
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }

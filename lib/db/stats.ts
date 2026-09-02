@@ -1,6 +1,6 @@
-import { db } from "./client";
+import { db } from "./config/client";
 import { siteStats, visitorCountries, activeSessions, floors } from "./config/schema";
-import { eq, sql, gt, count } from "drizzle-orm";
+import { eq, sql, gt, count, and, isNotNull } from "drizzle-orm";
 
 export interface LiveStatsData {
   online: number;
@@ -13,12 +13,15 @@ export interface LiveStatsData {
 
 /**
  * Record a page visit or heartbeat ping from a visitor session.
- * 100% real tracking using pure Drizzle ORM.
+ * 100% real tracking using pure Drizzle ORM:
+ * - isNewSession = true: increments cumulative page views (new tab opened)
+ * - isNewSession = false (or undefined): only refreshes active heartbeat ping (for online status)
  */
 export async function recordVisitAndPing(
   sessionId: string,
   countryCode?: string | null,
-  countryName?: string | null
+  countryName?: string | null,
+  isNewSession: boolean = false
 ): Promise<void> {
   const cleanSessionId = sessionId?.trim();
   if (!cleanSessionId) return;
@@ -27,21 +30,23 @@ export async function recordVisitAndPing(
   const cleanCountryName = countryName?.trim() || null;
 
   try {
-    // 1. Increment total page views atomically
-    await db
-      .insert(siteStats)
-      .values({
-        key: "global",
-        totalViews: 1,
-        updatedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: siteStats.key,
-        set: {
-          totalViews: sql`${siteStats.totalViews} + 1`,
+    // 1. Increment total page views ONLY on new tab sessions (not on recurring heartbeats)
+    if (isNewSession) {
+      await db
+        .insert(siteStats)
+        .values({
+          key: "global",
+          totalViews: 1,
           updatedAt: new Date(),
-        },
-      });
+        })
+        .onConflictDoUpdate({
+          target: siteStats.key,
+          set: {
+            totalViews: sql`${siteStats.totalViews} + 1`,
+            updatedAt: new Date(),
+          },
+        });
+    }
 
     // 2. Track unique visitor country if available
     if (cleanCountry && cleanCountry.length <= 10) {
@@ -62,7 +67,7 @@ export async function recordVisitAndPing(
         });
     }
 
-    // 3. Upsert active session for real-time online tracking
+    // 3. Upsert active session for real-time online tracking (expires in 2 minutes)
     await db
       .insert(activeSessions)
       .values({
@@ -92,7 +97,7 @@ export async function recordVisitAndPing(
  */
 export async function getLiveStats(): Promise<LiveStatsData> {
   try {
-    // 1. Active sessions within the last 2 minutes = real online count
+    // 1. Active sessions within the last 2 minutes = real live online count
     const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
     const activeRes = await db
       .select({ count: count() })
@@ -101,7 +106,7 @@ export async function getLiveStats(): Promise<LiveStatsData> {
 
     const onlineCount = Math.max(1, Number(activeRes[0]?.count || 0));
 
-    // 2. Real claimed floors count
+    // 2. Real claimed floors count (floors with is_claimed = true)
     const claimedRes = await db
       .select({ count: count() })
       .from(floors)
@@ -118,10 +123,11 @@ export async function getLiveStats(): Promise<LiveStatsData> {
 
     const totalViews = Math.max(1, statsRes[0]?.totalViews || 1);
 
-    // 4. Real distinct countries count
+    // 4. Real distinct unique countries count
     const countriesRes = await db
-      .select({ count: count() })
-      .from(visitorCountries);
+      .select({ count: count(sql`DISTINCT ${visitorCountries.countryCode}`) })
+      .from(visitorCountries)
+      .where(isNotNull(visitorCountries.countryCode));
 
     const countriesCount = Math.max(1, Number(countriesRes[0]?.count || 0));
 

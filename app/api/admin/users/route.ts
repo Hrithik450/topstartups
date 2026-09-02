@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/admin-auth";
 import { getAllUsersWithProducts } from "@/lib/db/users";
-import { db } from "@/lib/db/client";
-import { floors } from "@/lib/db/schema";
+import { db } from "@/lib/db/config/client";
+import { floors } from "@/lib/db/config/schema";
 import { count, eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";

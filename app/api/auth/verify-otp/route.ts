@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db/client";
-import { emailOtps } from "@/lib/db/schema";
+import { db } from "@/lib/db/config/client";
+import { emailOtps } from "@/lib/db/config/schema";
 import { getFloorsByEmail } from "@/lib/db/floors";
 import { eq, and, gt } from "drizzle-orm";
 import crypto from "crypto";

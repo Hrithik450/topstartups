@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db/client";
-import { claims } from "@/lib/db/schema";
+import { db } from "@/lib/db/config/client";
+import { claims } from "@/lib/db/config/schema";
 import { eq, or } from "drizzle-orm";
 import { claimTopFloorTransactional } from "@/lib/db/floors";
 

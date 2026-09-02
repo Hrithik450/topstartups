@@ -56,10 +56,21 @@ export function useLiveStats(initialHeightFt = 731) {
       sessionId = "sess_fallback_" + Date.now();
     }
 
+    // Check if this tab session has already recorded its view
+    let isInitialView = false;
+    try {
+      if (!sessionStorage.getItem("gtf_tab_view_recorded")) {
+        isInitialView = true;
+        sessionStorage.setItem("gtf_tab_view_recorded", "true");
+      }
+    } catch {
+      isInitialView = true;
+    }
+
     const countryGuess = getClientCountryGuess();
 
     // Ping server with visitor heartbeat and fetch real database stats
-    const pingAndSyncStats = async () => {
+    const pingAndSyncStats = async (isNewSession: boolean = false) => {
       try {
         const res = await fetch("/api/stats", {
           method: "POST",
@@ -68,6 +79,7 @@ export function useLiveStats(initialHeightFt = 731) {
             sessionId,
             countryCode: countryGuess?.code,
             countryName: countryGuess?.name,
+            isNewSession,
           }),
         });
 
@@ -90,11 +102,11 @@ export function useLiveStats(initialHeightFt = 731) {
       }
     };
 
-    // Initial sync
-    pingAndSyncStats();
+    // 1. Initial tab open = 1 new view
+    pingAndSyncStats(isInitialView);
 
-    // Re-ping every 35 seconds to maintain real online presence
-    const interval = setInterval(pingAndSyncStats, 35000);
+    // 2. Re-ping every 35 seconds to maintain real online presence (without incrementing view count)
+    const interval = setInterval(() => pingAndSyncStats(false), 35000);
     return () => clearInterval(interval);
   }, [initialHeightFt]);
 

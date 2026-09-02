@@ -35,7 +35,8 @@ async function resetDb() {
   });
 
   try {
-    console.log("1. Resetting floors, claims, users, active sessions, and countries...");
+    console.log("1. Dropping legacy tables and resetting floors, claims, users, active sessions, and countries...");
+    await pool.query(`DROP TABLE IF EXISTS email_otps CASCADE;`);
     await pool.query(`DELETE FROM floors;`);
     await pool.query(`DELETE FROM claims;`);
     await pool.query(`DELETE FROM users;`);

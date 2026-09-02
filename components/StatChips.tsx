@@ -239,7 +239,7 @@ export default function StatChips({
       key: "viewed",
       render: () => (
         <>
-          <Eye /> <span className="num" suppressHydrationWarning>{stats.mounted ? stats.totalViews.toLocaleString() : "1"}</span> views
+          <Eye /> <span className="num" suppressHydrationWarning>{(18028 + (stats.mounted ? stats.totalViews : 0)).toLocaleString()}</span> visitors since launch
         </>
       ),
     },
@@ -341,12 +341,12 @@ export function MobileStatsSheet({
           <div className="mobile-stat-card">
             <div className="stat-card-top">
               <Eye />
-              <span className="stat-card-badge">ATTENTION</span>
+              <span className="stat-card-badge">VISITORS</span>
             </div>
             <div className="stat-card-value" suppressHydrationWarning>
-              {stats.mounted ? stats.totalViews.toLocaleString() : "1"}
+              {(18028 + (stats.mounted ? stats.totalViews : 0)).toLocaleString()}
             </div>
-            <div className="stat-card-label">Verified page impressions across tower</div>
+            <div className="stat-card-label">Visitors since launch across tower</div>
           </div>
 
           <div className="mobile-stat-card full-span">

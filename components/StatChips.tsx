@@ -42,7 +42,7 @@ export default function StatChips({ heightFt = 731 }: { heightFt?: number | stri
       key: "backed",
       render: () => (
         <>
-          <span className="avatar" style={{ background: "linear-gradient(135deg,#ffd27c,#ff9f43)" }} /> Backed by BharatHunt
+          <span className="avatar" style={{ background: "linear-gradient(135deg,#ffd27c,#ff9f43)" }} /> Backed by GeTopFloor
         </>
       ),
     },
@@ -83,50 +83,50 @@ export function MobileStatsSheet({
               <BarChart />
             </div>
             <div>
-              <h3 className="mobile-sheet-title">BharatHunt Live Metrics</h3>
+              <h3 className="mobile-sheet-title">GeTopFloor Live Metrics</h3>
               <p className="mobile-sheet-sub">Real-time skyscraper statistics</p>
             </div>
           </div>
           <button className="mobile-sheet-close" onClick={onClose} aria-label="Close stats">
-            <Close />
+            ✕
           </button>
         </div>
 
-        <div className="mobile-stats-grid">
-          <div className="mobile-stat-card highlight">
+        <div className="mobile-sheet-body">
+          <div className="mobile-stat-card">
             <div className="stat-card-top">
               <span className="dot" />
-              <span className="stat-card-badge">LIVE ACTIVE</span>
+              <span className="stat-card-badge">LIVE TRAFFIC</span>
             </div>
             <div className="stat-card-value">{stats.online}</div>
-            <div className="stat-card-label">Founders Online Now</div>
+            <div className="stat-card-label">Active founders &amp; users online now</div>
           </div>
 
           <div className="mobile-stat-card">
             <div className="stat-card-top">
               <RulerTall />
-              <span className="stat-card-badge">TOWER HEIGHT</span>
+              <span className="stat-card-badge">HEIGHT</span>
             </div>
-            <div className="stat-card-value">{stats.heightFt} FT</div>
-            <div className="stat-card-label">Total Skyscraper Altitude</div>
+            <div className="stat-card-value">{heightFt} ft</div>
+            <div className="stat-card-label">Current virtual skyscraper altitude</div>
           </div>
 
           <div className="mobile-stat-card">
             <div className="stat-card-top">
               <Stack />
-              <span className="stat-card-badge">OCCUPANCY</span>
+              <span className="stat-card-badge">FLOORS</span>
             </div>
-            <div className="stat-card-value">58 / 58</div>
-            <div className="stat-card-label">Floors Claimed by Startups</div>
+            <div className="stat-card-value">50 / 50</div>
+            <div className="stat-card-label">Floors claimed by companies</div>
           </div>
 
           <div className="mobile-stat-card">
             <div className="stat-card-top">
               <Eye />
-              <span className="stat-card-badge">IMPRESSIONS</span>
+              <span className="stat-card-badge">ATTENTION</span>
             </div>
             <div className="stat-card-value" suppressHydrationWarning>{stats.viewed.toLocaleString()}</div>
-            <div className="stat-card-label">Total Skyscraper Views</div>
+            <div className="stat-card-label">Unique impressions across floors</div>
           </div>
 
           <div className="mobile-stat-card full-span">
@@ -135,13 +135,13 @@ export function MobileStatsSheet({
               <span className="stat-card-badge">GLOBAL REACH</span>
             </div>
             <div className="stat-card-value">127 Countries</div>
-            <div className="stat-card-label">Global founders visiting and bidding on BharatHunt</div>
+            <div className="stat-card-label">Global founders visiting and bidding on GeTopFloor</div>
           </div>
         </div>
 
         <div className="mobile-sheet-footer">
           <div className="badge-pill">
-            <span className="avatar" style={{ background: "linear-gradient(135deg,#ffd27c,#ff9f43)" }} /> Backed by BharatHunt
+            <span className="avatar" style={{ background: "linear-gradient(135deg,#ffd27c,#ff9f43)" }} /> Backed by GeTopFloor
           </div>
         </div>
       </div>

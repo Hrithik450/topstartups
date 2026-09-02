@@ -64,7 +64,7 @@ export async function createDodoCheckout(
           {
             amount: input.price * 100, // Dodo amounts in subunits (paise / cents)
             currency: "INR",
-            name: `BharatHunt Skyscraper Top Floor — ${input.companyName}`,
+            name: `GeTopFloor Skyscraper Top Floor — ${input.companyName}`,
             quantity: 1,
           },
         ],

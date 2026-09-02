@@ -48,7 +48,7 @@ export function createDefaultPlaceholderListings(): Listing[] {
 
     return {
       id: `floor-slot-${rank}`,
-      url_or_handle: "https://bharathunt.com",
+      url_or_handle: "https://getopfloor.com",
       title,
       description: "Spot reserved for your startup — Claim top floor",
       category: "Available Floor",

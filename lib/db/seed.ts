@@ -98,7 +98,7 @@ export async function seedFloors() {
       rank,
       isClaimed: false,
       companyName: getPlaceholderTitle(rank),
-      url: "https://bharathunt.com",
+      url: "https://getopfloor.com",
       category: "Available Floor",
       tagline: "Spot reserved for your startup — Outbid & claim top floor",
       description:

@@ -10,7 +10,7 @@ const bricolage = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "BharatHunt — Claim the top floor",
+  title: "GeTopFloor — Claim the top floor",
   description:
     "Claim the top floor of the internet's tallest tower. Enter your URL, outbid the last owner, and put your company on top.",
 };

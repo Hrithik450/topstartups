@@ -115,7 +115,7 @@ export async function initializeFloorsIfEmpty() {
             ${rank},
             false,
             ${title},
-            'https://bharathunt.com',
+            'https://getopfloor.com',
             'Available Floor',
             'Spot reserved for your startup — Outbid & claim top floor',
             'Claim this floor to put your company on the world stage.',
@@ -311,7 +311,7 @@ export async function deleteFloorByManageToken(
     .set({
       isClaimed: false,
       companyName: `Tower Floor #${current.rank} — Spot Reserved`,
-      url: "https://bharathunt.com",
+      url: "https://getopfloor.com",
       category: "Available Floor",
       tagline: "Spot reserved for your startup — Outbid & claim top floor",
       description: "Claim this floor to put your company on the world stage.",

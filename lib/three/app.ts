@@ -483,7 +483,7 @@ function createBillboardTexture(): THREE.CanvasTexture {
   ctx.font = "800 104px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("BharatHunt", 512, 134, 928);
+  ctx.fillText("GeTopFloor", 512, 134, 928);
   return makeCanvasTexture(canvas);
 }
 

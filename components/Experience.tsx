@@ -66,11 +66,11 @@ export default function Experience() {
       <div className="tower-cloud-fade" aria-hidden="true" />
       <div className="ui">
         {/* Desktop Brand */}
-        <div className="brand desktop-brand">BharatHunt</div>
+        <div className="brand desktop-brand">GeTopFloor</div>
 
         {/* Mobile Header Bar */}
         <header className="mobile-header">
-          <div className="mobile-brand-title">BharatHunt</div>
+          <div className="mobile-brand-title">GeTopFloor</div>
           <div className="mobile-header-actions">
             <button
               className="mobile-header-chip"

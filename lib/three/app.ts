@@ -173,7 +173,13 @@ function drawGlassBackground(ctx: CanvasRenderingContext2D, floorIndex: number, 
   }
 }
 
-function drawAvatar(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, title: string, id: string) {
+function drawAvatar(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement | null,
+  title: string,
+  id: string,
+  listing?: Listing
+) {
   ctx.save();
   ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
   ctx.shadowBlur = 18;
@@ -190,15 +196,35 @@ function drawAvatar(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null,
     ctx.drawImage(img, 80, 72, 112, 112);
     ctx.restore();
   } else {
-    const bg = getAvatarColor(id || title);
-    roundRectPath(ctx, 72, 64, 128, 128, 20);
-    ctx.fillStyle = bg;
-    ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "700 76px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText((title.trim().charAt(0) || "?").toUpperCase(), 136, 134);
+    const isClaimed = listing?.is_claimed ?? true;
+    if (!isClaimed) {
+      // Premium placeholder avatar
+      const grad = ctx.createLinearGradient(72, 64, 200, 192);
+      grad.addColorStop(0, "rgba(255, 122, 41, 0.95)");
+      grad.addColorStop(1, "rgba(255, 75, 0, 0.85)");
+      roundRectPath(ctx, 72, 64, 128, 128, 22);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "800 64px 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🏢", 136, 134);
+    } else {
+      const bg = getAvatarColor(id || title);
+      roundRectPath(ctx, 72, 64, 128, 128, 20);
+      ctx.fillStyle = bg;
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "700 76px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText((title.trim().charAt(0) || "?").toUpperCase(), 136, 134);
+    }
   }
 }
 
@@ -215,27 +241,32 @@ function paintFloorTexture(
   ctx.globalAlpha = 1;
   ctx.clearRect(0, 0, 1280, 256);
 
-  drawGlassBackground(ctx, floorIndex, theme);
-  drawAvatar(ctx, logoImg, listing.title, listing.id);
+  const isClaimed = listing?.is_claimed ?? true;
 
-  // Domain Name (Primary Heading)
+  drawGlassBackground(ctx, floorIndex, theme);
+  drawAvatar(ctx, logoImg, listing.title, listing.id, listing);
+
+  // Domain Name or Placeholder Title (Primary Heading)
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
   ctx.save();
   ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
   ctx.shadowBlur = 12;
   ctx.shadowOffsetY = 4;
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = isClaimed ? "#ffffff" : "#ffedd5";
   ctx.font = "700 64px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
 
-  const domain = listing.url_or_handle.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+  const domain = isClaimed
+    ? listing.url_or_handle.replace(/^https?:\/\//i, "").replace(/\/$/, "")
+    : listing.title;
   const titleText = truncateText(ctx, domain, 700);
   ctx.fillText(titleText, 260, 128);
 
   // Subtitle / Description
-  ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
+  ctx.fillStyle = isClaimed ? "rgba(255, 255, 255, 0.88)" : "rgba(255, 175, 120, 0.95)";
   ctx.font = "500 36px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
-  ctx.fillText(truncateText(ctx, listing.description || listing.title, 700), 260, 186);
+  const subText = listing.description || (isClaimed ? listing.title : "Spot reserved for your startup — Claim top floor");
+  ctx.fillText(truncateText(ctx, subText, 700), 260, 186);
   ctx.restore();
 
   // Rank and price
@@ -1718,6 +1749,13 @@ function createMoonTexture(): THREE.CanvasTexture {
     return img;
   }
 
+  const floorRepainters: (() => void)[] = [];
+  if (typeof document !== "undefined" && document.fonts) {
+    document.fonts.ready.then(() => {
+      floorRepainters.forEach((fn) => fn());
+    });
+  }
+
   for (let fIdx = 0; fIdx < floorCount; fIdx++) {
     const listing = listings[fIdx];
     const rank = floorCount - fIdx;
@@ -1735,9 +1773,14 @@ function createMoonTexture(): THREE.CanvasTexture {
     disposables.push(texture);
 
     const ctx = canvas.getContext("2d")!;
-    const logoImg = getOrLoadLogo(listing.url_or_handle, () => {
+    const repaintFloor = () => {
       paintFloorTexture(ctx, CANVAS_SCALE, listing, rank, fIdx, logoImg, currentTheme);
       texture.needsUpdate = true;
+    };
+    floorRepainters.push(repaintFloor);
+
+    const logoImg = getOrLoadLogo(listing.url_or_handle, () => {
+      repaintFloor();
     });
     paintFloorTexture(ctx, CANVAS_SCALE, listing, rank, fIdx, logoImg, currentTheme);
 

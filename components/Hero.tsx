@@ -72,8 +72,62 @@ export default function Hero() {
     setSearchQuery("");
   };
 
+  const [url, setUrl] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [justClaimed, setJustClaimed] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("claimed") === "true") {
+        setJustClaimed(params.get("company") || "Your company");
+        // Clear params from address bar without reloading
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!url.trim()) {
+      alert("Please enter your website URL (e.g. yourcompany.com)");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: url.trim(),
+          category: selectedCategory?.name || "Startup",
+          price,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.checkoutUrl) {
+        throw new Error(data.error || "Failed to create checkout session");
+      }
+
+      window.location.href = data.checkoutUrl;
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      alert(err.message || "Could not start checkout. Please try again.");
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section className="hero">
+      {justClaimed && (
+        <div className="claimed-banner" role="status">
+          <span>🏆 Congratulations! <strong>{justClaimed}</strong> has claimed Top Floor (#1)!</span>
+          <button type="button" onClick={() => setJustClaimed(null)} aria-label="Close">✕</button>
+        </div>
+      )}
+
       <h1 className="headline">
         Claim top floor for
         <span className="price-stepper">
@@ -87,11 +141,18 @@ export default function Hero() {
         </span>
       </h1>
 
-      <form className="form" onSubmit={(e) => e.preventDefault()}>
+      <form className="form" onSubmit={handleSubmit}>
         <div className="form-inputs-row">
           <label className="field url-field">
             <Globe />
-            <input placeholder="yourcompany.com" inputMode="url" />
+            <input
+              placeholder="yourcompany.com"
+              inputMode="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              disabled={isSubmitting}
+              required
+            />
           </label>
 
           <div
@@ -153,7 +214,7 @@ export default function Hero() {
                         }}
                         aria-label="Clear search"
                       >
-                        <Close />
+                        ✕
                       </button>
                     )}
                   </div>
@@ -183,7 +244,7 @@ export default function Hero() {
                             </span>
                             <span className="category-item-name">{cat.name}</span>
                             {isSelected && (
-                              <span className="category-item-check">
+                              <span className="category-check-icon">
                                 <Check />
                               </span>
                             )}
@@ -202,7 +263,7 @@ export default function Hero() {
                           <button
                             key={cat.id}
                             type="button"
-                            className={`category-item special-item ${isSelected ? "selected" : ""}`}
+                            className={`category-item special ${isSelected ? "selected" : ""}`}
                             onClick={() => handleSelect(cat)}
                             role="option"
                             aria-selected={isSelected}
@@ -210,7 +271,7 @@ export default function Hero() {
                             <span className="category-item-icon">{cat.icon}</span>
                             <span className="category-item-name">{cat.name}</span>
                             {isSelected && (
-                              <span className="category-item-check">
+                              <span className="category-check-icon">
                                 <Check />
                               </span>
                             )}
@@ -238,8 +299,10 @@ export default function Hero() {
           </div>
         </div>
 
-        <button type="submit" className="claim-btn">
-          Claim top floor <Arrow />
+        <button type="submit" className="claim-btn" disabled={isSubmitting}>
+          {isSubmitting ? "Redirecting..." : (
+            <>Claim top floor <Arrow /></>
+          )}
         </button>
       </form>
 

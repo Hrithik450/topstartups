@@ -8,6 +8,7 @@ import StatChips, { MobileStatsSheet, useLiveStats } from "./StatChips";
 import Controls from "./Controls";
 import FloorHoverCard, { type HoverData } from "./FloorHoverCard";
 import { Moon, Sun, BarChart } from "./icons";
+import type { Listing } from "@/lib/three/listings";
 
 const TowerScene = dynamic(() => import("./TowerScene"), { ssr: false });
 
@@ -16,11 +17,39 @@ export default function Experience() {
   const [hoveredData, setHoveredData] = useState<HoverData | null>(null);
   const [theme, setTheme] = useState<"dark" | "sunset">("dark");
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
+  const [listings, setListings] = useState<Listing[] | undefined>(undefined);
   const stats = useLiveStats(731);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  // Load live floors from backend (auto-seeded with 50 premium placeholders)
+  useEffect(() => {
+    fetch("/api/floors")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.floors) && data.floors.length > 0) {
+          const mapped: Listing[] = data.floors.map((f: any) => ({
+            id: String(f.id),
+            url_or_handle: f.url,
+            title: f.companyName,
+            description: f.description || f.tagline,
+            category: f.category || "Available Floor",
+            total_paid: f.pricePaid,
+            created_at: f.createdAt || new Date().toISOString(),
+            is_claimed: f.isClaimed,
+            rank: f.rank,
+            clicks: 0,
+            views: 0,
+          }));
+          setListings(mapped);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not load backend floors, falling back to local placeholders:", err);
+      });
+  }, []);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "sunset" : "dark";
@@ -30,7 +59,7 @@ export default function Experience() {
 
   return (
     <div className="stage" data-theme={theme}>
-      <TowerScene handleRef={handleRef} onFloorHover={setHoveredData} theme={theme} />
+      <TowerScene handleRef={handleRef} onFloorHover={setHoveredData} theme={theme} listings={listings} />
       <div className="tower-top-fade" aria-hidden="true" />
       <div className="tower-cloud-fade" aria-hidden="true" />
       <div className="ui">

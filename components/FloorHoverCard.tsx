@@ -3,6 +3,7 @@
 import React from "react";
 import type { Listing } from "@/lib/three/listings";
 import { Close } from "./icons";
+import { useUserAuth } from "@/lib/auth/use-user-auth";
 
 const AVAILABLE_LOGOS = new Set([
   "befailproof.ai",
@@ -81,6 +82,8 @@ export default function FloorHoverCard({
 }) {
   if (!data) return null;
   const { listing, rank } = data;
+  const { user, isOwnerOfFloor } = useUserAuth();
+  const isOwner = isOwnerOfFloor(rank) || Boolean(user?.email && listing.owner_email && listing.owner_email === user.email);
 
   const cleanDomain = listing.url_or_handle.replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./, "");
   const targetUrl = listing.url_or_handle.startsWith("http") ? listing.url_or_handle : `https://${listing.url_or_handle}`;
@@ -177,31 +180,54 @@ export default function FloorHoverCard({
               )}
             </div>
 
-            {/* Dedicated Visit Website & Manage Buttons */}
+            {/* Action Buttons: Visit Website / Claim Floor / Edit Floor (Owner Only) */}
             <div className="floor-hover-card-action">
-              <a
-                href={targetUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="floor-hover-card-visit-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-              >
-                <span>Visit Website</span>
-                <ExternalLink />
-              </a>
-              {onManage && (
+              {listing.is_claimed ? (
+                <a
+                  href={targetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="floor-hover-card-visit-btn"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span>Visit Website</span>
+                  <ExternalLink />
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className="floor-hover-card-visit-btn claim-action-btn"
+                  style={{ background: "linear-gradient(135deg,#ff9f43,#ee5253)", color: "#fff", fontWeight: 600 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const inputEl = document.querySelector<HTMLInputElement>(".url-field input");
+                    if (inputEl) {
+                      inputEl.focus();
+                      inputEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }
+                  }}
+                >
+                  <span>Claim Floor #{rank}</span>
+                </button>
+              )}
+
+              {isOwner && onManage && (
                 <button
                   type="button"
                   className="floor-hover-card-manage-btn"
+                  style={{
+                    background: "rgba(255, 159, 67, 0.18)",
+                    border: "1px solid rgba(255, 159, 67, 0.4)",
+                    color: "#ff9f43",
+                    fontWeight: 600,
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
                     onManage(listing);
                   }}
-                  title="Update or delete this floor"
+                  title="Update your claimed floor details"
                 >
-                  Manage
+                  👑 Edit Floor
                 </button>
               )}
             </div>

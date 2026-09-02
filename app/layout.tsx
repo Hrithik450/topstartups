@@ -100,6 +100,8 @@ export const viewport: Viewport = {
   themeColor: "#050811",
 };
 
+import { UserAuthProvider } from "@/lib/auth/use-user-auth";
+
 export default function RootLayout({
   children,
 }: {
@@ -113,7 +115,9 @@ export default function RootLayout({
         <SoftwareApplicationJsonLd />
         <FAQJsonLd />
       </head>
-      <body className={bricolage.className}>{children}</body>
+      <body className={bricolage.className}>
+        <UserAuthProvider>{children}</UserAuthProvider>
+      </body>
     </html>
   );
 }

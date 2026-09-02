@@ -3,6 +3,7 @@ import { createDodoCheckout } from "@/lib/dodo";
 import { db } from "@/lib/db/client";
 import { claims } from "@/lib/db/schema";
 import { verifyWebsiteLive } from "@/lib/validation/domain";
+import { getAuthenticatedUser } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,9 @@ const ALLOWED_ORIGINS = [
 
 export async function POST(req: NextRequest) {
   try {
+    const session = getAuthenticatedUser(req);
     const body = await req.json();
-    const { url, category, companyName, price, customerEmail } = body;
+    const { url, category, companyName, price } = body;
 
     // Input validation & Live Security Verification
     if (!url || typeof url !== "string") {
@@ -48,11 +50,9 @@ export async function POST(req: NextRequest) {
 
     const cleanCategory = sanitizeText(category || "Startup", 128);
 
-    // SECURITY: Validate email format if provided
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (customerEmail && !emailRegex.test(customerEmail.trim())) {
-      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
-    }
+    // Prefer authenticated Google email
+    const finalEmail = session?.email || body.customerEmail?.trim() || null;
+    const finalUserId = session?.id || null;
 
     const amount = Math.max(50, Math.min(100000, Number(price) || 50));
 
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       category: cleanCategory,
       companyName: name,
       price: amount,
-      customerEmail: customerEmail?.trim(),
+      customerEmail: finalEmail || undefined,
       returnUrl: origin,
     });
 
@@ -82,7 +82,8 @@ export async function POST(req: NextRequest) {
         category: cleanCategory,
         amount,
         currency: "INR",
-        customerEmail: customerEmail?.trim() || null,
+        customerEmail: finalEmail,
+        userId: finalUserId,
         checkoutUrl: checkout.checkoutUrl,
       });
     } catch (dbErr) {

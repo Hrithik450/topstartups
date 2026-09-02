@@ -77,19 +77,68 @@ export default function Hero() {
   const [url, setUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [justClaimed, setJustClaimed] = useState<string | null>(null);
+  const [paymentNotice, setPaymentNotice] = useState<{
+    type: "error" | "success" | "info";
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("claimed") === "true") {
-        setJustClaimed(params.get("company") || "Your company");
-        const token = params.get("manage_token");
-        if (token) {
-          localStorage.setItem("bharathunt_manage_token", token);
-        }
-        // Clear params from address bar without reloading
-        window.history.replaceState({}, "", window.location.pathname);
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id") || params.get("checkout_id") || params.get("payment_id");
+
+    // Check if returning from a real Dodo checkout session
+    if (sessionId && !sessionId.startsWith("mock_")) {
+      setPaymentNotice({
+        type: "info",
+        message: "Verifying payment confirmation with Dodo Payments...",
+      });
+
+      fetch(`/api/checkout/verify?session_id=${encodeURIComponent(sessionId)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.status === "succeeded") {
+            setJustClaimed(data.companyName || "Your company");
+            setPaymentNotice(null);
+            if (data.manageToken) {
+              localStorage.setItem("bharathunt_manage_token", data.manageToken);
+            }
+            // Trigger 3D tower reload
+            window.dispatchEvent(new CustomEvent("floors-refresh"));
+          } else if (data.status === "failed") {
+            setPaymentNotice({
+              type: "error",
+              message:
+                data.error ||
+                "Payment was not completed. For test mode INR payments, select UPI and use 'success@upi'.",
+            });
+          } else {
+            setPaymentNotice({
+              type: "info",
+              message: "Payment is still processing. Your floor will update shortly.",
+            });
+          }
+        })
+        .catch((err) => {
+          console.warn("Could not verify payment session:", err);
+          setPaymentNotice(null);
+        })
+        .finally(() => {
+          window.history.replaceState({}, "", window.location.pathname);
+        });
+      return;
+    }
+
+    // Legacy or mock fallback
+    if (params.get("claimed") === "true") {
+      setJustClaimed(params.get("company") || "Your company");
+      const token = params.get("manage_token");
+      if (token) {
+        localStorage.setItem("bharathunt_manage_token", token);
       }
+      window.dispatchEvent(new CustomEvent("floors-refresh"));
+      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
@@ -127,6 +176,44 @@ export default function Hero() {
 
   return (
     <section className="hero">
+      {paymentNotice && (
+        <div
+          className="claimed-banner"
+          style={{
+            background:
+              paymentNotice.type === "error"
+                ? "rgba(220, 38, 38, 0.9)"
+                : paymentNotice.type === "info"
+                ? "rgba(37, 99, 235, 0.9)"
+                : "rgba(16, 185, 129, 0.9)",
+            borderColor:
+              paymentNotice.type === "error"
+                ? "#f87171"
+                : paymentNotice.type === "info"
+                ? "#60a5fa"
+                : "#34d399",
+          }}
+          role="status"
+        >
+          <span>{paymentNotice.message}</span>
+          <button
+            type="button"
+            onClick={() => setPaymentNotice(null)}
+            aria-label="Close"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#fff",
+              cursor: "pointer",
+              marginLeft: "12px",
+              fontSize: "14px",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {justClaimed && (
         <div className="claimed-banner" role="status">
           <span>🏆 Congratulations! <strong>{justClaimed}</strong> has claimed Top Floor (#1)!</span>

@@ -91,7 +91,7 @@ export default function Experience() {
   }, [theme]);
 
   // Load live floors from backend (auto-seeded with 50 premium placeholders)
-  useEffect(() => {
+  const refreshFloors = useCallback(() => {
     fetch("/api/floors")
       .then((res) => res.json())
       .then((data) => {
@@ -116,6 +116,14 @@ export default function Experience() {
         console.warn("Could not load backend floors, falling back to local placeholders:", err);
       });
   }, []);
+
+  useEffect(() => {
+    refreshFloors();
+    window.addEventListener("floors-refresh", refreshFloors);
+    return () => {
+      window.removeEventListener("floors-refresh", refreshFloors);
+    };
+  }, [refreshFloors]);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "sunset" : "dark";

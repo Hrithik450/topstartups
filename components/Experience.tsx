@@ -126,6 +126,49 @@ export default function Experience() {
     };
   }, [refreshFloors]);
 
+  useEffect(() => {
+    const handleClaimedSuccess = (e: any) => {
+      const detail = e.detail || {};
+      const targetRank = detail.rank || 1;
+
+      // 1. Refresh floor data from server
+      refreshFloors();
+
+      // 2. Smoothly fly elevator camera to the top penthouse floor
+      setTimeout(() => {
+        handleRef.current?.jumpToTop();
+      }, 350);
+
+      // 3. Immediately display the floor hover preview card with company name, logo, and snippet
+      setTimeout(() => {
+        const topListing: Listing = {
+          id: String(targetRank),
+          url_or_handle: detail.url || "https://getopfloor.com",
+          title: detail.companyName || "Top Startup",
+          description: detail.description || detail.tagline || "Claimed Penthouse Floor #1",
+          category: detail.category || "Startup",
+          total_paid: detail.pricePaid || 50,
+          created_at: new Date().toISOString(),
+          is_claimed: true,
+          rank: targetRank,
+          clicks: 0,
+          views: 0,
+        };
+
+        setHoveredData({
+          listing: topListing,
+          rank: targetRank,
+          pinned: true,
+        });
+      }, 850);
+    };
+
+    window.addEventListener("floor-claimed-success", handleClaimedSuccess);
+    return () => {
+      window.removeEventListener("floor-claimed-success", handleClaimedSuccess);
+    };
+  }, [refreshFloors]);
+
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "sunset" : "dark";
     setTheme(nextTheme);

@@ -51,9 +51,11 @@ export async function getActiveFloors(): Promise<Floor[]> {
   return await db.select().from(floors).orderBy(asc(floors.rank)).limit(50);
 }
 
+import { scrapeWebsiteMetadata } from "@/lib/crawler/metadata";
+
 /**
  * Ensures 50 premium placeholder floors exist using pure Drizzle.
- * Minimum starting price is ₹50.
+ * Minimum starting price is ₹50 for all open floors.
  */
 export async function initializeFloorsIfEmpty(): Promise<void> {
   try {
@@ -63,7 +65,7 @@ export async function initializeFloorsIfEmpty(): Promise<void> {
     if (count < 50) {
       const placeholders: NewFloor[] = [];
       for (let rank = count + 1; rank <= 50; rank++) {
-        const price = Math.max(50, 95 - (rank - 1));
+        const price = 50; // All open placeholder floors start at ₹50
         const title =
           rank === 1
             ? "Penthouse Floor #1 — Open for Claim"
@@ -92,21 +94,60 @@ export async function initializeFloorsIfEmpty(): Promise<void> {
   }
 }
 
+export interface ClaimResult {
+  success: boolean;
+  rank: number;
+  manageToken: string;
+  message: string;
+  companyName?: string;
+  url?: string;
+  logoUrl?: string | null;
+  tagline?: string | null;
+  description?: string | null;
+}
+
 /**
  * High-reliability atomic transactional floor claim using pure Drizzle ORM:
  * When a user completes a payment:
  * 1. Checks payment idempotency.
- * 2. Shifts existing floor ranks down atomically (rank = rank + 1).
- * 3. Upserts user in 'users' table using Drizzle onConflictDoUpdate.
- * 4. Inserts newly claimed company at Rank 1 (Top Penthouse Floor).
- * 5. Trims floors beyond rank 50 using Drizzle delete.
- * 6. Updates claim ledger to 'succeeded'.
+ * 2. Crawls/scrapes website metadata (name, tagline, description, logo) if not provided.
+ * 3. Shifts existing floor ranks down atomically (rank = rank + 1).
+ * 4. Upserts user in 'users' table using Drizzle onConflictDoUpdate.
+ * 5. Inserts newly claimed company at Rank 1 (Top Penthouse Floor).
+ * 6. Trims floors beyond rank 50 using Drizzle delete.
+ * 7. Updates claim ledger to 'succeeded'.
  */
 export async function claimTopFloorTransactional(
   input: ClaimFloorInput
-): Promise<{ success: boolean; rank: number; manageToken: string; message: string }> {
+): Promise<ClaimResult> {
   await initializeFloorsIfEmpty();
   const token = input.manageToken || crypto.randomUUID().replace(/-/g, "");
+
+  // Auto-scrape metadata if logo/description/tagline not provided
+  let finalCompanyName = input.companyName?.trim();
+  let finalTagline = input.tagline?.trim();
+  let finalDescription = input.description?.trim();
+  let finalLogoUrl = input.logoUrl?.trim();
+  let finalCategory = input.category?.trim() || "Startup";
+
+  if (!finalLogoUrl || !finalDescription || !finalTagline || !finalCompanyName || finalCompanyName === "New Startup" || finalCompanyName === "Anonymous Startup") {
+    try {
+      const scraped = await scrapeWebsiteMetadata(input.url);
+      if (!finalCompanyName || finalCompanyName === "New Startup" || finalCompanyName === "Anonymous Startup") {
+        finalCompanyName = scraped.companyName;
+      }
+      if (!finalTagline) finalTagline = scraped.tagline;
+      if (!finalDescription) finalDescription = scraped.description;
+      if (!finalLogoUrl) finalLogoUrl = scraped.logoUrl;
+      if (!finalCategory || finalCategory === "Startup") finalCategory = scraped.category;
+    } catch (scrapeErr) {
+      console.warn("Metadata auto-scrape error during transaction:", scrapeErr);
+    }
+  }
+
+  if (!finalCompanyName) finalCompanyName = "Startup";
+  if (!finalTagline) finalTagline = `${finalCompanyName} — Official Skyscraper Floor`;
+  if (!finalDescription) finalDescription = `Claimed top floor on GeTopFloor skyscraper.`;
 
   return await db.transaction(async (tx) => {
     // 1. Idempotency Check: if this payment was already processed, don't double shift
@@ -122,6 +163,11 @@ export async function claimTopFloorTransactional(
       return {
         success: true,
         rank: 1,
+        companyName: existingClaim[0].companyName || finalCompanyName,
+        url: existingClaim[0].url || input.url,
+        logoUrl: finalLogoUrl,
+        tagline: finalTagline,
+        description: finalDescription,
         manageToken: existingClaim[0].manageToken || token,
         message: "Payment already successfully processed.",
       };
@@ -141,7 +187,7 @@ export async function claimTopFloorTransactional(
         .insert(users)
         .values({
           email: cleanEmail,
-          name: input.companyName || "Founder",
+          name: finalCompanyName || "Founder",
           phone: cleanPhone,
         })
         .onConflictDoUpdate({
@@ -162,12 +208,12 @@ export async function claimTopFloorTransactional(
     await tx.insert(floors).values({
       rank: 1,
       isClaimed: true,
-      companyName: input.companyName,
+      companyName: finalCompanyName,
       url: input.url,
-      category: input.category || "Startup",
-      tagline: input.tagline || `${input.companyName} — Official Skyscraper Floor`,
-      description: input.description || `Claimed top floor at ₹${finalPrice}`,
-      logoUrl: input.logoUrl || null,
+      category: finalCategory,
+      tagline: finalTagline,
+      description: finalDescription,
+      logoUrl: finalLogoUrl || null,
       pricePaid: finalPrice,
       manageToken: token,
       ownerEmail: cleanEmail,
@@ -224,8 +270,13 @@ export async function claimTopFloorTransactional(
     return {
       success: true,
       rank: 1,
+      companyName: finalCompanyName,
+      url: input.url,
+      logoUrl: finalLogoUrl,
+      tagline: finalTagline,
+      description: finalDescription,
       manageToken: token,
-      message: `Successfully claimed Top Floor (Rank 1) for ${input.companyName}!`,
+      message: `Successfully claimed Top Floor (Rank 1) for ${finalCompanyName}!`,
     };
   });
 }

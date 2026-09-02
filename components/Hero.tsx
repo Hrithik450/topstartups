@@ -85,6 +85,37 @@ export default function Hero() {
     message: string;
   } | null>(null);
 
+  const [minPrice, setMinPrice] = useState(50);
+  const [topFloorClaimed, setTopFloorClaimed] = useState(false);
+
+  // Sync current top floor outbid price
+  useEffect(() => {
+    const fetchTopFloorPrice = () => {
+      fetch("/api/floors", { cache: "no-store" })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.floors && data.floors.length > 0) {
+            const top = data.floors[0];
+            if (top.isClaimed) {
+              setTopFloorClaimed(true);
+              const requiredMin = Number(top.pricePaid || 50) + 1;
+              setMinPrice(requiredMin);
+              setPrice((prev) => Math.max(requiredMin, prev));
+            } else {
+              setTopFloorClaimed(false);
+              setMinPrice(50);
+              setPrice(50);
+            }
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchTopFloorPrice();
+    window.addEventListener("floors-refresh", fetchTopFloorPrice);
+    return () => window.removeEventListener("floors-refresh", fetchTopFloorPrice);
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -112,7 +143,23 @@ export default function Hero() {
             if (data.customerEmail) {
               localStorage.setItem("getopfloor_manage_email", data.customerEmail);
             }
-            // Trigger 3D tower reload immediately and after a short tick
+
+            // Immediately pop up the claimed floor on the 3D tower
+            window.dispatchEvent(
+              new CustomEvent("floor-claimed-success", {
+                detail: {
+                  rank: data.rank || 1,
+                  companyName: data.companyName,
+                  url: data.url,
+                  logoUrl: data.logoUrl,
+                  tagline: data.tagline,
+                  description: data.description,
+                  pricePaid: data.price || price,
+                },
+              })
+            );
+
+            // Trigger 3D tower reload
             window.dispatchEvent(new CustomEvent("floors-refresh"));
             setTimeout(() => {
               window.dispatchEvent(new CustomEvent("floors-refresh"));
@@ -292,9 +339,9 @@ export default function Hero() {
       )}
 
       <h1 className="headline">
-        Claim top floor for
+        {topFloorClaimed ? "Outbid top floor for" : "Claim top floor for"}
         <span className="price-stepper">
-          <button className="step-btn" onClick={() => setPrice((p) => Math.max(50, p - 1))} aria-label="Lower bid">
+          <button className="step-btn" onClick={() => setPrice((p) => Math.max(minPrice, p - 1))} aria-label="Lower bid" disabled={price <= minPrice}>
             <Minus />
           </button>
           <span className="price">₹{price}</span>

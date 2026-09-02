@@ -91,7 +91,7 @@ export async function seedFloors() {
   console.log(`Generating 50 premium placeholder floors...`);
   const placeholderFloors = Array.from({ length: 50 }, (_, i) => {
     const rank = i + 1;
-    const price = Math.max(50, 95 - (rank - 1));
+    const price = 50;
     return {
       rank,
       isClaimed: false,

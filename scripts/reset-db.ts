@@ -53,7 +53,7 @@ async function resetDb() {
     await pool.query(`DELETE FROM floors;`);
 
     for (let rank = 1; rank <= 50; rank++) {
-      const price = Math.max(50, 95 - (rank - 1));
+      const price = 50;
       await pool.query(
         `
         INSERT INTO floors (rank, is_claimed, company_name, url, category, tagline, description, price_paid, claimed_at, owner_email, user_id)

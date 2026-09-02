@@ -177,7 +177,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         status: "succeeded",
         rank: result.rank,
-        companyName,
+        companyName: result.companyName || companyName,
+        url: result.url || url,
+        logoUrl: result.logoUrl,
+        tagline: result.tagline,
+        description: result.description,
         customerEmail: finalEmail,
       });
     }

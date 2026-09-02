@@ -256,9 +256,57 @@ export default function ManageFloorModal({
             </button>
           </div>
         ) : ownedFloors.length === 0 && !loading ? (
-          <div style={{ marginTop: "24px", textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.6)" }}>
-            <p style={{ fontSize: "15px", marginBottom: "8px" }}>No claimed skyscraper floors found for <strong>{user.email}</strong>.</p>
-            <p style={{ fontSize: "13px" }}>Claim a floor on the skyscraper to feature your startup here!</p>
+          <div style={{ marginTop: "20px", textAlign: "center", padding: "28px 16px", background: "rgba(255,255,255,0.03)", borderRadius: "14px", border: "1px dashed rgba(255,255,255,0.15)" }}>
+            <div style={{ fontSize: "32px", marginBottom: "12px" }}>🏢</div>
+            <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", marginBottom: "6px" }}>
+              0 Claimed Products / Floors
+            </h3>
+            <p style={{ fontSize: "13.5px", color: "rgba(255,255,255,0.65)", maxWidth: "340px", margin: "0 auto 20px auto", lineHeight: "1.5" }}>
+              No claimed skyscraper floors found for <strong style={{ color: "#fff" }}>{user.email}</strong>. Claim a floor to feature your company on the 3D tower!
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  setTimeout(() => {
+                    const inputEl = document.querySelector<HTMLInputElement>(".url-field input");
+                    if (inputEl) {
+                      inputEl.focus();
+                      inputEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }
+                  }, 150);
+                }}
+                style={{
+                  background: "linear-gradient(135deg,#ff9f43,#ee5253)",
+                  border: "none",
+                  color: "#fff",
+                  padding: "10px 22px",
+                  borderRadius: "999px",
+                  fontSize: "13.5px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 14px rgba(255,159,67,0.35)",
+                }}
+              >
+                Claim Top Floor Now
+              </button>
+              <button
+                type="button"
+                onClick={() => login()}
+                style={{
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  color: "rgba(255,255,255,0.85)",
+                  padding: "10px 18px",
+                  borderRadius: "999px",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                }}
+              >
+                Switch Account
+              </button>
+            </div>
           </div>
         ) : (
           <div>

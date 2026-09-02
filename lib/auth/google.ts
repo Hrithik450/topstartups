@@ -1,6 +1,5 @@
 import { db } from "@/lib/db/config/client";
 import { users, type User } from "@/lib/db/config/schema";
-import { eq } from "drizzle-orm";
 
 export interface GoogleProfile {
   sub: string;

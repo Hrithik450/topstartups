@@ -1,11 +1,13 @@
 # GeTopFloor 🏢🚀
 
 > **The World's Most Interactive 3D Skyscraper Directory & Outbid Platform for Startups.**  
-> Outbid your rivals, claim the penthouse floor (#1), and put your company on the global stage.
+> Outbid your rivals, claim the penthouse floor (#1), and put your company on the global stage.  
+> *Backed by [BharatHunt](https://bharathunt.org)*
 
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![Three.js](https://img.shields.io/badge/Three.js-WebGL-blue?style=flat&logo=three.js)](https://threejs.org/)
 [![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-PostgreSQL-C5F74F?style=flat&logo=drizzle)](https://orm.drizzle.team/)
+[![Google OAuth 2.0](https://img.shields.io/badge/Auth-Google_OAuth_2.0-4285F4?style=flat&logo=google)](https://developers.google.com/identity/protocols/oauth2)
 [![Dodo Payments](https://img.shields.io/badge/Dodo_Payments-Merchant_of_Record-FF5722?style=flat)](https://dodopayments.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -14,40 +16,49 @@
 ## 🌟 Key Features
 
 ### 🏢 1. Real-Time 3D Skyscraper Experience
-- **Interactive Skyscraper**: A 50-story skyscraper with architectural glass, ambient night sky, starfield, procedural city skyline, and elevator altitude ruler.
+- **Interactive Skyscraper**: A 50-story interactive 3D skyscraper featuring architectural glass, night sky with twinkling starfield, procedural city skyline, and real-time altitude ruler.
 - **Rooftop Observations & Animations**:
   - Helipad with hovering helicopter and rotating rotor blades.
-  - Animated passenger descending from chopper to the rooftop Pizza Hut cafe.
-  - Rooftop Pizza Hut cafe pavilion with vibrant sRGB textures and filtered physics colliders.
-  - Penthouse executive conference boardroom featuring CEO, co-founders, modern desks, lounge sofas, and lush office flora.
+  - Animated passenger descending from chopper to the rooftop cafe.
+  - Rooftop cafe pavilion with vibrant sRGB textures and filtered physics colliders.
+  - Penthouse executive conference boardroom featuring CEO, co-founders, modern desks, lounge sofas, and office flora.
 - **Camera & Gesture Controls**: Smooth mouse drag rotation, elevator wheel scroll, touch gestures for mobile, and altitude camera zoom.
 - **Dual Lighting Themes**: Switch seamlessly between **Cyber Dark** and **Sunset Light** modes with custom UI styling.
 
 ### 💰 2. Atomic Outbidding & Rank Shift Engine
 - **Rank 1 Penthouse Claiming**: Founders can claim the top floor by completing checkout.
-- **Atomic Rank Shifting**: When a new company claims Rank 1, existing floors shift down automatically (`rank = rank + 1`) in an atomic database transaction.
-- **Idempotency Safeguard**: Dual-check payment processing ensures no double rank shifts occur even if webhooks retry.
+- **Atomic Rank Shifting**: When a new company claims Rank 1, existing floors shift down automatically (`rank = rank + 1`) in an atomic PostgreSQL transaction using pure Drizzle ORM.
+- **Idempotency Safeguard**: Dual-check payment processing (`payment_id` and `checkout_session_id`) ensures no double rank shifts occur even if webhooks or redirects retry.
 - **Clean 50-Floor Boundary**: The tower maintains an active 50 floors, gracefully pruning placeholder slots.
 
-### 💳 3. Dodo Payments Integration
-- **Merchant of Record**: Built-in support for INR (₹) transactions via UPI, Credit/Debit Cards, and NetBanking.
-- **Customer Information Capture**: Collects founder name, verified email, and contact phone number.
-- **Instant Webhook Reconciliation**: Cryptographically verified webhooks (`webhook-signature`) immediately activate claims.
+### 🔐 3. Direct Google OAuth 2.0 (Zero External Auth Libraries)
+- **Zero Heavy Dependencies**: Built with direct native OpenID Connect / OAuth 2.0 communication (`accounts.google.com`, `oauth2.googleapis.com`, `www.googleapis.com/oauth2/v3/userinfo`).
+- **Cross-Device Session Continuity**: Founders can sign in from mobile, tablet, or desktop Chrome/Safari and instantly access and manage all their claimed startup floors.
+- **Tamper-Proof HMAC Sessions**: Issues signed HTTP-only `user_session` cookies valid for 30 days with constant-time cryptographic verification.
+- **Zero-Intermediate Screen Claim Flow**:
+  - Unauthenticated users clicking "Claim top floor" are taken straight to Google Account Selection, then directly to Dodo checkout.
+  - Authenticated users go straight to payment with pre-filled verified credentials.
 
-### 🔐 4. Passwordless Email OTP & Floor Management
-- **Zero-Token Architecture**: No cumbersome tokens for users to copy or lose.
-- **Brevo (Sendinblue) OTP**: 6-digit numeric verification code sent directly to the founder's email (valid for 10 minutes, with server console fallback in dev mode).
-- **Product Selector Dropdown**: Once verified, founders can view all their claimed skyscraper floors in a unified modal to update company name, tagline, description, logo URL, or vacate floors.
+### 🛡️ 4. Live Domain & SSL Security Verification
+- **Strict HTTPS Enforcement**: Rejects insecure `http://` URLs and raw IP addresses.
+- **Anti-Spam & Demo Filter**: Blocks placeholder domains (`test.com`, `example.com`, `dummy.com`, `localhost`, etc.).
+- **Live Reachability Check**: Server-side network and SSL handshake verification checks that entered URLs are live and secure before checkout is created.
 
-### 📊 5. Protected Admin Portal (`/admin`)
-- **Password-Protected Authentication**: Admin login protected by `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env` using timing-safe HMAC validation.
+### 📊 5. 100% Real Live Statistics Engine
+- **Real Online Users**: Computed from active tab heartbeats: `WHERE last_seen_at > NOW() - INTERVAL '2 minutes'`.
+- **Tab-Session Views**: Real view counting based on browser tab sessions (`sessionStorage`), preventing heartbeat pings from inflating view metrics.
+- **Distinct Visitor Countries**: `COUNT(DISTINCT country_code)` ensuring unique geographical metrics.
+- **Claimed Floors**: Real-time count of active startup claims on the tower.
+
+### ⚙️ 6. Clean "Manage" UI & Owner Controls
+- **Owner-Only Hover Controls**: Public visitors only see "Visit Website" or "Claim Floor"; only verified floor owners see `👑 Edit Floor`.
+- **Dedicated Manage Drawer**: Single modal for updating company name, website URL, category, tagline, description, or vacating floors.
+- **0-Products Empty State**: Clear feedback with a 1-click **"Claim Top Floor Now"** action when a user has no active floors.
+
+### 📊 7. Protected Admin Portal (`/admin`)
+- **Password-Protected Authentication**: Admin login protected by `ADMIN_EMAIL` and `ADMIN_PASSWORD` using timing-safe HMAC validation.
 - **High-Level Metrics**: Live counters for total registered founders, claimed floors, available slots, and total revenue in ₹.
-- **Searchable Founder Table**: Filter founders by name, email, phone number, or company name, complete with product badges showing ranks and prices paid.
-
-### 🛡️ 6. Enterprise-Grade Security
-- **Content Security Policy (CSP)**: Strict headers allowing Three.js WebGL blobs, fonts, styles, and payment gateway connections.
-- **CORS & Framing Protections**: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and restricted permissions policy.
-- **Timing-Safe Comparison**: Prevents timing attacks on admin passwords and management session tokens.
+- **Searchable Founder Directory**: Filter founders by name, email, phone number, or company name, complete with product badges showing ranks and prices paid.
 
 ---
 
@@ -58,7 +69,7 @@
 | **Frontend & SSR** | [Next.js 14](https://nextjs.org/) (App Router, Server Components & Route Handlers) |
 | **3D Graphics Engine** | [Three.js](https://threejs.org/) (WebGL, GLTFLoader, PCFShadowMap, ACESFilmicToneMapping) |
 | **ORM** | [Drizzle ORM](https://orm.drizzle.team/) (100% Type-Safe SQL queries) |
-| **Database** | PostgreSQL (Tested with [Supabase](https://supabase.com/) & self-hosted VPS PostgreSQL) |
+| **Database** | PostgreSQL (Compatible with [Supabase](https://supabase.com/) & self-hosted VPS PostgreSQL) |
 | **Payments** | [Dodo Payments](https://dodopayments.com/) (Merchant of Record with UPI & Cards) |
 | **Authentication** | Direct Google OAuth 2.0 (Zero external auth libraries) |
 | **Styling** | Modern CSS Variables, Custom Theme Switching, Responsive Layouts |
@@ -87,7 +98,7 @@ outbid/
 │   ├── Experience.tsx            # Three.js canvas mount & UI state synchronizer
 │   ├── Hero.tsx                  # Interactive claim form & direct Google payment flow
 │   ├── FloorHoverCard.tsx        # 3D raycast hover card with startup preview & owner controls
-│   ├── StatChips.tsx             # Real-time live metrics & profile avatar / login chip
+│   ├── StatChips.tsx             # Real-time live metrics & Manage button
 │   ├── ManageFloorModal.tsx      # Google-authenticated multi-product management drawer
 │   └── BuildingLoader.tsx        # 3D building initialization progress indicator
 │
@@ -97,7 +108,7 @@ outbid/
 │   │   ├── session.ts            # Tamper-proof HMAC user session tokens
 │   │   └── use-user-auth.tsx     # Client auth provider & user hook
 │   ├── db/
-│   │   ├── config/               # ⚙️ Infrastructure & Configuration
+│   │   ├── config/               # ⚙️ Infrastructure & Configuration ONLY
 │   │   │   ├── client.ts         # Lazy connection pooler compatible with Supabase & VPS
 │   │   │   ├── schema.ts         # Drizzle schemas (users, floors, claims, site_stats)
 │   │   │   ├── pool-config.ts    # Multi-tier connection pooler (:5432 & :6543)
@@ -116,7 +127,7 @@ outbid/
 ├── public/models/                # Optimized GLB 3D models (Pizza Hut, Chopper, Team)
 ├── drizzle.config.ts             # Drizzle Kit migration configuration
 ├── Dockerfile                    # Multi-stage standalone production Dockerfile
-└── next.config.mjs               # Standalone output & CSP security headers
+└── next.config.mjs               # Standalone output, CSP security headers & webhook routing
 ```
 
 ---
@@ -138,10 +149,10 @@ cp .env.example .env.local
 | `DODO_PAYMENTS_WEBHOOK_SECRET` | Webhook verification secret from Dodo Dashboard | `whsec_...` |
 | `DODO_PAYMENTS_ENVIRONMENT` | Gateway environment (`test` or `live`) | `test` |
 | `DODO_PAYMENTS_PRODUCT_ID` | Product ID configured in Dodo Dashboard | `pdt_...` |
-| `BREVO_API_KEY` | Brevo API key for transactional OTP emails (console fallback if empty) | `xkeysib-...` |
-| `BREVO_SENDER_EMAIL` | Sender email address registered in Brevo | `notifications@getopfloor.com` |
-| `BREVO_SENDER_NAME` | Sender name displayed on emails | `GeTopFloor` |
-| `SESSION_SECRET` | Cryptographic secret for signing founder management sessions | `your_random_secret_here` |
+| `GOOGLE_CLIENT_ID` | Google OAuth 2.0 Client ID from Google Cloud Console | `your_client_id.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 Client Secret from Google Cloud Console | `GOCSPX-...` |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID`| Public Google Client ID | `your_client_id.apps.googleusercontent.com` |
+| `SESSION_SECRET` | Cryptographic secret for signing user HMAC sessions | `your_random_secret_here` |
 | `ADMIN_EMAIL` | Admin portal login email address | `admin@getopfloor.com` |
 | `ADMIN_PASSWORD` | Admin portal login password | `your_secure_admin_password` |
 | `PORT` | Node.js web server port | `3000` |
@@ -156,7 +167,7 @@ npm install
 ```
 
 ### 2. Configure Database & Seed 50 Floors
-Ensure PostgreSQL is running locally or provide a Supabase URL in `.env.local`:
+Ensure PostgreSQL is running locally or provide a connection URL in `.env.local`:
 ```bash
 # Push schema to database
 npm run db:push
@@ -192,6 +203,8 @@ docker run -d \
   --restart always \
   -e DATABASE_URL="postgresql://user:pass@127.0.0.1:5432/outbid" \
   -e DATABASE_SSL="false" \
+  -e GOOGLE_CLIENT_ID="your_google_client_id" \
+  -e GOOGLE_CLIENT_SECRET="your_google_client_secret" \
   -e ADMIN_EMAIL="admin@getopfloor.com" \
   -e ADMIN_PASSWORD="your_admin_password" \
   -e SESSION_SECRET="your_session_secret" \
@@ -215,13 +228,17 @@ pm2 start npm --name "getopfloor" -- start
 | Method | Endpoint | Description | Auth Required |
 |---|---|---|---|
 | `GET` | `/api/floors` | Fetch the 50 skyscraper floors (Rank 1 to 50) | Public |
-| `GET` | `/api/floors/manage` | Fetch claimed floors owned by an authenticated founder | HMAC Session Token |
-| `PATCH` | `/api/floors/manage` | Update claimed startup details (title, url, tagline, logo) | HMAC Session Token |
-| `DELETE` | `/api/floors/manage` | Vacate/reset a floor back to an available slot | HMAC Session Token |
-| `POST` | `/api/auth/send-otp` | Generate & send 6-digit Brevo verification code | Public |
-| `POST` | `/api/auth/verify-otp` | Verify 6-digit code and issue session token | Public |
-| `POST` | `/api/checkout` | Create Dodo Payments checkout session | Public |
-| `POST` | `/api/checkout/verify` | Verify payment status and atomically claim top floor | Public |
+| `GET` | `/api/floors/manage` | Fetch claimed floors owned by an authenticated founder | User Session |
+| `PATCH` | `/api/floors/manage` | Update claimed startup details (title, URL, tagline, logo) | User Session |
+| `DELETE` | `/api/floors/manage` | Vacate/reset a floor back to an available slot | User Session |
+| `GET` | `/api/auth/google/url` | Generate Google OAuth 2.0 authorization URL | Public |
+| `GET` | `/api/auth/google/callback` | Exchange Google code for tokens & set user session cookie | Public |
+| `GET` | `/api/auth/me` | Fetch active user profile and owned skyscraper floors | User Session |
+| `POST` | `/api/auth/logout` | Clear authenticated user session cookie | Public |
+| `GET` | `/api/stats` | Retrieve live skyscraper metrics (online, views, countries) | Public |
+| `POST` | `/api/stats` | Record tab-session view and heartbeat ping | Public |
+| `POST` | `/api/checkout` | Create Dodo Payments checkout session with domain verification | Public / Optional User Session |
+| `GET` | `/api/checkout/verify` | Verify payment status and atomically claim top floor | Public |
 | `POST` | `/api/webhooks/dodo` | Receive and process payment webhook events | Dodo Signature |
 | `POST` | `/api/admin/login` | Authenticate admin against `.env` credentials | Public |
 | `POST` | `/api/admin/logout` | Clear admin authentication cookie | Admin Cookie |

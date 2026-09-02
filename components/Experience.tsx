@@ -24,9 +24,9 @@ export default function Experience() {
   const [listings, setListings] = useState<Listing[] | undefined>(undefined);
   const stats = useLiveStats(731);
 
-  // Safety fallback so loading screen never hangs on slow or restricted networks
+  // Safety fallback so loading screen is snappy and never hangs
   useEffect(() => {
-    const timer = setTimeout(() => setIsBuildingLoading(false), 3500);
+    const timer = setTimeout(() => setIsBuildingLoading(false), 1200);
     return () => clearTimeout(timer);
   }, []);
 

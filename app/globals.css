@@ -2036,6 +2036,33 @@ body.home-tower-scrolled .tower-top-fade {
   width: 100%;
 }
 
+.building-loader-logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.building-loader-logo {
+  width: 76px;
+  height: 76px;
+  border-radius: 18px;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 24px rgba(255, 107, 26, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  animation: logoPulse 2s infinite ease-in-out;
+}
+
+@keyframes logoPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 18px rgba(255, 107, 26, 0.25);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6), 0 0 32px rgba(255, 107, 26, 0.55);
+  }
+}
+
 /* Skyscraper Graphic */
 .skyscraper-anim {
   display: flex;

@@ -42,6 +42,17 @@ export default function BuildingLoader({ isLoading }: { isLoading: boolean }) {
       role="status"
     >
       <div className="building-loader-card">
+        {/* Brand Logo */}
+        <div className="building-loader-logo-wrap">
+          <img
+            src="/logo.png"
+            alt="GeTopFloor Logo"
+            className="building-loader-logo"
+            width={76}
+            height={76}
+          />
+        </div>
+
         {/* Animated Skyscraper Graphic */}
         <div className="skyscraper-anim">
           {/* Spire & Beacon */}

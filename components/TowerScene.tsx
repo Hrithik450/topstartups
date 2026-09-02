@@ -2,9 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { TowerHandle } from "@/lib/three/app";
-
 import type { HoverData } from "@/components/FloorHoverCard";
-
 import type { Listing } from "@/lib/three/listings";
 
 export default function TowerScene({
@@ -21,6 +19,11 @@ export default function TowerScene({
   onLoaded?: () => void;
 }) {
   const mount = useRef<HTMLDivElement>(null);
+  const onLoadedRef = useRef(onLoaded);
+  onLoadedRef.current = onLoaded;
+
+  const onFloorHoverRef = useRef(onFloorHover);
+  onFloorHoverRef.current = onFloorHover;
 
   useEffect(() => {
     let handle: TowerHandle | null = null;
@@ -29,12 +32,14 @@ export default function TowerScene({
     import("@/lib/three/app").then(({ createTower }) => {
       if (disposed || !mount.current) return;
       handle = createTower(mount.current, {
-        onFloorHover,
+        onFloorHover: (data) => onFloorHoverRef.current?.(data),
         theme,
         listings,
-        onLoaded,
+        onLoaded: () => onLoadedRef.current?.(),
       });
       handleRef.current = handle;
+      // Immediately notify parent so loader can safely exit
+      onLoadedRef.current?.();
     });
 
     return () => {
@@ -42,7 +47,7 @@ export default function TowerScene({
       handle?.dispose();
       handleRef.current = null;
     };
-  }, [handleRef, onFloorHover, theme, listings, onLoaded]);
+  }, [handleRef, theme, listings]);
 
   return <div ref={mount} className="scene-canvas" />;
 }

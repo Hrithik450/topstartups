@@ -8,12 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:setup": "drizzle-kit push && tsx lib/db/config/seed.ts",
     "db:push": "drizzle-kit push",
-    "db:seed": "tsx lib/db/config/seed.ts",
     "db:reset": "tsx scripts/reset-db.ts",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx lib/db/config/seed.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

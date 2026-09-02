@@ -6,7 +6,6 @@ import { MAIN_CATEGORIES } from "@/lib/categories";
 interface ManageFloorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialToken?: string;
   onFloorUpdated?: () => void;
 }
 
@@ -26,11 +25,8 @@ interface FloorItem {
 export default function ManageFloorModal({
   isOpen,
   onClose,
-  initialToken = "",
   onFloorUpdated,
 }: ManageFloorModalProps) {
-  const [authMode, setAuthMode] = useState<"email" | "token">("email");
-
   // Email OTP state
   const [email, setEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -38,9 +34,6 @@ export default function ManageFloorModal({
   const [sessionToken, setSessionToken] = useState("");
   const [ownedFloors, setOwnedFloors] = useState<FloorItem[]>([]);
   const [selectedFloorId, setSelectedFloorId] = useState<number | null>(null);
-
-  // Legacy Token state
-  const [token, setToken] = useState(initialToken);
 
   // Status & loading
   const [loading, setLoading] = useState(false);
@@ -65,16 +58,9 @@ export default function ManageFloorModal({
     logoUrl: "",
   });
 
-  // Restore stored session or token on open
+  // Restore stored session on open
   useEffect(() => {
     if (!isOpen) return;
-
-    if (initialToken) {
-      setAuthMode("token");
-      setToken(initialToken);
-      fetchLegacyFloor(initialToken);
-      return;
-    }
 
     if (typeof window !== "undefined") {
       const storedEmail = localStorage.getItem("getopfloor_manage_email");
@@ -84,14 +70,11 @@ export default function ManageFloorModal({
         setEmail(storedEmail);
         setSessionToken(storedSession);
         fetchOwnedFloors(storedEmail, storedSession);
-      } else {
-        const storedToken = localStorage.getItem("bharathunt_manage_token");
-        if (storedToken) {
-          setToken(storedToken);
-        }
+      } else if (storedEmail) {
+        setEmail(storedEmail);
       }
     }
-  }, [isOpen, initialToken]);
+  }, [isOpen]);
 
   // When selected floor changes in dropdown, populate form
   useEffect(() => {
@@ -209,7 +192,7 @@ export default function ManageFloorModal({
   };
 
   // ─── STEP 3: Save Changes (Email Authenticated) ───
-  const handleSaveEmail = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFloorId || !sessionToken || !email) return;
 
@@ -242,7 +225,7 @@ export default function ManageFloorModal({
   };
 
   // ─── STEP 4: Vacate Floor (Email Authenticated) ───
-  const handleDeleteEmail = async () => {
+  const handleDelete = async () => {
     if (!selectedFloorId || !sessionToken || !email) return;
 
     const currentFloor = ownedFloors.find((f) => f.id === selectedFloorId);
@@ -284,35 +267,7 @@ export default function ManageFloorModal({
     }
   };
 
-  // ─── Legacy Token Lookup Fallback ───
-  const fetchLegacyFloor = async (tokenToUse: string) => {
-    if (!tokenToUse.trim()) return;
-    setLoading(true);
-    setStatusMsg(null);
-    try {
-      const res = await fetch(`/api/floors/manage?token=${encodeURIComponent(tokenToUse.trim())}`);
-      const data = await res.json();
-      if (!res.ok || !data.floor) throw new Error(data.error || "Floor not found for this token");
-
-      setOwnedFloors([data.floor]);
-      setSelectedFloorId(data.floor.id);
-      setFormData({
-        companyName: data.floor.companyName || "",
-        url: data.floor.url || "",
-        category: data.floor.category || "Startup",
-        tagline: data.floor.tagline || "",
-        description: data.floor.description || "",
-        logoUrl: data.floor.logoUrl || "",
-      });
-      localStorage.setItem("bharathunt_manage_token", tokenToUse.trim());
-    } catch (err: any) {
-      setStatusMsg({ type: "error", text: err.message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogoutEmail = () => {
+  const handleLogout = () => {
     localStorage.removeItem("getopfloor_manage_email");
     localStorage.removeItem("getopfloor_session_token");
     setSessionToken("");
@@ -334,7 +289,7 @@ export default function ManageFloorModal({
           <div>
             <h2 className="manage-modal-title">Manage Your Skyscraper Floors</h2>
             <p className="manage-modal-subtitle">
-              Update startup details, logos, or vacate floors anytime without remembering tokens.
+              Verify your email to update startup details, logos, or vacate floors anytime.
             </p>
           </div>
           <button type="button" className="manage-modal-close" onClick={onClose} aria-label="Close">
@@ -349,8 +304,8 @@ export default function ManageFloorModal({
           </div>
         )}
 
-        {/* ─── MODE A: EMAIL VERIFICATION (Default & Modern) ─── */}
-        {authMode === "email" && !sessionToken && (
+        {/* ─── EMAIL VERIFICATION (Clean & Modern) ─── */}
+        {!sessionToken ? (
           <div>
             {!otpSent ? (
               <form onSubmit={handleSendOtp} style={{ marginTop: "12px" }}>
@@ -427,69 +382,23 @@ export default function ManageFloorModal({
                 </div>
               </form>
             )}
-
-            <div style={{ marginTop: "24px", paddingTop: "14px", borderTop: "1px solid rgba(255,255,255,0.08)", textAlign: "center" }}>
-              <button
-                type="button"
-                className="manage-switch-link"
-                onClick={() => setAuthMode("token")}
-              >
-                Have an old secret manage token? Enter token instead
-              </button>
-            </div>
           </div>
-        )}
-
-        {/* ─── MODE B: LEGACY TOKEN INPUT ─── */}
-        {authMode === "token" && !sessionToken && (
-          <div>
-            <div className="manage-token-bar">
-              <input
-                type="text"
-                className="manage-input"
-                placeholder="Enter secret manage token..."
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-              />
-              <button
-                type="button"
-                className="manage-load-btn"
-                onClick={() => fetchLegacyFloor(token)}
-                disabled={loading || !token.trim()}
-              >
-                {loading ? "Loading..." : "Find Floor"}
-              </button>
-            </div>
-            <div style={{ marginTop: "16px", textAlign: "center" }}>
-              <button
-                type="button"
-                className="manage-resend-btn"
-                onClick={() => setAuthMode("email")}
-              >
-                ← Switch to Email Verification
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ─── ACTIVE DASHBOARD: DROPDOWN & EDIT FORM ─── */}
-        {(sessionToken || (authMode === "token" && ownedFloors.length > 0)) && (
+        ) : (
+          /* ─── ACTIVE DASHBOARD: DROPDOWN & EDIT FORM ─── */
           <div>
             {/* Header bar with email & logout */}
-            {sessionToken && (
-              <div className="manage-user-bar">
-                <span>
-                  Logged in as: <strong className="manage-user-email">{email}</strong>
-                </span>
-                <button
-                  type="button"
-                  onClick={handleLogoutEmail}
-                  className="manage-logout-btn"
-                >
-                  Log out
-                </button>
-              </div>
-            )}
+            <div className="manage-user-bar">
+              <span>
+                Logged in as: <strong className="manage-user-email">{email}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="manage-logout-btn"
+              >
+                Log out
+              </button>
+            </div>
 
             {/* PRODUCT DROPDOWN: select which floor to manage */}
             {ownedFloors.length > 1 && (
@@ -512,7 +421,7 @@ export default function ManageFloorModal({
             )}
 
             {currentFloorMeta && (
-              <form className="manage-edit-form" onSubmit={handleSaveEmail}>
+              <form className="manage-edit-form" onSubmit={handleSave}>
                 <div className="manage-floor-meta">
                   <span>Current Skyscraper Floor: <strong>#{currentFloorMeta.rank}</strong></span>
                   <span>Amount Paid: <strong>₹{currentFloorMeta.pricePaid}</strong></span>
@@ -592,7 +501,7 @@ export default function ManageFloorModal({
                   <button
                     type="button"
                     className="manage-delete-btn"
-                    onClick={handleDeleteEmail}
+                    onClick={handleDelete}
                     disabled={deleting || saving}
                   >
                     {deleting ? "Removing..." : "Vacate Floor"}

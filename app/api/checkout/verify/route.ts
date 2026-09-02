@@ -73,36 +73,37 @@ export async function GET(req: NextRequest) {
     }
 
     if (paymentStatus === "succeeded") {
-      // If already claimed and has manageToken, return it
-      if (pendingClaim && pendingClaim.status === "succeeded" && pendingClaim.manageToken) {
-        return NextResponse.json({
-          status: "succeeded",
-          rank: 1,
-          companyName: pendingClaim.companyName,
-          manageToken: pendingClaim.manageToken,
-        });
-      }
-
-      // Claim top floor atomically
+      const customerEmail = (pendingClaim?.customerEmail || sessionData.customer_email)?.toLowerCase().trim() || null;
       const companyName = pendingClaim?.companyName || sessionData.customer_name || "New Startup";
       const url = pendingClaim?.url || "https://getopfloor.com";
       const category = pendingClaim?.category || "Startup";
       const price = pendingClaim?.amount || 50;
 
+      // If already claimed, return confirmation
+      if (pendingClaim && pendingClaim.status === "succeeded") {
+        return NextResponse.json({
+          status: "succeeded",
+          rank: 1,
+          companyName: pendingClaim.companyName,
+          customerEmail,
+        });
+      }
+
+      // Claim top floor atomically
       const result = await claimTopFloorTransactional({
         paymentId: sessionId,
         companyName,
         url,
         category,
         price,
-        customerEmail: pendingClaim?.customerEmail || sessionData.customer_email,
+        customerEmail: customerEmail || undefined,
       });
 
       return NextResponse.json({
         status: "succeeded",
         rank: result.rank,
         companyName,
-        manageToken: result.manageToken,
+        customerEmail,
       });
     }
 

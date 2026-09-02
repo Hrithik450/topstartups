@@ -101,8 +101,8 @@ export default function Hero() {
           if (data.status === "succeeded") {
             setJustClaimed(data.companyName || "Your company");
             setPaymentNotice(null);
-            if (data.manageToken) {
-              localStorage.setItem("bharathunt_manage_token", data.manageToken);
+            if (data.customerEmail) {
+              localStorage.setItem("getopfloor_manage_email", data.customerEmail);
             }
             // Trigger 3D tower reload
             window.dispatchEvent(new CustomEvent("floors-refresh"));
@@ -130,13 +130,8 @@ export default function Hero() {
       return;
     }
 
-    // Legacy or mock fallback
     if (params.get("claimed") === "true") {
       setJustClaimed(params.get("company") || "Your company");
-      const token = params.get("manage_token");
-      if (token) {
-        localStorage.setItem("bharathunt_manage_token", token);
-      }
       window.dispatchEvent(new CustomEvent("floors-refresh"));
       window.history.replaceState({}, "", window.location.pathname);
     }

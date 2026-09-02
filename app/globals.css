@@ -1925,11 +1925,6 @@ body.home-tower-scrolled .tower-top-fade {
   color: #fff;
 }
 
-.manage-token-bar {
-  display: flex;
-  gap: 10px;
-}
-
 .manage-input {
   width: 100%;
   background: rgba(255, 255, 255, 0.05);

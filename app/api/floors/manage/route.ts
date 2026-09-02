@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getFloorByManageToken,
-  updateFloorByManageToken,
-  deleteFloorByManageToken,
   getFloorsByEmail,
   updateFloorByEmail,
   deleteFloorByEmail,
@@ -14,7 +11,10 @@ export const dynamic = "force-dynamic";
 function verifySessionSignature(email: string, token: string): boolean {
   if (!email || !token) return false;
   const secret = process.env.SESSION_SECRET || "getopfloor_secure_session_secret";
-  const expected = crypto.createHmac("sha256", secret).update(email.toLowerCase().trim()).digest("hex");
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(email.toLowerCase().trim())
+    .digest("hex");
   try {
     const a = Buffer.from(expected, "utf8");
     const b = Buffer.from(token.trim(), "utf8");
@@ -26,38 +26,20 @@ function verifySessionSignature(email: string, token: string): boolean {
 }
 
 /**
- * GET /api/floors/manage
- * Fetch claimed floors by email or manageToken
+ * GET /api/floors/manage?email=...&session_token=...
+ * Fetch claimed floors for verified owner
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const email = searchParams.get("email")?.toLowerCase().trim();
   const sessionToken = searchParams.get("session_token");
-  const token = searchParams.get("token");
 
-  // Email-based lookup (preferred modern workflow)
-  if (email) {
-    if (!sessionToken || !verifySessionSignature(email, sessionToken)) {
-      return NextResponse.json({ error: "Unauthorized session" }, { status: 401 });
-    }
-
-    const floors = await getFloorsByEmail(email);
-    return NextResponse.json({ success: true, floors });
+  if (!email || !sessionToken || !verifySessionSignature(email, sessionToken)) {
+    return NextResponse.json({ error: "Unauthorized session" }, { status: 401 });
   }
 
-  // Token-based lookup (backward compatibility)
-  if (token) {
-    const floor = await getFloorByManageToken(token);
-    if (!floor) {
-      return NextResponse.json(
-        { error: "No floor found for this management token" },
-        { status: 404 }
-      );
-    }
-    return NextResponse.json({ success: true, floor });
-  }
-
-  return NextResponse.json({ error: "Email or token is required" }, { status: 400 });
+  const floors = await getFloorsByEmail(email);
+  return NextResponse.json({ success: true, floors });
 }
 
 /**
@@ -71,7 +53,6 @@ export async function PATCH(req: NextRequest) {
       floorId,
       email,
       sessionToken,
-      token,
       companyName,
       url,
       category,
@@ -80,62 +61,39 @@ export async function PATCH(req: NextRequest) {
       logoUrl,
     } = body;
 
-    // Email-based update (preferred)
-    if (email && floorId) {
-      const cleanEmail = email.toLowerCase().trim();
-      if (!sessionToken || !verifySessionSignature(cleanEmail, sessionToken)) {
-        return NextResponse.json({ error: "Unauthorized session" }, { status: 401 });
-      }
-
-      const updated = await updateFloorByEmail(Number(floorId), cleanEmail, {
-        companyName,
-        url,
-        category,
-        tagline,
-        description,
-        logoUrl,
-      });
-
-      if (!updated) {
-        return NextResponse.json(
-          { error: "Floor not found or you are not authorized to update it." },
-          { status: 404 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: "Floor updated successfully",
-        floor: updated,
-      });
+    if (!email || !floorId || !sessionToken) {
+      return NextResponse.json(
+        { error: "Authentication credentials and floor ID required" },
+        { status: 400 }
+      );
     }
 
-    // Legacy manageToken update
-    if (token) {
-      const updated = await updateFloorByManageToken(token, {
-        companyName,
-        url,
-        category,
-        tagline,
-        description,
-        logoUrl,
-      });
-
-      if (!updated) {
-        return NextResponse.json(
-          { error: "Floor not found or update failed" },
-          { status: 404 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: "Floor updated successfully",
-        floor: updated,
-      });
+    const cleanEmail = email.toLowerCase().trim();
+    if (!verifySessionSignature(cleanEmail, sessionToken)) {
+      return NextResponse.json({ error: "Unauthorized session" }, { status: 401 });
     }
 
-    return NextResponse.json({ error: "Authentication credentials required" }, { status: 400 });
+    const updated = await updateFloorByEmail(Number(floorId), cleanEmail, {
+      companyName,
+      url,
+      category,
+      tagline,
+      description,
+      logoUrl,
+    });
+
+    if (!updated) {
+      return NextResponse.json(
+        { error: "Floor not found or you are not authorized to update it." },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Floor updated successfully",
+      floor: updated,
+    });
   } catch (err: any) {
     console.error("Error updating floor:", err);
     return NextResponse.json(
@@ -157,31 +115,24 @@ export async function DELETE(req: NextRequest) {
     const email = (body.email || searchParams.get("email"))?.toLowerCase().trim();
     const floorId = body.floorId || searchParams.get("floor_id");
     const sessionToken = body.sessionToken || searchParams.get("session_token");
-    const token = body.token || searchParams.get("token");
 
-    // Email-based delete (preferred)
-    if (email && floorId) {
-      if (!sessionToken || !verifySessionSignature(email, sessionToken)) {
-        return NextResponse.json({ error: "Unauthorized session" }, { status: 401 });
-      }
-
-      const result = await deleteFloorByEmail(Number(floorId), email);
-      if (!result.success) {
-        return NextResponse.json({ error: result.message }, { status: 400 });
-      }
-      return NextResponse.json(result);
+    if (!email || !floorId || !sessionToken) {
+      return NextResponse.json(
+        { error: "Authentication credentials and floor ID required" },
+        { status: 400 }
+      );
     }
 
-    // Legacy manageToken delete
-    if (token) {
-      const result = await deleteFloorByManageToken(token);
-      if (!result.success) {
-        return NextResponse.json({ error: result.message }, { status: 400 });
-      }
-      return NextResponse.json(result);
+    if (!verifySessionSignature(email, sessionToken)) {
+      return NextResponse.json({ error: "Unauthorized session" }, { status: 401 });
     }
 
-    return NextResponse.json({ error: "Authentication credentials required" }, { status: 400 });
+    const result = await deleteFloorByEmail(Number(floorId), email);
+    if (!result.success) {
+      return NextResponse.json({ error: result.message }, { status: 400 });
+    }
+
+    return NextResponse.json(result);
   } catch (err: any) {
     console.error("Error deleting floor:", err);
     return NextResponse.json(

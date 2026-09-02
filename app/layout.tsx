@@ -39,6 +39,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -49,7 +54,7 @@ export const metadata: Metadata = {
       "Interactive 3D skyscraper where ambitious startups outbid each other to claim the top floor. Showcase your product to founders and investors worldwide.",
     images: [
       {
-        url: "/og-image.svg",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "GeTopFloor 3D Skyscraper — Claim the Top Floor",
@@ -61,7 +66,7 @@ export const metadata: Metadata = {
     title: "GeTopFloor — Claim the Top Floor of the Internet's Tallest Tower",
     description:
       "Interactive 3D skyscraper where ambitious startups outbid each other to claim the top floor. Showcase your product to thousands of founders.",
-    images: ["/og-image.svg"],
+    images: ["/og-image.png"],
     creator: "@GeTopFloor",
   },
   robots: {
@@ -106,7 +111,7 @@ export default function RootLayout({
           url: "https://getopfloor.com",
           logo: {
             "@type": "ImageObject",
-            url: "https://getopfloor.com/product-icon.png",
+            url: "https://getopfloor.com/logo.png",
           },
         },
       },

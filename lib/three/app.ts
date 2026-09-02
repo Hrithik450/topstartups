@@ -682,14 +682,38 @@ function createHiringTexture(): THREE.CanvasTexture {
 
 // Bounding box helper: fit model to exact target height
 function fitModelHeight(scene: THREE.Object3D, targetHeight: number): THREE.Group {
+  // 1. Hide physics colliders before computing bounding box
+  scene.traverse((o) => {
+    if (o.name.toLowerCase().includes("collider")) {
+      o.visible = false;
+    }
+  });
+
   const root = new THREE.Group();
   root.add(scene);
-  const box = new THREE.Box3().setFromObject(root);
+
+  // Compute bounding box strictly on visible meshes
+  const box = new THREE.Box3();
+  root.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh && o.visible) {
+      box.expandByObject(o);
+    }
+  });
+  if (box.isEmpty()) box.setFromObject(root);
+
   const size = box.getSize(new THREE.Vector3());
   const scale = targetHeight / (size.y || 1);
   root.scale.setScalar(scale);
 
-  const updatedBox = new THREE.Box3().setFromObject(root);
+  // Recalculate center and ground offset
+  const updatedBox = new THREE.Box3();
+  root.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh && o.visible) {
+      updatedBox.expandByObject(o);
+    }
+  });
+  if (updatedBox.isEmpty()) updatedBox.setFromObject(root);
+
   const center = updatedBox.getCenter(new THREE.Vector3());
   root.position.set(-center.x, -updatedBox.min.y, -center.z);
 
@@ -699,6 +723,16 @@ function fitModelHeight(scene: THREE.Object3D, targetHeight: number): THREE.Grou
     if (o instanceof THREE.Mesh) {
       o.castShadow = true;
       o.receiveShadow = true;
+      if (o.material) {
+        const mats = Array.isArray(o.material) ? o.material : [o.material];
+        for (const m of mats) {
+          if ((m as any).map) {
+            (m as any).map.colorSpace = THREE.SRGBColorSpace;
+            (m as any).map.needsUpdate = true;
+          }
+          m.needsUpdate = true;
+        }
+      }
     }
   });
   return wrapper;

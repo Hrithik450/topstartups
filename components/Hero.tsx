@@ -178,36 +178,15 @@ export default function Hero() {
     <section className="hero">
       {paymentNotice && (
         <div
-          className="claimed-banner"
-          style={{
-            background:
-              paymentNotice.type === "error"
-                ? "rgba(220, 38, 38, 0.9)"
-                : paymentNotice.type === "info"
-                ? "rgba(37, 99, 235, 0.9)"
-                : "rgba(16, 185, 129, 0.9)",
-            borderColor:
-              paymentNotice.type === "error"
-                ? "#f87171"
-                : paymentNotice.type === "info"
-                ? "#60a5fa"
-                : "#34d399",
-          }}
+          className={`claimed-banner payment-notice ${paymentNotice.type}`}
           role="status"
         >
           <span>{paymentNotice.message}</span>
           <button
             type="button"
+            className="claimed-close-btn"
             onClick={() => setPaymentNotice(null)}
             aria-label="Close"
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "#fff",
-              cursor: "pointer",
-              marginLeft: "12px",
-              fontSize: "14px",
-            }}
           >
             ✕
           </button>
@@ -215,26 +194,23 @@ export default function Hero() {
       )}
 
       {justClaimed && (
-        <div className="claimed-banner" role="status">
+        <div className="claimed-banner celebration" role="status">
           <span>🏆 Congratulations! <strong>{justClaimed}</strong> has claimed Top Floor (#1)!</span>
           <button
             type="button"
             className="claimed-edit-btn"
             onClick={() => setIsManageOpen(true)}
-            style={{
-              background: "rgba(255, 255, 255, 0.2)",
-              color: "#fff",
-              padding: "3px 10px",
-              borderRadius: "6px",
-              fontWeight: 600,
-              fontSize: "12px",
-              cursor: "pointer",
-              border: "none",
-            }}
           >
             Edit Floor
           </button>
-          <button type="button" onClick={() => setJustClaimed(null)} aria-label="Close">✕</button>
+          <button
+            type="button"
+            className="claimed-close-btn"
+            onClick={() => setJustClaimed(null)}
+            aria-label="Close"
+          >
+            ✕
+          </button>
         </div>
       )}
 

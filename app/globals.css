@@ -1713,6 +1713,18 @@ body.home-tower-scrolled .tower-top-fade {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+[data-theme="sunset"] .floor-hover-card-manage-btn {
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  color: #0f172a;
+}
+
+[data-theme="sunset"] .floor-hover-card-manage-btn:hover {
+  background: rgba(0, 0, 0, 0.12);
+  color: #000000;
+  border-color: rgba(0, 0, 0, 0.28);
+}
+
 @media (max-width: 900px) {
   .floor-hover-card-wrapper {
     top: auto;
@@ -1746,19 +1758,104 @@ body.home-tower-scrolled .tower-top-fade {
   text-decoration: underline;
 }
 
-.claimed-banner button {
+.claimed-banner.payment-notice.error {
+  background: rgba(220, 38, 38, 0.88);
+  border-color: #f87171;
+  color: #ffffff;
+}
+
+.claimed-banner.payment-notice.info {
+  background: rgba(37, 99, 235, 0.88);
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+
+.claimed-banner.payment-notice.success {
+  background: rgba(16, 185, 129, 0.88);
+  border-color: #34d399;
+  color: #ffffff;
+}
+
+.claimed-edit-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.15s ease;
+}
+
+.claimed-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+}
+
+.claimed-close-btn {
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   padding: 2px 6px;
   border-radius: 4px;
   transition: color 0.15s;
 }
 
-.claimed-banner button:hover {
-  color: #fff;
+.claimed-close-btn:hover {
+  color: #ffffff;
+}
+
+/* Light / Sunset Mode Overrides for Banner */
+[data-theme="sunset"] .claimed-banner {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1.5px solid rgba(255, 107, 26, 0.45);
+  color: #0f172a;
+  box-shadow: 0 10px 25px rgba(255, 107, 26, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="sunset"] .claimed-banner strong {
+  color: #ea580c;
+  text-decoration: underline;
+}
+
+[data-theme="sunset"] .claimed-banner.payment-notice.error {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+[data-theme="sunset"] .claimed-banner.payment-notice.info {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+[data-theme="sunset"] .claimed-banner.payment-notice.success {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+
+[data-theme="sunset"] .claimed-edit-btn {
+  background: rgba(234, 88, 12, 0.12);
+  color: #c2410c;
+  border: 1px solid rgba(234, 88, 12, 0.35);
+}
+
+[data-theme="sunset"] .claimed-edit-btn:hover {
+  background: #ea580c;
+  color: #ffffff;
+}
+
+[data-theme="sunset"] .claimed-close-btn {
+  color: #64748b;
+}
+
+[data-theme="sunset"] .claimed-close-btn:hover {
+  color: #0f172a;
 }
 
 /* ---------- Manage Floor Modal (CRUD) ---------- */
@@ -1998,6 +2095,191 @@ body.home-tower-scrolled .tower-top-fade {
   filter: brightness(1.1);
   box-shadow: 0 4px 14px rgba(255, 107, 26, 0.4);
 }
+
+/* ─── Light / Sunset Mode Overrides for Manage Floor Modal ─── */
+[data-theme="sunset"] .manage-modal-content {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #0f172a;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 107, 26, 0.25);
+}
+
+[data-theme="sunset"] .manage-modal-title {
+  color: #0f172a;
+}
+
+[data-theme="sunset"] .manage-modal-subtitle {
+  color: #64748b;
+}
+
+[data-theme="sunset"] .manage-modal-close {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+[data-theme="sunset"] .manage-modal-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+[data-theme="sunset"] .manage-input {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+}
+
+[data-theme="sunset"] .manage-input::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="sunset"] .manage-input:focus {
+  background: #ffffff;
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+[data-theme="sunset"] .manage-select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+[data-theme="sunset"] .manage-label {
+  color: #475569;
+}
+
+[data-theme="sunset"] .manage-floor-meta {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+[data-theme="sunset"] .manage-cancel-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+[data-theme="sunset"] .manage-cancel-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+[data-theme="sunset"] .manage-actions-row {
+  border-top-color: #e2e8f0;
+}
+
+.manage-user-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.manage-user-email {
+  color: #ffffff;
+}
+
+.manage-logout-btn {
+  background: transparent;
+  border: none;
+  color: #f87171;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.manage-logout-btn:hover {
+  text-decoration: underline;
+}
+
+.manage-sub-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.manage-sub-btn:hover {
+  color: #ffffff;
+}
+
+.manage-resend-btn {
+  background: none;
+  border: none;
+  color: #818cf8;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+}
+
+.manage-resend-btn:hover {
+  filter: brightness(1.2);
+}
+
+.manage-switch-link {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.manage-switch-link:hover {
+  color: #9ca3af;
+}
+
+.manage-dropdown-label {
+  color: #818cf8;
+  font-weight: 600;
+}
+
+/* Sunset / Light mode overrides */
+[data-theme="sunset"] .manage-user-bar {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+}
+
+[data-theme="sunset"] .manage-user-email {
+  color: #0f172a;
+}
+
+[data-theme="sunset"] .manage-sub-btn {
+  color: #64748b;
+}
+
+[data-theme="sunset"] .manage-sub-btn:hover {
+  color: #0f172a;
+}
+
+[data-theme="sunset"] .manage-resend-btn {
+  color: #4f46e5;
+}
+
+[data-theme="sunset"] .manage-switch-link {
+  color: #64748b;
+}
+
+[data-theme="sunset"] .manage-switch-link:hover {
+  color: #0f172a;
+}
+
+[data-theme="sunset"] .manage-dropdown-label {
+  color: #4f46e5;
+}
+
 
 /* ---------- Premium Building Loader ---------- */
 .building-loader-overlay {

@@ -411,16 +411,16 @@ export default function ManageFloorModal({
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px" }}>
                   <button
                     type="button"
+                    className="manage-sub-btn"
                     onClick={() => setOtpSent(false)}
-                    style={{ background: "none", border: "none", color: "#9ca3af", fontSize: "12px", cursor: "pointer" }}
                   >
                     ← Change Email
                   </button>
                   <button
                     type="button"
+                    className="manage-resend-btn"
                     onClick={() => handleSendOtp()}
                     disabled={loading}
-                    style={{ background: "none", border: "none", color: "#818cf8", fontSize: "12px", cursor: "pointer" }}
                   >
                     Resend Code
                   </button>
@@ -431,8 +431,8 @@ export default function ManageFloorModal({
             <div style={{ marginTop: "24px", paddingTop: "14px", borderTop: "1px solid rgba(255,255,255,0.08)", textAlign: "center" }}>
               <button
                 type="button"
+                className="manage-switch-link"
                 onClick={() => setAuthMode("token")}
-                style={{ background: "none", border: "none", color: "#6b7280", fontSize: "12px", cursor: "pointer", textDecoration: "underline" }}
               >
                 Have an old secret manage token? Enter token instead
               </button>
@@ -463,8 +463,8 @@ export default function ManageFloorModal({
             <div style={{ marginTop: "16px", textAlign: "center" }}>
               <button
                 type="button"
+                className="manage-resend-btn"
                 onClick={() => setAuthMode("email")}
-                style={{ background: "none", border: "none", color: "#818cf8", fontSize: "12px", cursor: "pointer", textDecoration: "underline" }}
               >
                 ← Switch to Email Verification
               </button>
@@ -477,32 +477,14 @@ export default function ManageFloorModal({
           <div>
             {/* Header bar with email & logout */}
             {sessionToken && (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "8px 12px",
-                  background: "rgba(255,255,255,0.03)",
-                  borderRadius: "8px",
-                  marginBottom: "16px",
-                  fontSize: "13px",
-                  color: "#9ca3af",
-                }}
-              >
+              <div className="manage-user-bar">
                 <span>
-                  Logged in as: <strong style={{ color: "#fff" }}>{email}</strong>
+                  Logged in as: <strong className="manage-user-email">{email}</strong>
                 </span>
                 <button
                   type="button"
                   onClick={handleLogoutEmail}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "#f87171",
-                    cursor: "pointer",
-                    fontSize: "12px",
-                  }}
+                  className="manage-logout-btn"
                 >
                   Log out
                 </button>
@@ -512,14 +494,13 @@ export default function ManageFloorModal({
             {/* PRODUCT DROPDOWN: select which floor to manage */}
             {ownedFloors.length > 1 && (
               <label className="manage-field-group" style={{ marginBottom: "16px" }}>
-                <span className="manage-label" style={{ color: "#818cf8", fontWeight: 600 }}>
+                <span className="manage-label manage-dropdown-label">
                   Select Startup / Floor to Manage:
                 </span>
                 <select
                   className="manage-input manage-select"
                   value={selectedFloorId || ""}
                   onChange={(e) => setSelectedFloorId(Number(e.target.value))}
-                  style={{ borderColor: "#6366f1" }}
                 >
                   {ownedFloors.map((f) => (
                     <option key={f.id} value={f.id}>

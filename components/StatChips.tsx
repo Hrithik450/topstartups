@@ -150,7 +150,7 @@ export default function StatChips({ heightFt = 731 }: { heightFt?: number | stri
       key: "backed",
       render: () => (
         <a
-          href="https://bharathunt.com"
+          href="https://bharathunt.org"
           target="_blank"
           rel="noopener noreferrer"
           style={{ textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center", gap: "6px" }}
@@ -258,7 +258,7 @@ export function MobileStatsSheet({
 
         <div className="mobile-sheet-footer">
           <a
-            href="https://bharathunt.com"
+            href="https://bharathunt.org"
             target="_blank"
             rel="noopener noreferrer"
             className="badge-pill"

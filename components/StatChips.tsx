@@ -38,7 +38,7 @@ export function useLiveStats(initialHeightFt = 731) {
     heightFt: initialHeightFt,
     claimedFloors: 0,
     totalFloors: 50,
-    totalViews: 1,
+    totalViews: 18028,
     countriesCount: 1,
     mounted: false,
   });
@@ -212,7 +212,7 @@ export default function StatChips({
       key: "viewed",
       render: () => (
         <>
-          <Eye /> <span className="num" suppressHydrationWarning>{(18028 + (stats.mounted ? stats.totalViews : 0)).toLocaleString()}</span> visitors since launch
+          <Eye /> <span className="num" suppressHydrationWarning>{(stats.totalViews || 18028).toLocaleString()}</span> visitors since launch
         </>
       ),
     },
@@ -334,7 +334,7 @@ export function MobileStatsSheet({
               <span className="stat-card-badge">VISITORS</span>
             </div>
             <div className="stat-card-value" suppressHydrationWarning>
-              {(18028 + (stats.mounted ? stats.totalViews : 0)).toLocaleString()}
+              {(stats.totalViews || 18028).toLocaleString()}
             </div>
             <div className="stat-card-label">Visitors since launch across tower</div>
           </div>

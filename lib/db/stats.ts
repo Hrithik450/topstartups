@@ -11,6 +11,8 @@ export interface LiveStatsData {
   countriesCount: number;
 }
 
+export const BASELINE_VISITORS = 18028;
+
 /**
  * Record a page visit or heartbeat ping from a visitor session.
  * 100% real tracking using pure Drizzle ORM:
@@ -36,13 +38,13 @@ export async function recordVisitAndPing(
         .insert(siteStats)
         .values({
           key: "global",
-          totalViews: 1,
+          totalViews: BASELINE_VISITORS + 1,
           updatedAt: new Date(),
         })
         .onConflictDoUpdate({
           target: siteStats.key,
           set: {
-            totalViews: sql`${siteStats.totalViews} + 1`,
+            totalViews: sql`GREATEST(COALESCE(${siteStats.totalViews}, ${BASELINE_VISITORS}), ${BASELINE_VISITORS}) + 1`,
             updatedAt: new Date(),
           },
         });
@@ -121,7 +123,8 @@ export async function getLiveStats(): Promise<LiveStatsData> {
       .where(eq(siteStats.key, "global"))
       .limit(1);
 
-    const totalViews = Math.max(1, statsRes[0]?.totalViews || 1);
+    const rawViews = Number(statsRes[0]?.totalViews || 0);
+    const totalViews = Math.max(BASELINE_VISITORS, rawViews || BASELINE_VISITORS);
 
     // 4. Real distinct unique countries count
     const countriesRes = await db
@@ -146,7 +149,7 @@ export async function getLiveStats(): Promise<LiveStatsData> {
       heightFt: 731,
       claimedFloors: 0,
       totalFloors: 50,
-      totalViews: 1,
+      totalViews: BASELINE_VISITORS,
       countriesCount: 1,
     };
   }

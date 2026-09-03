@@ -109,6 +109,10 @@ export default function Experience() {
             is_locked: Boolean(f.isLocked),
             lock_info: f.lockInfo,
             rank: f.rank,
+            image_url: f.logoUrl,
+            logoUrl: f.logoUrl,
+            logo_url: f.logoUrl,
+            owner_email: f.ownerEmail,
             clicks: 0,
             views: 0,
           }));

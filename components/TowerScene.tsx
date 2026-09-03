@@ -42,6 +42,9 @@ export default function TowerScene({
         onLoaded: () => onLoadedRef.current?.(),
       });
       handleRef.current = handle;
+      if (listingsRef.current && handle.updateListings) {
+        handle.updateListings(listingsRef.current);
+      }
     });
 
     return () => {
@@ -56,7 +59,7 @@ export default function TowerScene({
     if (listings && handleRef.current?.updateListings) {
       handleRef.current.updateListings(listings);
     }
-  }, [listings, handleRef]);
+  }, [listings]);
 
   // 3. Reactively update theme without recreating the scene
   useEffect(() => {

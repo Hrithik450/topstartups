@@ -1779,10 +1779,10 @@ function createMoonTexture(): THREE.CanvasTexture {
       }
     };
 
-    if (AVAILABLE_LOGOS.has(clean)) {
-      img.src = `/company-logos/${clean}.jpg`;
-    } else if (customLogoUrl) {
+    if (customLogoUrl) {
       img.src = customLogoUrl;
+    } else if (AVAILABLE_LOGOS.has(clean)) {
+      img.src = `/company-logos/${clean}.jpg`;
     } else {
       img.src = `https://www.google.com/s2/favicons?domain=${clean}&sz=128`;
     }
@@ -1898,9 +1898,6 @@ function createMoonTexture(): THREE.CanvasTexture {
     });
   }
 
-  // Collect all floor meshes for fast raycasting (avoids traversing entire scene)
-  const floorMeshes = allFloors.map((f) => f.mesh);
-
   // 4. Floor #0 Penthouse (Claim Top Floor Glass Office)
   const penthouseGridTex = createGlassGridTexture();
   disposables.push(penthouseGridTex);
@@ -1933,6 +1930,9 @@ function createMoonTexture(): THREE.CanvasTexture {
   ]);
   penthouseMesh.position.y = penthouseY + SLAB_HEIGHT + BODY_HEIGHT / 2;
   scene.add(penthouseMesh);
+
+  // Collect all floor meshes for fast raycasting (including top penthouse floor)
+  const floorMeshes = [...allFloors.map((f) => f.mesh), penthouseMesh];
 
   // Executive CEO Boardroom Conference Table
   const tableMat = new THREE.MeshStandardMaterial({ color: 0x181a22, roughness: 0.25, metalness: 0.25 });
@@ -2370,7 +2370,18 @@ function createMoonTexture(): THREE.CanvasTexture {
 
   // Helper: check if a raycast intersection hits a tower floor
   function getFloorHit(hit: THREE.Intersection): { floorIndex: number; listing: Listing; rank: number } | null {
-    if (hit.point.y < BASE_HEIGHT || hit.point.y >= penthouseY) return null;
+    if (hit.point.y < BASE_HEIGHT) return null;
+
+    // Top penthouse boardroom / roof structure
+    if (hit.point.y >= BASE_HEIGHT + (floorCount - 1) * FLOOR_PITCH) {
+      const topIdx = floorCount - 1;
+      return {
+        floorIndex: topIdx,
+        listing: listings[topIdx],
+        rank: 1,
+      };
+    }
+
     const fIdx = Math.floor((hit.point.y - BASE_HEIGHT) / FLOOR_PITCH);
     if (fIdx < 0 || fIdx >= floorCount) return null;
 
@@ -2822,6 +2833,11 @@ function createMoonTexture(): THREE.CanvasTexture {
     updateListings(newListings: Listing[]) {
       if (Array.isArray(newListings) && newListings.length > 0) {
         listings = [...newListings].reverse();
+        for (let i = 0; i < allFloors.length; i++) {
+          if (listings[i]) {
+            allFloors[i].listing = listings[i];
+          }
+        }
         floorRepainters.forEach((fn) => {
           try {
             fn();

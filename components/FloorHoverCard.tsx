@@ -85,9 +85,10 @@ export default function FloorHoverCard({
   const { user, isOwnerOfFloor } = useUserAuth();
   const isOwner = isOwnerOfFloor(rank) || Boolean(user?.email && listing.owner_email && listing.owner_email === user.email);
 
-  const cleanDomain = listing.url_or_handle.replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./, "");
-  const targetUrl = listing.url_or_handle.startsWith("http") ? listing.url_or_handle : `https://${listing.url_or_handle}`;
-  const hasLogo = AVAILABLE_LOGOS.has(cleanDomain);
+  const cleanDomain = (listing.url_or_handle || "").replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./, "");
+  const targetUrl = (listing.url_or_handle || "").startsWith("http") ? listing.url_or_handle : `https://${listing.url_or_handle}`;
+  const customLogoUrl = listing.image_url || listing.logoUrl || listing.logo_url;
+  const hasLocalLogo = AVAILABLE_LOGOS.has(cleanDomain);
   const flag = getFlagEmoji(listing.country_code);
   const timeAgo = getTimeAgo(listing.created_at);
 
@@ -124,11 +125,29 @@ export default function FloorHoverCard({
           <div className="floor-hover-card-body">
             <div className="floor-hover-card-top-row">
               <div className="floor-hover-card-logo">
-                {hasLogo ? (
+                {customLogoUrl ? (
+                  <img
+                    src={customLogoUrl}
+                    alt={listing.title}
+                    className="floor-hover-card-img"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://www.google.com/s2/favicons?domain=${cleanDomain || "getopfloor.com"}&sz=128`;
+                    }}
+                  />
+                ) : hasLocalLogo ? (
                   <img
                     src={`/company-logos/${cleanDomain}.jpg`}
                     alt={listing.title}
                     className="floor-hover-card-img"
+                  />
+                ) : cleanDomain && listing.is_claimed ? (
+                  <img
+                    src={`https://www.google.com/s2/favicons?domain=${cleanDomain}&sz=128`}
+                    alt={listing.title}
+                    className="floor-hover-card-img"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = "none";
+                    }}
                   />
                 ) : (
                   <div

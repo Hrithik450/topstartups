@@ -279,7 +279,13 @@ function paintFloorTexture(
   ctx.fillStyle = "#ffffff";
   ctx.font = "800 84px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
   ctx.fillText(`#${rank}`, 1232, 108);
-  ctx.fillText(`₹${listing.total_paid}`, 1232, 204);
+  if (isClaimed) {
+    ctx.fillText(`₹${listing.total_paid}`, 1232, 204);
+  } else {
+    ctx.fillStyle = "rgba(255, 235, 200, 0.65)";
+    ctx.font = "700 48px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+    ctx.fillText("OPEN", 1232, 196);
+  }
   ctx.restore();
 }
 

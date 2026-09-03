@@ -10,7 +10,7 @@ import FloorHoverCard, { type HoverData } from "./FloorHoverCard";
 import ManageFloorModal from "./ManageFloorModal";
 import BuildingLoader from "./BuildingLoader";
 import { Moon, Sun, ManageIcon, SoundOn, SoundOff } from "./icons";
-import type { Listing } from "@/lib/three/listings";
+import { INITIAL_LISTINGS, type Listing } from "@/lib/three/listings";
 import { useUserAuth } from "@/lib/auth/use-user-auth";
 
 const TowerScene = dynamic(() => import("./TowerScene"), { ssr: false });
@@ -23,7 +23,7 @@ export default function Experience() {
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [isBuildingLoading, setIsBuildingLoading] = useState(true);
-  const [listings, setListings] = useState<Listing[] | undefined>(undefined);
+  const [listings, setListings] = useState<Listing[] | undefined>(INITIAL_LISTINGS);
   const { user, login } = useUserAuth();
 
   const toggleSound = useCallback(() => {
@@ -98,36 +98,59 @@ export default function Experience() {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  // Load live floors from backend (auto-seeded with 50 premium placeholders)
+  // Load live claimed floors from backend
   const refreshFloors = useCallback(() => {
     fetch(`/api/floors?t=${Date.now()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && Array.isArray(data.floors) && data.floors.length > 0) {
-          const mapped: Listing[] = data.floors.map((f: any) => ({
-            id: String(f.id),
-            url_or_handle: f.url,
-            title: f.companyName,
-            description: f.description || f.tagline,
-            category: f.category || "Available Floor",
-            total_paid: f.pricePaid,
-            created_at: f.createdAt || new Date().toISOString(),
-            is_claimed: f.isClaimed,
-            is_locked: Boolean(f.isLocked),
-            lock_info: f.lockInfo,
-            rank: f.rank,
-            image_url: f.logoUrl,
-            logoUrl: f.logoUrl,
-            logo_url: f.logoUrl,
-            owner_email: f.ownerEmail,
-            clicks: 0,
-            views: 0,
-          }));
-          setListings(mapped);
+        if (data.success && Array.isArray(data.floors)) {
+          const claimedMap = new Map<number, any>(data.floors.map((f: any) => [f.rank, f]));
+          const full50: Listing[] = Array.from({ length: 50 }, (_, i) => {
+            const rank = i + 1;
+            const f = claimedMap.get(rank);
+            if (f) {
+              return {
+                id: String(f.id),
+                url_or_handle: f.url,
+                title: f.companyName,
+                description: f.description || f.tagline,
+                category: f.category || "Startup",
+                total_paid: f.pricePaid,
+                created_at: f.createdAt || new Date().toISOString(),
+                is_claimed: true,
+                is_locked: Boolean(f.isLocked),
+                lock_info: f.lockInfo,
+                rank: f.rank,
+                image_url: f.logoUrl,
+                logoUrl: f.logoUrl,
+                logo_url: f.logoUrl,
+                owner_email: f.ownerEmail,
+                clicks: 0,
+                views: 0,
+              };
+            }
+            return {
+              id: `floor-slot-${rank}`,
+              url_or_handle: "https://getopfloor.com",
+              title: `Open Floor #${rank}`,
+              description: "Spot reserved for your startup — Outbid & claim top floor",
+              category: "Available Floor",
+              total_paid: 0,
+              created_at: new Date().toISOString(),
+              is_claimed: false,
+              is_locked: false,
+              rank,
+              country_code: "IN",
+              country_name: "India",
+              hiring: false,
+              views: 0,
+            };
+          });
+          setListings(full50);
         }
       })
       .catch((err) => {
-        console.warn("Could not load backend floors, falling back to local placeholders:", err);
+        console.warn("Could not load backend floors:", err);
       });
   }, []);
 

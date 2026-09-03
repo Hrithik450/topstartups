@@ -2,6 +2,7 @@ import { db } from "./config/client";
 import { floors, claims, users, type Floor, type NewFloor } from "./config/schema";
 import { eq, asc, and, gt, gte, lte, lt, sql } from "drizzle-orm";
 import { releaseFloorLock } from "./locks";
+import { persistImageToBlob } from "../storage/blob";
 import crypto from "crypto";
 
 export type { Floor, NewFloor };
@@ -159,6 +160,13 @@ export async function claimTopFloorTransactional(
   if (!finalCompanyName) finalCompanyName = "Startup";
   if (!finalTagline) finalTagline = `${finalCompanyName} — Official Skyscraper Floor`;
   if (!finalDescription) finalDescription = `Claimed top floor on GeTopFloor skyscraper.`;
+
+  // Persist logo to Vercel Blob Storage if configured
+  if (finalLogoUrl) {
+    try {
+      finalLogoUrl = await persistImageToBlob(finalLogoUrl, finalCompanyName);
+    } catch {}
+  }
 
   const targetRank = Math.min(50, Math.max(1, input.targetRank || 1));
 
@@ -419,7 +427,15 @@ export async function updateFloorByEmail(
   if (updates.category?.trim()) setPayload.category = updates.category.trim();
   if (updates.tagline?.trim()) setPayload.tagline = updates.tagline.trim();
   if (updates.description?.trim()) setPayload.description = updates.description.trim();
-  if (updates.logoUrl !== undefined) setPayload.logoUrl = updates.logoUrl?.trim() || null;
+  if (updates.logoUrl !== undefined) {
+    let logoToSet = updates.logoUrl?.trim() || null;
+    if (logoToSet) {
+      try {
+        logoToSet = await persistImageToBlob(logoToSet, updates.companyName || "logo");
+      } catch {}
+    }
+    setPayload.logoUrl = logoToSet;
+  }
 
   await db.update(floors).set(setPayload).where(eq(floors.id, floorId));
 

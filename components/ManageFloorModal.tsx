@@ -41,6 +41,7 @@ export default function ManageFloorModal({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
 
   // Active form data
@@ -59,6 +60,36 @@ export default function ManageFloorModal({
     description: "",
     logoUrl: "",
   });
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingLogo(true);
+    setStatusMsg(null);
+
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Failed to upload logo to Vercel Blob Storage");
+      }
+
+      setFormData((prev) => ({ ...prev, logoUrl: data.url }));
+      setStatusMsg({ type: "success", text: "✓ Logo uploaded to Vercel Blob Storage successfully!" });
+    } catch (err: any) {
+      setStatusMsg({ type: "error", text: err.message || "Failed to upload image." });
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   // Load latest owned floors and current top floor price every time the modal opens
   useEffect(() => {
@@ -507,6 +538,82 @@ export default function ManageFloorModal({
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
+                </label>
+              </div>
+
+              <div style={{ marginTop: "12px" }}>
+                <label className="manage-field-group">
+                  <span className="manage-label">Company Logo (Vercel Blob Storage)</span>
+                  <div style={{ display: "flex", gap: "12px", alignItems: "center", marginTop: "6px" }}>
+                    {formData.logoUrl ? (
+                      <img
+                        src={formData.logoUrl}
+                        alt="Logo preview"
+                        style={{
+                          width: "42px",
+                          height: "42px",
+                          borderRadius: "8px",
+                          objectFit: "contain",
+                          background: "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.15)",
+                          padding: "2px",
+                        }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://www.google.com/s2/favicons?domain=${formData.url || "getopfloor.com"}&sz=128`;
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "42px",
+                          height: "42px",
+                          borderRadius: "8px",
+                          background: "rgba(255,255,255,0.06)",
+                          border: "1px dashed rgba(255,255,255,0.2)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "18px",
+                        }}
+                      >
+                        🏢
+                      </div>
+                    )}
+                    <div style={{ flex: 1, display: "flex", gap: "8px" }}>
+                      <input
+                        type="text"
+                        className="manage-input"
+                        placeholder="Logo URL or upload image file..."
+                        value={formData.logoUrl}
+                        onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                      />
+                      <label
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "0 14px",
+                          background: "rgba(255, 255, 255, 0.08)",
+                          border: "1px solid rgba(255, 255, 255, 0.2)",
+                          borderRadius: "8px",
+                          color: "#fff",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          cursor: uploadingLogo ? "not-allowed" : "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {uploadingLogo ? "Uploading..." : "Upload File"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: "none" }}
+                          disabled={uploadingLogo}
+                          onChange={handleLogoUpload}
+                        />
+                      </label>
+                    </div>
+                  </div>
                 </label>
               </div>
 

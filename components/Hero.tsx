@@ -125,6 +125,29 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
     };
   }, []);
 
+  // Handle browser Back / Forward navigation (bfcache restoration)
+  useEffect(() => {
+    const handlePageShow = () => {
+      setIsSubmitting(false);
+      const params = new URLSearchParams(window.location.search);
+      const paymentId = params.get("payment_id");
+      const sessionId = params.get("session_id") || params.get("checkout_id");
+      if (!paymentId && !sessionId && params.get("claimed") !== "true") {
+        setPaymentNotice(null);
+        fetch("/api/floors/lock-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rank: 1 }),
+        }).catch(() => {});
+      }
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -140,11 +163,11 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
 
       setPaymentNotice({
         type: "info",
-        message: "Verifying payment confirmation with Dodo Payments...",
+        message: "Verifying payment confirmation...",
       });
 
       let attempts = 0;
-      const maxAttempts = 15;
+      const maxAttempts = 3;
 
       const pollVerification = async () => {
         try {
@@ -154,6 +177,7 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
           if (data.status === "succeeded") {
             setJustClaimed(data.companyName || "Your company");
             setPaymentNotice(null);
+            setIsSubmitting(false);
             window.history.replaceState({}, "", window.location.pathname);
 
             if (data.customerEmail) {
@@ -181,36 +205,34 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
             setTimeout(() => window.dispatchEvent(new CustomEvent("floors-refresh")), 1500);
             return;
           } else if (data.status === "failed") {
+            setIsSubmitting(false);
             setPaymentNotice({
               type: "error",
               message:
                 data.error ||
-                "Payment was not completed. For test mode INR payments, select UPI and use 'success@upi'.",
+                "Payment was not completed. You can try claiming again.",
             });
             window.history.replaceState({}, "", window.location.pathname);
+            window.dispatchEvent(new CustomEvent("floors-refresh"));
             return;
           }
 
-          // Still pending/processing at payment gateway -> retry with backoff
+          // Still pending/processing at payment gateway -> retry quick backoff
           attempts++;
           if (attempts < maxAttempts) {
-            setTimeout(pollVerification, 1200);
+            setTimeout(pollVerification, 1000);
           } else {
-            setPaymentNotice({
-              type: "info",
-              message: "Payment received and is being finalized. Your floor will appear on the tower in a moment.",
-            });
+            setIsSubmitting(false);
+            setPaymentNotice(null);
             window.history.replaceState({}, "", window.location.pathname);
+            window.dispatchEvent(new CustomEvent("floors-refresh"));
           }
         } catch (err) {
           console.warn("Could not verify payment session:", err);
-          attempts++;
-          if (attempts < maxAttempts) {
-            setTimeout(pollVerification, 1500);
-          } else {
-            setPaymentNotice(null);
-            window.history.replaceState({}, "", window.location.pathname);
-          }
+          setIsSubmitting(false);
+          setPaymentNotice(null);
+          window.history.replaceState({}, "", window.location.pathname);
+          window.dispatchEvent(new CustomEvent("floors-refresh"));
         }
       };
 

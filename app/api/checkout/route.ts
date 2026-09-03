@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     });
 
     let effectiveTargetRank = targetRank;
-    let amount = Math.max(50, Math.min(100000, Number(price) || 50));
+    let amount = Math.max(1, Math.min(100000, Number(price) || 1));
 
     if (existingFloor) {
       if (existingFloor.rank === 1) {

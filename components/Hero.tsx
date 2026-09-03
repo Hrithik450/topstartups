@@ -120,7 +120,7 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
   // Difference price required to reclaim top floor #1
   const differencePrice = useMemo(() => {
     if (!existingFloorOnTower || existingFloorOnTower.rank === 1) return 0;
-    return Math.max(50, topFloorPrice - Number(existingFloorOnTower.pricePaid || 0));
+    return Math.max(1, topFloorPrice - Number(existingFloorOnTower.pricePaid || 0));
   }, [existingFloorOnTower, topFloorPrice]);
 
   // If existing floor detected on lower rank, auto-switch to difference price

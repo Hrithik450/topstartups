@@ -4,6 +4,18 @@ const nextConfig = {
   output: "standalone",
   skipTrailingSlashRedirect: true,
 
+  // Webpack config for direct audio & media imports
+  webpack(config) {
+    config.module.rules.push({
+      test: /\.(mp3|wav|ogg|m4a|aac|flac)$/i,
+      type: "asset/resource",
+      generator: {
+        filename: "static/media/[name].[hash][ext]",
+      },
+    });
+    return config;
+  },
+
   // SECURITY: Comprehensive security headers
   async headers() {
     return [
@@ -21,11 +33,11 @@ const nextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains",
           },
-          // Disable browser features we don't need
+          // Browser feature permissions
           {
             key: "Permissions-Policy",
             value:
-              "camera=(), microphone=(), geolocation=(), payment=(self)",
+              "camera=(), microphone=(), geolocation=(), payment=(self), autoplay=(self)",
           },
           // Content Security Policy — allow Three.js, inline styles, images from https
           {

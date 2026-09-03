@@ -501,24 +501,27 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
           <div
             ref={categoryWrapperRef}
             className="category-wrapper"
+            style={{ position: "relative", zIndex: open ? 120 : 10 }}
           >
             <button
               type="button"
-              className="category-select-btn"
-              onClick={() => setOpen((prev) => !prev)}
+              className={`field select category-field ${open ? "open" : ""}`}
+              onClick={() => setOpen((o) => !o)}
               aria-haspopup="listbox"
               aria-expanded={open}
             >
-              <span className="selected-category-icon">
-                {selectedCategory?.icon === ">_" ? (
-                  <span className="category-code-tag">&gt;_</span>
-                ) : (
-                  selectedCategory?.icon || "🌐"
-                )}
-              </span>
-              <span className="category-label-text">
-                {selectedCategory?.name || "Startup"}
-              </span>
+              {selectedCategory?.icon ? (
+                <span className="selected-category-icon">
+                  {selectedCategory.icon === ">_" ? (
+                    <span className="category-code-tag">&gt;_</span>
+                  ) : (
+                    selectedCategory.icon
+                  )}
+                </span>
+              ) : (
+                <Building />
+              )}
+              <span className="category-label">{selectedCategory?.name ?? "Category"}</span>
               <span className={`category-chevron ${open ? "open" : ""}`}>
                 <ChevronDown />
               </span>
@@ -526,33 +529,41 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
 
             {/* Dropdown Popover */}
             {open && (
-              <div
-                className="category-popover animate-category-popover"
-                role="listbox"
-              >
-                {/* Search Bar */}
-                <div className="category-search-box">
-                  <span className="category-search-icon">
-                    <Search />
-                  </span>
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    className="category-search-input"
-                    placeholder="Search industries (e.g. AI, SaaS, DevTools)..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      className="category-search-clear"
-                      onClick={() => setSearchQuery("")}
-                      aria-label="Clear search"
-                    >
-                      ✕
-                    </button>
-                  )}
+              <div className="category-popover" role="listbox" aria-label="Industry Categories">
+                {/* Sticky Search Header */}
+                <div className="category-search-header">
+                  <div className="category-search-box">
+                    <span className="category-search-icon">
+                      <Search />
+                    </span>
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      className="category-search-input"
+                      placeholder="Search industries..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && filteredMain.length > 0) {
+                          e.preventDefault();
+                          handleSelect(filteredMain[0]);
+                        }
+                      }}
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        className="category-search-clear"
+                        onClick={() => {
+                          setSearchQuery("");
+                          searchInputRef.current?.focus();
+                        }}
+                        aria-label="Clear search"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Scrollable Categories List */}

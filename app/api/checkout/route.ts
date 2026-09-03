@@ -58,12 +58,12 @@ export async function POST(req: NextRequest) {
 
     const amount = Math.max(50, Math.min(100000, Number(price) || 50));
 
-    // CONCURRENCY LOCK: Reserve floor rank for 5 minutes during checkout
+    // CONCURRENCY LOCK: Reserve floor rank for 6 minutes (360s) during checkout
     const lockResult = await acquireFloorLock({
       targetRank,
       email: finalEmail,
       companyName: name,
-      durationSeconds: 300,
+      durationSeconds: 360,
     });
 
     if (!lockResult.success) {
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
         email: finalEmail,
         paymentId: checkout.paymentId,
         companyName: name,
-        durationSeconds: 300,
+        durationSeconds: 360,
       });
     }
 

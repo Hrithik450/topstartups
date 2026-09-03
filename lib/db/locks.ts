@@ -130,14 +130,14 @@ export async function getAllFloorLocks(): Promise<Record<number, LockStatus>> {
 
 /**
  * Acquire claim lock for any specific floor rank.
- * Default duration: 5 minutes (300 seconds).
+ * Default duration: 6 minutes (360 seconds).
  */
 export async function acquireFloorLock({
   targetRank = 1,
   email,
   paymentId,
   companyName,
-  durationSeconds = 300,
+  durationSeconds = 360,
 }: {
   targetRank?: number;
   email?: string | null;

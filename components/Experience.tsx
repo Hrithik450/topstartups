@@ -50,7 +50,10 @@ export default function Experience({
   const [isSoundOn, setIsSoundOn] = useState(false);
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
-  const [isBuildingLoading, setIsBuildingLoading] = useState(false);
+  const [isSceneReady, setIsSceneReady] = useState(false);
+  const [isFloorsReady, setIsFloorsReady] = useState(() => Boolean(initialFloors && initialFloors.length > 0));
+  const isBuildingLoading = !(isSceneReady && isFloorsReady);
+
   const [listings, setListings] = useState<Listing[] | undefined>(() =>
     initialFloors.length > 0 ? mapFloorsToListings(initialFloors) : INITIAL_LISTINGS
   );
@@ -120,7 +123,10 @@ export default function Experience({
 
   // Safety fallback only in case WebGL context fails to initialize
   useEffect(() => {
-    const timer = setTimeout(() => setIsBuildingLoading(false), 6000);
+    const timer = setTimeout(() => {
+      setIsSceneReady(true);
+      setIsFloorsReady(true);
+    }, 6000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -155,9 +161,11 @@ export default function Experience({
           }));
           setListings(mapped);
         }
+        setIsFloorsReady(true);
       })
       .catch((err) => {
         console.warn("Could not load backend floors:", err);
+        setIsFloorsReady(true);
       });
   }, []);
 
@@ -287,7 +295,7 @@ export default function Experience({
         onFloorHover={handleFloorHover}
         theme={theme}
         listings={listings}
-        onLoaded={() => setIsBuildingLoading(false)}
+        onLoaded={() => setIsSceneReady(true)}
       />
       <div className="tower-top-fade" aria-hidden="true" />
       <div className="tower-cloud-fade" aria-hidden="true" />

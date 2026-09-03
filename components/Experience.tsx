@@ -93,7 +93,7 @@ export default function Experience() {
 
   // Load live floors from backend (auto-seeded with 50 premium placeholders)
   const refreshFloors = useCallback(() => {
-    fetch("/api/floors")
+    fetch(`/api/floors?t=${Date.now()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.floors) && data.floors.length > 0) {

@@ -137,14 +137,22 @@ export function validateWebsiteSyntax(inputUrl: string): ValidationResult {
     return { valid: false, error: "This website is not valid, please enter a valid website." };
   }
 
-  // Block obvious test prefixes (e.g. test-site.com, demo-page.com)
+  // Block obvious test prefixes and combinations (e.g. testsetup.com, demo-page.com, testapp.io)
+  const domainPrefix = hostname.split(".")[0];
   if (
-    hostname.startsWith("test-") ||
-    hostname.startsWith("demo-") ||
-    hostname.startsWith("dummy-") ||
-    hostname.startsWith("sample-") ||
-    hostname.endsWith("-test.com") ||
-    hostname.endsWith("-demo.com")
+    domainPrefix === "test" ||
+    domainPrefix === "demo" ||
+    domainPrefix === "dummy" ||
+    domainPrefix === "sample" ||
+    domainPrefix.startsWith("test-") ||
+    domainPrefix.startsWith("demo-") ||
+    domainPrefix.startsWith("dummy-") ||
+    domainPrefix.startsWith("sample-") ||
+    domainPrefix.startsWith("testsetup") ||
+    domainPrefix.startsWith("testapp") ||
+    domainPrefix.startsWith("testsite") ||
+    domainPrefix.endsWith("-test") ||
+    domainPrefix.endsWith("-demo")
   ) {
     return { valid: false, error: "This website is not valid, please enter a valid website." };
   }
@@ -159,8 +167,29 @@ export function validateWebsiteSyntax(inputUrl: string): ValidationResult {
   };
 }
 
+/** Known domain squatter and parking platforms */
+const PARKED_DOMAIN_HOSTS = [
+  "hugedomains.com",
+  "sedo.com",
+  "sedoparking.com",
+  "godaddy.com",
+  "dan.com",
+  "afternic.com",
+  "domainmarket.com",
+  "parkingcrew.net",
+  "bodis.com",
+  "domainagents.com",
+  "undeveloped.com",
+  "squadhelp.com",
+  "atom.com",
+  "brandpa.com",
+  "brandbucket.com",
+  "domainnamesales.com",
+];
+
 /**
  * Server-side verification: Validates syntax and performs a live reachability & SSL health check.
+ * Also verifies that the domain is a real active site and not a parked/for-sale placeholder.
  */
 export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationResult> {
   const syntaxCheck = validateWebsiteSyntax(inputUrl);
@@ -169,6 +198,7 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
   }
 
   const targetUrl = syntaxCheck.cleanUrl;
+  const requestedDomain = syntaxCheck.domain || "";
 
   try {
     const controller = new AbortController();
@@ -176,9 +206,8 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
 
     let response: Response;
     try {
-      // Try fast HEAD request first
       response = await fetch(targetUrl, {
-        method: "HEAD",
+        method: "GET",
         signal: controller.signal,
         redirect: "follow",
         headers: {
@@ -186,26 +215,65 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
           "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         },
       });
-
-      // If server doesn't allow HEAD (405 Method Not Allowed), fall back to GET
-      if (response.status === 405) {
-        response = await fetch(targetUrl, {
-          method: "GET",
-          signal: controller.signal,
-          redirect: "follow",
-          headers: {
-            "User-Agent": "GeTopFloor-Bot/1.0 (+https://getopfloor.com; domain verification)",
-          },
-        });
-      }
     } finally {
       clearTimeout(timeoutId);
     }
 
+    if (!response.ok && response.status !== 401 && response.status !== 403) {
+      return {
+        valid: false,
+        error: "This website is not valid, please enter a valid website.",
+      };
+    }
+
+    // Check if the domain redirected to a known domain-parking/squatting broker
+    const finalUrl = response.url || targetUrl;
+    try {
+      const finalParsed = new URL(finalUrl);
+      const finalHost = finalParsed.hostname.toLowerCase();
+
+      // Check against known parking platforms
+      if (PARKED_DOMAIN_HOSTS.some((p) => finalHost.includes(p))) {
+        return {
+          valid: false,
+          error: "This website is not valid, please enter a valid website.",
+        };
+      }
+
+      // If redirected to completely different root domain
+      const requestedRoot = requestedDomain.split(".").slice(-2).join(".");
+      const finalRoot = finalHost.split(".").slice(-2).join(".");
+      if (requestedRoot && finalRoot && requestedRoot !== finalRoot && !finalHost.includes(requestedRoot)) {
+        return {
+          valid: false,
+          error: "This website is not valid, please enter a valid website.",
+        };
+      }
+    } catch {}
+
+    // Inspect initial HTML content for parking/for-sale signatures
+    try {
+      const textSample = (await response.text()).slice(0, 4000).toLowerCase();
+      if (
+        textSample.includes("buy this domain") ||
+        textSample.includes("domain is for sale") ||
+        textSample.includes("domain is parked") ||
+        textSample.includes("hugedomains.com") ||
+        textSample.includes("inquire about this domain") ||
+        textSample.includes("domain name is available for sale") ||
+        textSample.includes("parked free, courtesy of")
+      ) {
+        return {
+          valid: false,
+          error: "This website is not valid, please enter a valid website.",
+        };
+      }
+    } catch {}
+
     return {
       valid: true,
       cleanUrl: targetUrl,
-      domain: syntaxCheck.domain,
+      domain: requestedDomain,
     };
   } catch (err: any) {
     console.warn(`Live check unreachable for ${targetUrl}:`, err?.message || err);

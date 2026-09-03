@@ -1810,15 +1810,17 @@ function createMoonTexture(): THREE.CanvasTexture {
 
     const ctx = canvas.getContext("2d")!;
     const repaintFloor = () => {
-      paintFloorTexture(ctx, CANVAS_SCALE, listing, rank, fIdx, logoImg, currentTheme);
+      const currentListing = listings[fIdx] || listing;
+      const logo = getOrLoadLogo(currentListing.url_or_handle, () => {
+        paintFloorTexture(ctx, CANVAS_SCALE, currentListing, rank, fIdx, logo, currentTheme);
+        texture.needsUpdate = true;
+      });
+      paintFloorTexture(ctx, CANVAS_SCALE, currentListing, rank, fIdx, logo, currentTheme);
       texture.needsUpdate = true;
     };
     floorRepainters.push(repaintFloor);
 
-    const logoImg = getOrLoadLogo(listing.url_or_handle, () => {
-      repaintFloor();
-    });
-    paintFloorTexture(ctx, CANVAS_SCALE, listing, rank, fIdx, logoImg, currentTheme);
+    repaintFloor();
 
     const sideMat = new THREE.MeshPhysicalMaterial({
       map: texture,
@@ -2758,6 +2760,11 @@ function createMoonTexture(): THREE.CanvasTexture {
     updateListings(newListings: Listing[]) {
       if (Array.isArray(newListings) && newListings.length > 0) {
         listings = [...newListings].reverse();
+        floorRepainters.forEach((fn) => {
+          try {
+            fn();
+          } catch (e) {}
+        });
       }
     },
     dispose() {

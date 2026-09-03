@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const paymentId = searchParams.get("payment_id") || `mock_${Date.now()}`;
+  const paymentId = searchParams.get("payment_id") || "mock_single_session";
   const url = searchParams.get("url") || "https://example.com";
   const category = searchParams.get("category") || "Developer Tools";
   const companyName = searchParams.get("company_name") || "Mock Startup";

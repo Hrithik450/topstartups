@@ -181,9 +181,8 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     console.error("Error initiating checkout:", err);
-    // SECURITY: Never expose internal error messages to clients
     return NextResponse.json(
-      { error: "An internal error occurred. Please try again." },
+      { error: err?.message || "Could not start checkout. Please try again." },
       { status: 500 }
     );
   }

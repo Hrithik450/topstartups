@@ -91,8 +91,12 @@ export async function createDodoCheckout(
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Dodo Payments API error:", response.status, errorText);
-      // SECURITY: Don't expose Dodo API error details to clients
-      throw new Error("Payment processing failed. Please try again.");
+      let parsedMsg = "";
+      try {
+        const parsed = JSON.parse(errorText);
+        parsedMsg = parsed.message || parsed.error || "";
+      } catch {}
+      throw new Error(parsedMsg ? `Payment gateway error: ${parsedMsg}` : "Payment processing failed. Please try again.");
     }
 
     const data = await response.json();

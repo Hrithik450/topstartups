@@ -11,24 +11,52 @@ export interface WebsiteMetadata {
   category: string;
 }
 
+function decodeHtmlEntities(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#39;/gi, "'")
+    .replace(/&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#(\d+);/g, (_, dec) => {
+      try {
+        return String.fromCharCode(Number(dec));
+      } catch {
+        return "";
+      }
+    })
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+      try {
+        return String.fromCharCode(parseInt(hex, 16));
+      } catch {
+        return "";
+      }
+    });
+}
+
 /**
  * Clean up title strings by stripping common marketing fluff suffixes.
  * e.g. "Linear – A better way to build software" -> "Linear"
  */
 function cleanCompanyName(title: string, hostname: string): string {
-  if (!title) {
+  const decoded = decodeHtmlEntities(title || "");
+  if (!decoded) {
     const cleanHost = hostname.replace(/^www\./, "").split(".")[0];
     return cleanHost.charAt(0).toUpperCase() + cleanHost.slice(1);
   }
 
   // Split on common delimiters: " | ", " – ", " - ", " : ", " • "
-  const parts = title.split(/\s+[-|–—:•]\s+/);
+  const parts = decoded.split(/\s+[-|–—:•]\s+/);
   if (parts.length > 1 && parts[0].trim().length > 1 && parts[0].trim().length < 40) {
     return parts[0].trim();
   }
 
   // If title is short enough, return it
-  if (title.length <= 40) return title.trim();
+  if (decoded.length <= 40) return decoded.trim();
 
   // Otherwise fallback to hostname capitalized
   const cleanHost = hostname.replace(/^www\./, "").split(".")[0];
@@ -40,7 +68,8 @@ function cleanCompanyName(title: string, hostname: string): string {
  */
 function cleanDescription(desc: string, maxLength = 240): string {
   if (!desc) return "Next-generation startup on GeTopFloor skyscraper.";
-  const clean = desc.replace(/\s+/g, " ").trim();
+  const decoded = decodeHtmlEntities(desc);
+  const clean = decoded.replace(/\s+/g, " ").trim();
   if (clean.length <= maxLength) return clean;
   return clean.slice(0, maxLength - 3) + "...";
 }

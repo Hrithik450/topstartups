@@ -1,6 +1,7 @@
 import { db } from "./config/client";
 import { floors, claims, users, type Floor, type NewFloor } from "./config/schema";
-import { eq, asc, and, gt, sql } from "drizzle-orm";
+import { eq, asc, and, gt, gte, lte, sql } from "drizzle-orm";
+import { releaseFloorLock } from "./locks";
 import crypto from "crypto";
 
 export type { Floor, NewFloor };
@@ -12,6 +13,7 @@ export interface ClaimFloorInput {
   url: string;
   category?: string;
   price: number;
+  targetRank?: number;
   tagline?: string;
   description?: string;
   logoUrl?: string;
@@ -158,6 +160,8 @@ export async function claimTopFloorTransactional(
   if (!finalTagline) finalTagline = `${finalCompanyName} — Official Skyscraper Floor`;
   if (!finalDescription) finalDescription = `Claimed top floor on GeTopFloor skyscraper.`;
 
+  const targetRank = Math.min(50, Math.max(1, input.targetRank || 1));
+
   const result = await db.transaction(async (tx) => {
     // 1. Idempotency Check: if this payment was already processed, don't double shift
     const existingClaim = await tx
@@ -169,10 +173,10 @@ export async function claimTopFloorTransactional(
       .limit(1);
 
     if (existingClaim.length > 0 && existingClaim[0].status === "succeeded") {
-      await releaseTopFloorLock(1);
+      await releaseFloorLock(targetRank, input.paymentId, input.checkoutSessionId);
       return {
         success: true,
-        rank: 1,
+        rank: targetRank,
         companyName: existingClaim[0].companyName || finalCompanyName,
         url: existingClaim[0].url || input.url,
         logoUrl: finalLogoUrl,
@@ -183,9 +187,16 @@ export async function claimTopFloorTransactional(
       };
     }
 
-    // 2. Atomic sequential shift using Drizzle update
-    await tx.update(floors).set({ rank: sql`${floors.rank} * -1` });
-    await tx.update(floors).set({ rank: sql`(${floors.rank} * -1) + 1` });
+    // 2. Atomic sequential shift only for floors at or below targetRank
+    await tx
+      .update(floors)
+      .set({ rank: sql`${floors.rank} * -1` })
+      .where(gte(floors.rank, targetRank));
+
+    await tx
+      .update(floors)
+      .set({ rank: sql`(${floors.rank} * -1) + 1` })
+      .where(lte(floors.rank, -1 * targetRank));
 
     // 3. Upsert user in 'users' table using pure Drizzle
     let userId: string | null = null;
@@ -212,11 +223,11 @@ export async function claimTopFloorTransactional(
       userId = upsertedUser?.id ?? null;
     }
 
-    // 4. Insert newly claimed startup at Rank 1 (Penthouse Floor) using pure Drizzle
+    // 4. Insert newly claimed startup at targetRank
     const finalPrice = Math.max(50, input.price);
 
     await tx.insert(floors).values({
-      rank: 1,
+      rank: targetRank,
       isClaimed: true,
       companyName: finalCompanyName,
       url: input.url,
@@ -232,11 +243,20 @@ export async function claimTopFloorTransactional(
       updatedAt: new Date(),
     });
 
-    // 5. Prune floors beyond rank 50 to maintain exact 50 floors using pure Drizzle
+    // 5. Prune floors beyond rank 50 to maintain exact 50 floors
     await tx.delete(floors).where(and(gt(floors.rank, 50), eq(floors.isClaimed, false)));
     await tx.delete(floors).where(gt(floors.rank, 50));
 
-    // 6. Update claim ledger to succeeded using pure Drizzle
+    // 6. Update unclaimed placeholder titles and prices so they always match their new rank
+    await tx
+      .update(floors)
+      .set({
+        companyName: sql`CASE WHEN ${floors.rank} = 1 THEN 'Penthouse Floor #1 — Open for Claim' WHEN ${floors.rank} = 2 THEN 'Skyline Suite #2 — Open for Claim' ELSE 'Tower Floor #' || ${floors.rank} || ' — Spot Reserved' END`,
+        pricePaid: sql`50 + (50 - ${floors.rank})`,
+      })
+      .where(eq(floors.isClaimed, false));
+
+    // 7. Update claim ledger to succeeded using pure Drizzle
     await tx
       .insert(claims)
       .values({
@@ -246,6 +266,7 @@ export async function claimTopFloorTransactional(
         url: input.url,
         category: input.category || "Startup",
         amount: finalPrice,
+        targetRank,
         currency: "INR",
         customerEmail: cleanEmail || undefined,
         customerPhone: cleanPhone || undefined,
@@ -258,6 +279,7 @@ export async function claimTopFloorTransactional(
         set: {
           status: "succeeded",
           manageToken: token,
+          targetRank,
           customerPhone: cleanPhone || undefined,
           userId: userId || undefined,
           completedAt: new Date(),
@@ -270,6 +292,7 @@ export async function claimTopFloorTransactional(
         .set({
           status: "succeeded",
           manageToken: token,
+          targetRank,
           customerPhone: cleanPhone || undefined,
           userId: userId || undefined,
           completedAt: new Date(),
@@ -279,19 +302,19 @@ export async function claimTopFloorTransactional(
 
     return {
       success: true,
-      rank: 1,
+      rank: targetRank,
       companyName: finalCompanyName,
       url: input.url,
       logoUrl: finalLogoUrl,
       tagline: finalTagline,
       description: finalDescription,
       manageToken: token,
-      message: `Successfully claimed Top Floor (Rank 1) for ${finalCompanyName}!`,
+      message: `Successfully claimed Floor #${targetRank} for ${finalCompanyName}!`,
     };
   });
 
   // Release lock after transaction completes
-  await releaseTopFloorLock(1);
+  await releaseFloorLock(targetRank, input.paymentId, input.checkoutSessionId);
 
   return result;
 }

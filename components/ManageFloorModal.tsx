@@ -379,10 +379,10 @@ export default function ManageFloorModal({
           </div>
         ) : (
           /* ─── 4. EDIT FORM FOR CLAIMED PRODUCTS ─── */
-          <div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {/* Floor Selector Dropdown */}
             {ownedFloors.length > 1 && (
-              <div style={{ margin: "16px 0" }}>
+              <div>
                 <label className="manage-label">Select Floor to Manage</label>
                 <select
                   className="manage-input"
@@ -406,7 +406,7 @@ export default function ManageFloorModal({
                 const diff = Math.max(50, topFloorPrice - Number(current.pricePaid || 0));
                 const newTotal = Number(current.pricePaid || 0) + diff;
                 return (
-                  <div className="manage-outbid-banner">
+                  <div className="manage-outbid-banner" style={{ marginTop: 0 }}>
                     <div>
                       <div style={{ fontWeight: 700, color: "#ff6b1a", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
                         <span>⚡ Reclaim Penthouse Floor #1</span>
@@ -432,18 +432,22 @@ export default function ManageFloorModal({
               } else if (current.rank === 1) {
                 return (
                   <div
+                    className="manage-penthouse-banner"
                     style={{
-                      marginTop: "16px",
-                      padding: "10px 14px",
-                      background: "rgba(16, 185, 129, 0.12)",
-                      border: "1px solid rgba(16, 185, 129, 0.35)",
+                      marginTop: 0,
+                      padding: "9px 13px",
+                      background: "rgba(16, 185, 129, 0.1)",
+                      border: "1px solid rgba(16, 185, 129, 0.3)",
                       borderRadius: "10px",
                       fontSize: "13px",
                       color: "#10b981",
                       fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
                     }}
                   >
-                    👑 Currently occupying the #1 Top Penthouse Floor (₹{current.pricePaid} paid)
+                    <span>👑 Currently occupying the #1 Top Penthouse Floor (₹{current.pricePaid} paid)</span>
                   </div>
                 );
               }
@@ -451,7 +455,7 @@ export default function ManageFloorModal({
             })()}
 
             {/* Edit Form */}
-            <form onSubmit={handleSave} style={{ marginTop: "16px" }}>
+            <form onSubmit={handleSave} style={{ marginTop: "4px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <label className="manage-field-group">
                   <span className="manage-label">Startup / Company Name</span>

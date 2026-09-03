@@ -1985,11 +1985,11 @@ button.chip:focus-visible {
   border-radius: 20px;
   width: 100%;
   max-width: 520px;
-  padding: 28px;
+  padding: 24px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px #1e293b;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
   color: #f8fafc;
 }
 
@@ -1997,6 +1997,7 @@ button.chip:focus-visible {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  margin-bottom: 2px;
 }
 
 .manage-modal-title {
@@ -2009,7 +2010,8 @@ button.chip:focus-visible {
 .manage-modal-subtitle {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.6);
-  margin-top: 4px;
+  margin-top: 3px;
+  margin-bottom: 0;
 }
 
 .manage-modal-close {

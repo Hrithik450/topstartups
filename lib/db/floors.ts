@@ -410,27 +410,24 @@ export async function deleteFloorByEmail(
   }
 
   const current = existing[0];
+  const oldRank = current.rank;
+
+  // Delete the floor record
+  await db.delete(floors).where(eq(floors.id, floorId));
+
+  // Shift all floors below it up by 1 rank
+  await db
+    .update(floors)
+    .set({ rank: sql`${floors.rank} * -1` })
+    .where(gt(floors.rank, oldRank));
 
   await db
     .update(floors)
-    .set({
-      isClaimed: false,
-      companyName: `Tower Floor #${current.rank} — Spot Reserved`,
-      url: "https://getopfloor.com",
-      category: "Available Floor",
-      tagline: "Spot reserved for your startup — Outbid & claim top floor",
-      description: "Claim this floor to put your company on the world stage.",
-      logoUrl: null,
-      manageToken: null,
-      ownerEmail: null,
-      userId: null,
-      claimedAt: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(floors.id, floorId));
+    .set({ rank: sql`(${floors.rank} * -1) - 1` })
+    .where(lt(floors.rank, -1 * oldRank));
 
   return {
     success: true,
-    message: `Floor #${current.rank} (${current.companyName}) has been vacated and reset to an available slot.`,
+    message: `Floor #${oldRank} (${current.companyName}) has been removed.`,
   };
 }

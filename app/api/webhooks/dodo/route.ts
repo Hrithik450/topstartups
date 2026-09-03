@@ -53,7 +53,9 @@ export async function POST(req: NextRequest) {
       const customerEmail = data.customer?.email || metadata.customer_email;
       const customerPhone = data.customer?.phone_number || data.customer_phone || data.billing?.phone;
 
-      console.log(`Processing verified webhook payment for ${companyName} (${paymentId})...`);
+      const targetRank = Number(metadata.target_rank || metadata.targetRank) || 1;
+
+      console.log(`Processing verified webhook payment for ${companyName} (${paymentId}) at Rank #${targetRank}...`);
 
       const result = await claimTopFloorTransactional({
         paymentId,
@@ -62,11 +64,12 @@ export async function POST(req: NextRequest) {
         url,
         category,
         price,
+        targetRank,
         customerEmail,
         customerPhone,
       });
 
-      await releaseFloorLock(1);
+      await releaseFloorLock(targetRank, paymentId, checkoutSessionId);
 
       console.log("Webhook transaction result:", result);
       return NextResponse.json({ success: true, rank: result.rank });

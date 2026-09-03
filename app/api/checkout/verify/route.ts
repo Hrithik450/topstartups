@@ -167,7 +167,7 @@ export async function GET(req: NextRequest) {
         });
       }
 
-      // Claim top floor atomically
+      // Claim floor atomically at targetRank
       const result = await claimTopFloorTransactional({
         paymentId: paymentId || targetId,
         checkoutSessionId: checkoutSessionId || undefined,
@@ -175,6 +175,7 @@ export async function GET(req: NextRequest) {
         url,
         category,
         price,
+        targetRank: targetRankToRelease,
         customerEmail: finalEmail || undefined,
         customerPhone: finalPhone || undefined,
       });

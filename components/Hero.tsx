@@ -6,9 +6,24 @@ import { MAIN_CATEGORIES, SPECIAL_OPTIONS, IndustryCategory } from "@/lib/catego
 import { validateWebsiteSyntax } from "@/lib/validation/domain";
 import { useUserAuth } from "@/lib/auth/use-user-auth";
 
-export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {}) {
+export default function Hero({
+  onOpenManage,
+  initialFloors = [],
+  initialLocks = {},
+}: {
+  onOpenManage?: () => void;
+  initialFloors?: any[];
+  initialLocks?: Record<number, any>;
+} = {}) {
   const { user, ownedFloors, login, logout, loading: authLoading } = useUserAuth();
-  const [price, setPrice] = useState(50);
+
+  const maxInitialPrice = initialFloors.reduce(
+    (max: number, f: any) => Math.max(max, Number(f.pricePaid || 0)),
+    0
+  );
+  const initialTopPrice = initialFloors.length > 0 ? maxInitialPrice + 1 : 99;
+
+  const [price, setPrice] = useState(initialTopPrice);
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<IndustryCategory | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,10 +44,11 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
 
   // Close dropdown on click/touch outside or Esc key
   useEffect(() => {
-    if (!open) return;
-
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
-      if (categoryWrapperRef.current && !categoryWrapperRef.current.contains(e.target as Node)) {
+      if (
+        categoryWrapperRef.current &&
+        !categoryWrapperRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     };
@@ -84,16 +100,16 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
   } | null>(null);
 
   const [minPrice, setMinPrice] = useState(50);
-  const [topFloorPrice, setTopFloorPrice] = useState(99);
-  const [topFloorClaimed, setTopFloorClaimed] = useState(false);
+  const [topFloorPrice, setTopFloorPrice] = useState(initialTopPrice);
+  const [topFloorClaimed, setTopFloorClaimed] = useState(initialFloors.length > 0);
   const [allLocks, setAllLocks] = useState<Record<number, {
     isLocked: boolean;
     lockedByEmail?: string | null;
     companyName?: string | null;
     secondsRemaining?: number;
-  }>>({});
+  }>>(initialLocks as any);
 
-  const [activeFloors, setActiveFloors] = useState<any[]>([]);
+  const [activeFloors, setActiveFloors] = useState<any[]>(initialFloors);
 
   // Check if current URL input already exists on the skyscraper
   const existingFloorOnTower = useMemo(() => {

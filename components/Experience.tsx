@@ -15,15 +15,45 @@ import { useUserAuth } from "@/lib/auth/use-user-auth";
 
 const TowerScene = dynamic(() => import("./TowerScene"), { ssr: false });
 
-export default function Experience() {
+function mapFloorsToListings(floorsData: any[] = []): Listing[] {
+  return floorsData.map((f: any) => ({
+    id: String(f.id),
+    url_or_handle: f.url,
+    title: f.companyName,
+    description: f.description || f.tagline,
+    category: f.category || "Startup",
+    total_paid: Number(f.pricePaid || 0),
+    created_at: f.createdAt || new Date().toISOString(),
+    is_claimed: true,
+    is_locked: Boolean(f.isLocked),
+    lock_info: f.lockInfo,
+    rank: f.rank,
+    image_url: f.logoUrl,
+    logoUrl: f.logoUrl,
+    logo_url: f.logoUrl,
+    owner_email: f.ownerEmail,
+    clicks: 0,
+    views: 0,
+  }));
+}
+
+export default function Experience({
+  initialFloors = [],
+  initialLocks = {},
+}: {
+  initialFloors?: any[];
+  initialLocks?: Record<number, any>;
+}) {
   const handleRef = useRef<TowerHandle | null>(null);
   const [hoveredData, setHoveredData] = useState<HoverData | null>(null);
   const [theme, setTheme] = useState<"dark" | "sunset">("sunset");
   const [isSoundOn, setIsSoundOn] = useState(false);
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
-  const [isBuildingLoading, setIsBuildingLoading] = useState(true);
-  const [listings, setListings] = useState<Listing[] | undefined>(INITIAL_LISTINGS);
+  const [isBuildingLoading, setIsBuildingLoading] = useState(false);
+  const [listings, setListings] = useState<Listing[] | undefined>(() =>
+    initialFloors.length > 0 ? mapFloorsToListings(initialFloors) : INITIAL_LISTINGS
+  );
   const { user, login } = useUserAuth();
 
   const toggleSound = useCallback(() => {
@@ -330,7 +360,11 @@ export default function Experience() {
           </div>
         </header>
 
-        <Hero onOpenManage={() => setIsManageModalOpen(true)} />
+        <Hero
+          onOpenManage={() => setIsManageModalOpen(true)}
+          initialFloors={initialFloors}
+          initialLocks={initialLocks}
+        />
         <StatChips onOpenManage={() => setIsManageModalOpen(true)} />
         <Controls
           handleRef={handleRef}

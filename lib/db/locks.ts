@@ -1,6 +1,6 @@
 import { db } from "./config/client";
-import { floorLocks } from "./config/schema";
-import { eq, sql } from "drizzle-orm";
+import { floorLocks, floors } from "./config/schema";
+import { eq, or, sql } from "drizzle-orm";
 
 export interface LockStatus {
   isLocked: boolean;
@@ -83,18 +83,39 @@ export const getTopFloorLock = (rank = 1) => getFloorLock(rank);
 
 /**
  * Get all active claim locks across all floors (Ranks 1..50).
- * Automatically purges expired locks.
+ * Automatically purges expired or fulfilled locks.
  */
 export async function getAllFloorLocks(): Promise<Record<number, LockStatus>> {
   try {
     await ensureFloorLocksTable();
     const now = new Date();
-    const rows = await db.select().from(floorLocks);
+    const [rows, claimedFloors] = await Promise.all([
+      db.select().from(floorLocks),
+      db
+        .select({
+          rank: floors.rank,
+          ownerEmail: floors.ownerEmail,
+          companyName: floors.companyName,
+          claimedAt: floors.claimedAt,
+        })
+        .from(floors)
+        .where(eq(floors.isClaimed, true)),
+    ]);
+
+    const claimedMap = new Map(claimedFloors.map((f) => [f.rank, f]));
     const lockMap: Record<number, LockStatus> = {};
     const expiredRanks: number[] = [];
 
     for (const lock of rows) {
-      if (new Date(lock.expiresAt) > now) {
+      const claimedFloor = claimedMap.get(lock.targetRank);
+      const isAlreadyFulfilled =
+        claimedFloor &&
+        ((claimedFloor.ownerEmail && lock.lockedByEmail && claimedFloor.ownerEmail.toLowerCase().trim() === lock.lockedByEmail.toLowerCase().trim()) ||
+          (claimedFloor.claimedAt && new Date(claimedFloor.claimedAt) >= new Date(lock.lockedAt)));
+
+      if (isAlreadyFulfilled || new Date(lock.expiresAt) <= now) {
+        expiredRanks.push(lock.targetRank);
+      } else {
         const secondsRemaining = Math.max(
           0,
           Math.round((new Date(lock.expiresAt).getTime() - now.getTime()) / 1000)
@@ -109,12 +130,10 @@ export async function getAllFloorLocks(): Promise<Record<number, LockStatus>> {
           expiresAt: lock.expiresAt.toISOString(),
           secondsRemaining,
         };
-      } else {
-        expiredRanks.push(lock.targetRank);
       }
     }
 
-    // Purge expired locks in background
+    // Purge expired / fulfilled locks in background
     if (expiredRanks.length > 0) {
       db.delete(floorLocks)
         .where(sql`${floorLocks.targetRank} IN (${sql.join(expiredRanks, sql`, `)})`)
@@ -217,28 +236,21 @@ export async function releaseFloorLock(
     await ensureFloorLocksTable();
     const cleanEmail = email?.toLowerCase().trim() || null;
 
-    if (cleanEmail) {
-      await db
-        .delete(floorLocks)
-        .where(
-          sql`${floorLocks.targetRank} = ${targetRank} 
-            OR (${paymentId ? sql`${floorLocks.lockedByPaymentId} = ${paymentId}` : sql`false`}) 
-            OR (${checkoutSessionId ? sql`${floorLocks.lockedByPaymentId} = ${checkoutSessionId}` : sql`false`})
-            OR LOWER(${floorLocks.lockedByEmail}) = ${cleanEmail}`
-        );
-    } else if (paymentId || checkoutSessionId) {
-      await db
-        .delete(floorLocks)
-        .where(
-          sql`${floorLocks.targetRank} = ${targetRank} 
-            OR (${paymentId ? sql`${floorLocks.lockedByPaymentId} = ${paymentId}` : sql`false`}) 
-            OR (${checkoutSessionId ? sql`${floorLocks.lockedByPaymentId} = ${checkoutSessionId}` : sql`false`}`
-        );
-    } else {
-      await db.delete(floorLocks).where(eq(floorLocks.targetRank, targetRank));
+    const conditions = [eq(floorLocks.targetRank, targetRank)];
+
+    if (paymentId) {
+      conditions.push(eq(floorLocks.lockedByPaymentId, paymentId));
     }
+    if (checkoutSessionId) {
+      conditions.push(eq(floorLocks.lockedByPaymentId, checkoutSessionId));
+    }
+    if (cleanEmail) {
+      conditions.push(sql`LOWER(${floorLocks.lockedByEmail}) = ${cleanEmail}`);
+    }
+
+    await db.delete(floorLocks).where(or(...conditions));
   } catch (err) {
-    console.warn(`Error releasing floor lock on rank #${targetRank}:`, err);
+    console.error(`Error releasing floor lock on rank #${targetRank}:`, err);
   }
 }
 

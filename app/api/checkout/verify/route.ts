@@ -158,7 +158,7 @@ export async function GET(req: NextRequest) {
 
       // If already claimed, return immediate confirmation
       if (pendingClaim && pendingClaim.status === "succeeded") {
-        await releaseFloorLock(targetRankToRelease, paymentId, checkoutSessionId);
+        await releaseFloorLock(targetRankToRelease, paymentId, checkoutSessionId, finalEmail);
         return NextResponse.json({
           status: "succeeded",
           rank: 1,
@@ -180,7 +180,7 @@ export async function GET(req: NextRequest) {
         customerPhone: finalPhone || undefined,
       });
 
-      await releaseFloorLock(targetRankToRelease, paymentId, checkoutSessionId);
+      await releaseFloorLock(targetRankToRelease, paymentId, checkoutSessionId, finalEmail);
 
       return NextResponse.json({
         status: "succeeded",

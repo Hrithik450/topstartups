@@ -2799,12 +2799,12 @@ button.chip:focus-visible {
   max-width: 860px;
   margin: 0 auto;
   box-sizing: border-box;
-  padding: 56px 24px 200px;
+  padding: 48px 24px 64px;
 }
 
 @media (min-width: 640px) {
   .legal-doc-container {
-    padding: 72px 40px 240px;
+    padding: 56px 36px 80px;
   }
 }
 

@@ -572,7 +572,7 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
           role="status"
         >
           <span>
-            ⚡ <strong>{existingFloorOnTower.companyName || url}</strong> is on Floor #{existingFloorOnTower.rank} (₹{existingFloorOnTower.pricePaid} paid). Outbid for <strong>₹{differencePrice}</strong> to reclaim Top Floor #1 and boost total floor value to <strong>₹{Number(existingFloorOnTower.pricePaid || 0) + differencePrice}</strong>!
+            ⚡ <strong>{existingFloorOnTower.companyName || url}</strong> is on Floor #{existingFloorOnTower.rank} (₹{existingFloorOnTower.pricePaid} paid). Outbid for <strong>₹{differencePrice}</strong> to reclaim <strong>Top Floor #1</strong> with a total floor value of <strong>₹{Number(existingFloorOnTower.pricePaid || 0) + differencePrice}</strong>!
           </span>
           <button type="button" className="claimed-edit-btn" style={{ background: "#ff6b00", color: "#fff", borderColor: "#ff6b00" }} onClick={() => onOpenManage?.()}>
             Manage

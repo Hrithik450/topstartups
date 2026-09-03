@@ -397,7 +397,7 @@ export default function ManageFloorModal({
                         </span>
                       </div>
                       <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "rgba(255, 255, 255, 0.75)" }}>
-                        You previously paid ₹{current.pricePaid}. Outbid for <strong>₹{diff}</strong> to reclaim Top Floor #1 and boost your cumulative floor rank to <strong>₹{newTotal}</strong>!
+                        You previously paid ₹{current.pricePaid}. Outbid for <strong>₹{diff}</strong> to reclaim <strong>Top Floor #1</strong> with a total floor value of <strong>₹{newTotal}</strong>!
                       </p>
                     </div>
                     <button

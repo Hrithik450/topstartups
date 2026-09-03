@@ -125,7 +125,7 @@ export default function ManageFloorModal({
     }
   }, [selectedFloorId, ownedFloors]);
 
-  // Outbid and reclaim Top Floor #1 for the difference price
+  // Outbid and reclaim Top Floor #1 for the difference price (gateway minimum ₹50)
   const handleOutbidUpgrade = async () => {
     const current = ownedFloors.find((f) => f.id === selectedFloorId);
     if (!current) return;
@@ -134,7 +134,7 @@ export default function ManageFloorModal({
     setStatusMsg(null);
 
     try {
-      const diff = Math.max(1, topFloorPrice - Number(current.pricePaid || 0));
+      const diff = Math.max(50, topFloorPrice - Number(current.pricePaid || 0));
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -372,7 +372,8 @@ export default function ManageFloorModal({
               const current = ownedFloors.find((f) => f.id === selectedFloorId);
               if (!current) return null;
               if (current.rank > 1) {
-                const diff = Math.max(1, topFloorPrice - Number(current.pricePaid || 0));
+                const diff = Math.max(50, topFloorPrice - Number(current.pricePaid || 0));
+                const newTotal = Number(current.pricePaid || 0) + diff;
                 return (
                   <div
                     style={{
@@ -396,7 +397,7 @@ export default function ManageFloorModal({
                         </span>
                       </div>
                       <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "rgba(255, 255, 255, 0.75)" }}>
-                        You previously paid ₹{current.pricePaid}. Pay only the <strong>₹{diff} difference</strong> to boost this startup back to Top Floor #1!
+                        You previously paid ₹{current.pricePaid}. Outbid for <strong>₹{diff}</strong> to reclaim Top Floor #1 and boost your cumulative floor rank to <strong>₹{newTotal}</strong>!
                       </p>
                     </div>
                     <button

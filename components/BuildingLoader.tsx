@@ -3,36 +3,21 @@
 import { useEffect, useState } from "react";
 
 export default function BuildingLoader({ isLoading }: { isLoading: boolean }) {
-  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [shouldRender, setShouldRender] = useState(true);
 
-  // Guarantee branded loader is visible for a brief, smooth moment (900ms)
+  // When 3D assets & building finish loading, immediately fade out and unmount
   useEffect(() => {
-    const minTimer = setTimeout(() => {
-      setMinTimeElapsed(true);
-    }, 900);
-
-    return () => {
-      clearTimeout(minTimer);
-    };
-  }, []);
-
-  // Dismiss when minimum time has passed AND loading is complete
-  const isVisible = !(minTimeElapsed && !isLoading);
-
-  // Gracefully unmount after fade-out transition
-  useEffect(() => {
-    if (!isVisible) {
-      const timer = setTimeout(() => setShouldRender(false), 450);
+    if (!isLoading) {
+      const timer = setTimeout(() => setShouldRender(false), 300);
       return () => clearTimeout(timer);
     }
-  }, [isVisible]);
+  }, [isLoading]);
 
   if (!shouldRender) return null;
 
   return (
     <div
-      className={`building-loader-overlay ${!isVisible ? "fade-out" : ""}`}
+      className={`building-loader-overlay ${!isLoading ? "fade-out" : ""}`}
       aria-label="Loading GeTopFloor"
       role="status"
     >

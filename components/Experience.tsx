@@ -81,9 +81,9 @@ export default function Experience() {
     setHoveredData(null);
   }, []);
 
-  // Safety fallback so loading screen is snappy and never hangs
+  // Safety fallback only in case WebGL context fails to initialize
   useEffect(() => {
-    const timer = setTimeout(() => setIsBuildingLoading(false), 1200);
+    const timer = setTimeout(() => setIsBuildingLoading(false), 6000);
     return () => clearTimeout(timer);
   }, []);
 

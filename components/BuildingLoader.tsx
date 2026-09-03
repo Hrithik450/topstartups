@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 export default function BuildingLoader({ isLoading }: { isLoading: boolean }) {
   const [shouldRender, setShouldRender] = useState(true);
 
-  // When 3D assets & building finish loading, immediately fade out and unmount
+  // When 3D assets & building finish loading, immediately fade out and unmount smoothly
   useEffect(() => {
     if (!isLoading) {
       const timer = setTimeout(() => setShouldRender(false), 300);

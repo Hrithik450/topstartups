@@ -145,17 +145,6 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
   const isTargetLocked = Boolean(targetLock.isLocked);
   const isStrangerLocked = Boolean(isTargetLocked && !isHeldByMe);
 
-  const handleCancelMyLock = async () => {
-    try {
-      await fetch("/api/checkout/release-lock", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user?.email, targetRank }),
-      });
-      fetchFloorsAndLocks();
-    } catch (e) {}
-  };
-
   // Sync current floors pricing ladder and concurrency locks across all 50 floors
   const fetchFloorsAndLocks = () => {
     fetch("/api/floors", { cache: "no-store" })
@@ -530,27 +519,6 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
             aria-label="Close"
           >
             ✕
-          </button>
-        </div>
-      )}
-
-      {/* Active Lock Held by User Notice */}
-      {isHeldByMe && (
-        <div
-          className="claimed-banner payment-notice info"
-          style={{ marginBottom: "16px", background: "rgba(59, 130, 246, 0.12)", border: "1px solid rgba(59, 130, 246, 0.35)", color: "#3b82f6" }}
-          role="status"
-        >
-          <span>
-            ⏳ You have a checkout session in progress for Floor #{targetRank}.
-          </span>
-          <button
-            type="button"
-            className="claimed-edit-btn"
-            style={{ background: "rgba(239, 68, 68, 0.15)", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.35)", fontSize: "11px", padding: "3px 8px" }}
-            onClick={handleCancelMyLock}
-          >
-            Release Lock
           </button>
         </div>
       )}

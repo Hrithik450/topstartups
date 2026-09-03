@@ -7,87 +7,93 @@ export const metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="legal-doc-page bg-white text-slate-900">
-      <div className="legal-doc-container max-w-4xl mx-auto px-6 sm:px-10 py-16 sm:py-20 space-y-12">
+    <div className="legal-doc-page">
+      <div className="legal-doc-container">
         
-        {/* Top Navigation */}
-        <div className="flex items-center justify-between border-b border-slate-200 pb-6">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-orange-600 hover:text-orange-700 transition-colors"
-          >
-            ← Back to Skyscraper
+        {/* Top Header Navigation */}
+        <div className="legal-header-bar">
+          <Link href="/" className="legal-back-btn">
+            <span>←</span>
+            <span>Back to Skyscraper</span>
           </Link>
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
-            Legal Document
+          <span className="legal-badge">
+            Privacy Policy
           </span>
         </div>
 
-        {/* Document Header */}
-        <header className="space-y-3">
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+        {/* Title Block */}
+        <header className="legal-title-block">
+          <h1 className="legal-main-title">
             Privacy Policy
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="legal-sub-title">
             Effective Date: September 2026 • GeTopFloor (https://getopfloor.com)
           </p>
         </header>
 
         {/* Section 1 */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-900 border-l-4 border-orange-500 pl-3">
+        <section className="legal-section">
+          <h2 className="legal-section-title">
             1. Information We Collect
           </h2>
-          <p className="text-slate-700 leading-relaxed text-base">
-            When you visit GeTopFloor, register an account, or claim a virtual floor on the skyscraper, we collect only the information necessary to fulfill our digital advertising and discovery services:
+          <p className="legal-text">
+            When you visit GeTopFloor, authenticate an account, or claim a virtual floor on the skyscraper, we collect only the essential information needed to fulfill our digital advertising and discovery services:
           </p>
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 space-y-3">
-            <ul className="list-disc list-inside space-y-2 text-slate-700 text-sm leading-relaxed">
-              <li><strong>Account &amp; Profile Data:</strong> Email address and profile name provided through Google OAuth login.</li>
-              <li><strong>Company &amp; Listing Details:</strong> Company/startup name, destination website URL, product category, tagline, description, and brand logo.</li>
-              <li><strong>Transaction &amp; Order Details:</strong> Payment status, checkout session ID, transaction amount, and timestamp. All payment transactions are securely processed by our authorized Merchant of Record, <strong>Dodo Payments</strong>. We never store raw credit card numbers or banking PINs.</li>
-              <li><strong>Aggregated Analytics:</strong> Privacy-preserving aggregated metrics, including visitor country of origin and total tower views.</li>
+          <div className="legal-card">
+            <ul className="legal-list">
+              <li className="legal-list-item">
+                <strong>Account &amp; Profile Data:</strong> Email address and profile name provided through Google OAuth authentication.
+              </li>
+              <li className="legal-list-item">
+                <strong>Company &amp; Listing Details:</strong> Company name, destination website URL, product category, tagline, description, and brand logo.
+              </li>
+              <li className="legal-list-item">
+                <strong>Transaction &amp; Order Details:</strong> Payment status, checkout session ID, transaction amount, and timestamp. All payments are securely processed by our authorized Merchant of Record, <strong>Dodo Payments</strong>. We never store raw payment cards or banking PINs.
+              </li>
+              <li className="legal-list-item">
+                <strong>Aggregated Analytics:</strong> Privacy-preserving aggregated metrics, including visitor country of origin and total tower views.
+              </li>
             </ul>
           </div>
         </section>
 
         {/* Section 2 */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-900 border-l-4 border-orange-500 pl-3">
+        <section className="legal-section">
+          <h2 className="legal-section-title">
             2. How We Use Your Information
           </h2>
-          <p className="text-slate-700 leading-relaxed text-base">
-            We use your data solely to:
+          <p className="legal-text">
+            We use your collected information strictly to:
           </p>
-          <ul className="list-disc list-inside space-y-1 text-slate-700 text-base pl-2">
-            <li>Publish and display your startup on your claimed skyscraper floor.</li>
-            <li>Verify floor ownership and allow you to update or manage your listing.</li>
-            <li>Deliver automated invoice receipts and payment confirmation notifications.</li>
-            <li>Protect platform integrity, prevent fraudulent submissions, and enforce our moderation rules.</li>
+          <ul className="legal-list" style={{ marginBottom: "16px" }}>
+            <li className="legal-list-item">Publish and showcase your startup on your claimed skyscraper floor.</li>
+            <li className="legal-list-item">Verify floor ownership and allow you to manage or update your floor listing.</li>
+            <li className="legal-list-item">Deliver automated payment receipts and claim confirmation notifications.</li>
+            <li className="legal-list-item">Protect platform integrity, prevent fraudulent submissions, and enforce our moderation rules.</li>
           </ul>
-          <p className="text-slate-700 leading-relaxed text-base font-medium">
+          <p className="legal-text" style={{ fontWeight: 600 }}>
             We never sell, rent, or monetize your personal information with third-party advertisers.
           </p>
         </section>
 
         {/* Section 3 */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-900 border-l-4 border-orange-500 pl-3">
+        <section className="legal-section">
+          <h2 className="legal-section-title">
             3. Third-Party Service Providers
           </h2>
-          <p className="text-slate-700 leading-relaxed text-base">
+          <p className="legal-text">
             We partner with vetted, industry-leading infrastructure and payment partners:
           </p>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-1">
-              <h3 className="font-semibold text-slate-900 text-sm">Dodo Payments</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Authorized global Merchant of Record handling billing, PCI-compliant payment gateways, tax remittance, and invoices.
+          <div className="legal-grid-2">
+            <div className="legal-grid-item">
+              <h3 className="legal-grid-title">Dodo Payments</h3>
+              <p className="legal-grid-desc">
+                Authorized global Merchant of Record handling billing, PCI-compliant payment processing, tax remittance, and invoices.
               </p>
             </div>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-1">
-              <h3 className="font-semibold text-slate-900 text-sm">Google OAuth</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+            <div className="legal-grid-item">
+              <h3 className="legal-grid-title">Google OAuth</h3>
+              <p className="legal-grid-desc">
                 Secure identity provider used for passwordless, authenticated floor management.
               </p>
             </div>
@@ -95,41 +101,43 @@ export default function PrivacyPage() {
         </section>
 
         {/* Section 4 */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-900 border-l-4 border-orange-500 pl-3">
+        <section className="legal-section">
+          <h2 className="legal-section-title">
             4. Data Retention &amp; Your Rights
           </h2>
-          <p className="text-slate-700 leading-relaxed text-base">
+          <p className="legal-text">
             You have the right to access, update, or request permanent deletion of your listing and associated personal data at any time.
           </p>
-          <p className="text-slate-700 leading-relaxed text-base">
-            To submit a data access or deletion request, please email our support team at <a href="mailto:support@getopfloor.com" className="text-orange-600 font-semibold hover:underline">support@getopfloor.com</a>. Requests are processed within 48 hours.
+          <p className="legal-text">
+            To submit a data access or deletion request, please email our team at <a href="mailto:support@getopfloor.com" style={{ color: "#ea580c", fontWeight: 600, textDecoration: "underline" }}>support@getopfloor.com</a>. Requests are processed within 48 hours.
           </p>
         </section>
 
         {/* Section 5 */}
-        <section className="space-y-4 border-t border-slate-200 pt-8">
-          <h2 className="text-xl font-bold text-slate-900">
+        <section className="legal-section" style={{ borderTop: "1px solid #e2e8f0", paddingTop: "32px" }}>
+          <h2 className="legal-section-title" style={{ borderLeft: "none", paddingLeft: 0 }}>
             5. Contact Information
           </h2>
-          <p className="text-slate-700 leading-relaxed text-sm">
-            For any privacy inquiries or legal notices, contact our compliance team:
+          <p className="legal-text" style={{ fontSize: "14px" }}>
+            For privacy inquiries or compliance notices, reach out to our team:
           </p>
-          <div className="bg-slate-100 border border-slate-200 rounded-xl p-5 text-sm space-y-1 text-slate-800">
-            <p><strong>GeTopFloor Compliance Team</strong></p>
-            <p>Email: <a href="mailto:support@getopfloor.com" className="text-orange-600 hover:underline">support@getopfloor.com</a></p>
-            <p>Website: <a href="https://getopfloor.com" className="text-orange-600 hover:underline">https://getopfloor.com</a></p>
+          <div className="legal-card" style={{ marginTop: "12px" }}>
+            <p style={{ margin: "0 0 6px 0", fontWeight: 700, fontSize: "14px", color: "#0f172a" }}>GeTopFloor Compliance Team</p>
+            <p style={{ margin: "0 0 4px 0", fontSize: "13.5px", color: "#475569" }}>Email: <a href="mailto:support@getopfloor.com" style={{ color: "#ea580c", fontWeight: 600, textDecoration: "underline" }}>support@getopfloor.com</a></p>
+            <p style={{ margin: 0, fontSize: "13.5px", color: "#475569" }}>Website: <a href="https://getopfloor.com" style={{ color: "#ea580c", fontWeight: 600, textDecoration: "underline" }}>https://getopfloor.com</a></p>
           </div>
         </section>
 
         {/* Footer Navigation */}
-        <footer className="border-t border-slate-200 pt-8 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500">
-          <div className="flex gap-4">
-            <Link href="/terms" className="hover:text-slate-900 transition-colors">Terms of Service</Link>
-            <Link href="/rules" className="hover:text-slate-900 transition-colors">Platform Rules</Link>
-            <Link href="/privacy" className="font-semibold text-slate-900">Privacy Policy</Link>
+        <footer className="legal-footer-nav">
+          <div className="legal-footer-links">
+            <Link href="/terms" className="legal-footer-link">Terms of Service</Link>
+            <Link href="/rules" className="legal-footer-link">Platform Rules</Link>
+            <Link href="/privacy" className="legal-footer-link active">Privacy Policy</Link>
           </div>
-          <Link href="/" className="font-semibold text-orange-600 hover:text-orange-700">Return to Skyscraper →</Link>
+          <Link href="/" className="legal-footer-home">
+            Return to Skyscraper →
+          </Link>
         </footer>
 
       </div>

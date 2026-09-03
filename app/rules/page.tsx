@@ -7,195 +7,178 @@ export const metadata = {
 
 export default function RulesPage() {
   return (
-    <div className="legal-doc-page bg-white text-slate-900">
-      <div className="legal-doc-container max-w-4xl mx-auto px-6 sm:px-10 py-16 sm:py-20 space-y-12">
+    <div className="legal-doc-page">
+      <div className="legal-doc-container">
         
-        {/* Top Navigation */}
-        <div className="flex items-center justify-between border-b border-slate-200 pb-6">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-orange-600 hover:text-orange-700 transition-colors"
-          >
-            ← Back to Skyscraper
+        {/* Top Header Navigation */}
+        <div className="legal-header-bar">
+          <Link href="/" className="legal-back-btn">
+            <span>←</span>
+            <span>Back to Skyscraper</span>
           </Link>
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
-            Governance &amp; Moderation
+          <span className="legal-badge">
+            Platform Rules
           </span>
         </div>
 
-        {/* Document Header */}
-        <header className="space-y-3">
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+        {/* Title Block */}
+        <header className="legal-title-block">
+          <h1 className="legal-main-title">
             Platform Rules &amp; Moderation Policy
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="legal-sub-title">
             Official Guidelines • GeTopFloor (https://getopfloor.com)
           </p>
         </header>
 
         {/* Section 1 */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-900 border-l-4 border-orange-500 pl-3">
+        <section className="legal-section">
+          <h2 className="legal-section-title">
             1. Overview &amp; Objective
           </h2>
-          <p className="text-slate-700 leading-relaxed text-base">
+          <p className="legal-text">
             <strong>GeTopFloor</strong> is a global, interactive 3D digital discovery and advertising platform for technology startups, SaaS products, open-source projects, and indie founders. Founders claim virtual floors on a 50-story skyscraper to showcase their company name, URL, and description.
           </p>
-          <p className="text-slate-700 leading-relaxed text-base">
+          <p className="legal-text">
             To maintain a trustworthy, safe, and professional ecosystem for all visitors, founders, and payment partners, all floor submissions and listings must comply strictly with these guidelines.
           </p>
         </section>
 
         {/* Section 2 */}
-        <section className="space-y-5 bg-emerald-50/70 border border-emerald-200 rounded-2xl p-6 sm:p-8">
-          <h2 className="text-xl font-bold text-emerald-900">
-            2. Permitted Content &amp; Activities
-          </h2>
-          <p className="text-slate-700 text-base leading-relaxed">
-            We welcome legitimate technology companies, creative ventures, and online software products, including:
-          </p>
-          <ul className="grid sm:grid-cols-2 gap-3 text-sm text-slate-800 font-medium">
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-600 font-bold">✓</span>
-              <span>SaaS, Cloud Infrastructure, APIs &amp; Dev Tools</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-600 font-bold">✓</span>
-              <span>Artificial Intelligence &amp; Machine Learning Apps</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-600 font-bold">✓</span>
-              <span>E-Commerce, Direct-to-Consumer &amp; Retail Tech</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-600 font-bold">✓</span>
-              <span>Fintech, Productivity, Workflow &amp; Design Tools</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-600 font-bold">✓</span>
-              <span>Open-Source Projects, Developer Communities &amp; News</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-600 font-bold">✓</span>
-              <span>Verified Tech Agencies, Studios &amp; Portfolios</span>
-            </li>
-          </ul>
+        <section className="legal-section">
+          <div className="legal-card-emerald">
+            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#065f46", margin: "0 0 10px 0" }}>
+              2. Permitted Content &amp; Activities
+            </h2>
+            <p className="legal-text" style={{ color: "#064e3b", marginBottom: "14px" }}>
+              We welcome legitimate technology companies, creative ventures, and online software products, including:
+            </p>
+            <div className="legal-grid-2">
+              <div className="legal-grid-item" style={{ backgroundColor: "#ffffff" }}>
+                <h3 className="legal-grid-title" style={{ color: "#065f46" }}>✓ SaaS &amp; Cloud Tools</h3>
+                <p className="legal-grid-desc">Software-as-a-Service, developer tools, cloud infrastructure, APIs, and micro-SaaS.</p>
+              </div>
+              <div className="legal-grid-item" style={{ backgroundColor: "#ffffff" }}>
+                <h3 className="legal-grid-title" style={{ color: "#065f46" }}>✓ AI &amp; Machine Learning</h3>
+                <p className="legal-grid-desc">Artificial intelligence applications, LLM agents, automation, and machine learning models.</p>
+              </div>
+              <div className="legal-grid-item" style={{ backgroundColor: "#ffffff" }}>
+                <h3 className="legal-grid-title" style={{ color: "#065f46" }}>✓ E-Commerce &amp; DTC</h3>
+                <p className="legal-grid-desc">Direct-to-consumer products, verified digital store platforms, and consumer apps.</p>
+              </div>
+              <div className="legal-grid-item" style={{ backgroundColor: "#ffffff" }}>
+                <h3 className="legal-grid-title" style={{ color: "#065f46" }}>✓ Fintech &amp; Productivity</h3>
+                <p className="legal-grid-desc">Accounting, invoicing, design, workflow automation, and collaboration software.</p>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Section 3 */}
-        <section className="space-y-6 bg-rose-50/70 border border-rose-200 rounded-2xl p-6 sm:p-8">
-          <div className="space-y-1">
-            <h2 className="text-xl font-bold text-rose-900">
+        <section className="legal-section">
+          <div className="legal-card-rose">
+            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#9f1239", margin: "0 0 6px 0" }}>
               3. Strictly Prohibited Content &amp; Activities
             </h2>
-            <p className="text-slate-700 text-sm">
-              The following content, industries, and practices are strictly prohibited from appearing on any floor of GeTopFloor:
+            <p className="legal-text" style={{ color: "#881337", fontSize: "14px", marginBottom: "14px" }}>
+              The following content, industries, and practices are strictly prohibited from appearing on any floor:
             </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="bg-white border border-rose-100 rounded-xl p-5 space-y-1 shadow-sm">
-              <h3 className="font-semibold text-rose-900 text-sm">Fraud &amp; Phishing</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Phishing sites, deceptive domain names, counterfeit goods, pyramid schemes, fake investment or get-rich-quick scams.
-              </p>
-            </div>
-            <div className="bg-white border border-rose-100 rounded-xl p-5 space-y-1 shadow-sm">
-              <h3 className="font-semibold text-rose-900 text-sm">Illegal Goods &amp; Services</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Weapons, illegal narcotics, unlicensed pharmaceuticals, counterfeit credentials, or contraband.
-              </p>
-            </div>
-            <div className="bg-white border border-rose-100 rounded-xl p-5 space-y-1 shadow-sm">
-              <h3 className="font-semibold text-rose-900 text-sm">Adult &amp; Explicit Material</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Pornography, sexually explicit content, escort services, or adult-themed entertainment.
-              </p>
-            </div>
-            <div className="bg-white border border-rose-100 rounded-xl p-5 space-y-1 shadow-sm">
-              <h3 className="font-semibold text-rose-900 text-sm">Malicious Software &amp; Exploits</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Malware, spyware, ransomware, credential harvesters, DDoS tools, or unauthorized hacking utilities.
-              </p>
-            </div>
-            <div className="bg-white border border-rose-100 rounded-xl p-5 space-y-1 shadow-sm">
-              <h3 className="font-semibold text-rose-900 text-sm">Hate Speech &amp; Harassment</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Content promoting violence, discrimination, hate speech, defamation, or harassment against any group or individual.
-              </p>
-            </div>
-            <div className="bg-white border border-rose-100 rounded-xl p-5 space-y-1 shadow-sm">
-              <h3 className="font-semibold text-rose-900 text-sm">Parked &amp; Squatter Domains</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Unregistered, non-functional, parked, or domain-broker sales landing pages with no actual product or business.
-              </p>
+            <div className="legal-grid-2">
+              <div className="legal-grid-item" style={{ backgroundColor: "#ffffff" }}>
+                <h3 className="legal-grid-title" style={{ color: "#9f1239" }}>🚫 Fraud &amp; Phishing</h3>
+                <p className="legal-grid-desc">Phishing sites, deceptive domain names, counterfeit goods, pyramid schemes, or fake investments.</p>
+              </div>
+              <div className="legal-grid-item" style={{ backgroundColor: "#ffffff" }}>
+                <h3 className="legal-grid-title" style={{ color: "#9f1239" }}>🚫 Illegal Goods &amp; Services</h3>
+                <p className="legal-grid-desc">Weapons, illegal narcotics, unlicensed pharmaceuticals, counterfeit credentials, or contraband.</p>
+              </div>
+              <div className="legal-grid-item" style={{ backgroundColor: "#ffffff" }}>
+                <h3 className="legal-grid-title" style={{ color: "#9f1239" }}>🚫 Adult &amp; Explicit Material</h3>
+                <p className="legal-grid-desc">Pornography, sexually explicit content, escort services, or adult-themed entertainment.</p>
+              </div>
+              <div className="legal-grid-item" style={{ backgroundColor: "#ffffff" }}>
+                <h3 className="legal-grid-title" style={{ color: "#9f1239" }}>🚫 Malicious Software &amp; Exploits</h3>
+                <p className="legal-grid-desc">Malware, spyware, ransomware, credential harvesters, DDoS tools, or unauthorized hacking tools.</p>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Section 4 */}
-        <section className="space-y-6">
-          <h2 className="text-xl font-bold text-slate-900 border-l-4 border-orange-500 pl-3">
+        <section className="legal-section">
+          <h2 className="legal-section-title">
             4. Content Moderation &amp; Automated Safeguards
           </h2>
-          <p className="text-slate-700 leading-relaxed text-base">
-            GeTopFloor implements a rigorous, multi-layered moderation pipeline combining real-time automated screening and continuous human review:
+          <p className="legal-text">
+            GeTopFloor implements a multi-layered moderation pipeline combining real-time automated screening and continuous human review:
           </p>
 
-          <div className="space-y-4">
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 space-y-2">
-              <h3 className="text-base font-bold text-slate-900">
-                A. Real-Time Pre-Payment Automated Verification
-              </h3>
-              <p className="text-sm text-slate-700 leading-relaxed">
-                Before any checkout session or floor reservation can be initiated:
-              </p>
-              <ul className="list-disc list-inside text-xs sm:text-sm text-slate-700 space-y-1.5 pl-2 leading-relaxed">
-                <li><strong>Live HTTPS &amp; SSL Probe:</strong> Automated verification tests that the destination URL is active, reachable over HTTPS, and possesses a trusted SSL certificate.</li>
-                <li><strong>DNS Resolution Check:</strong> Confirms active DNS records and blocks private, unroutable, or reserved IP addresses.</li>
-                <li><strong>Domain Parked &amp; Broker Filter:</strong> Automated heuristic scanner analyzes response headers and body content to reject known parked brokers and dummy domains.</li>
-              </ul>
-            </div>
+          <div className="legal-card">
+            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", margin: "0 0 8px 0" }}>
+              A. Real-Time Pre-Payment Automated Verification
+            </h3>
+            <p className="legal-text" style={{ fontSize: "14px", marginBottom: "10px" }}>
+              Before any checkout session or floor reservation can be initiated:
+            </p>
+            <ul className="legal-list">
+              <li className="legal-list-item">
+                <strong>Live HTTPS &amp; SSL Probe:</strong> Automated verification tests that the destination URL is active, reachable over HTTPS, and possesses a trusted SSL certificate.
+              </li>
+              <li className="legal-list-item">
+                <strong>DNS Resolution Check:</strong> Confirms active DNS records and blocks private, unroutable, or reserved IP addresses.
+              </li>
+              <li className="legal-list-item">
+                <strong>Domain Parked &amp; Broker Filter:</strong> Automated heuristic scanner analyzes response headers and body content to reject known parked brokers and dummy domains.
+              </li>
+            </ul>
+          </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 space-y-2">
-              <h3 className="text-base font-bold text-slate-900">
-                B. Post-Placement Continuous Monitoring &amp; Admin Takedown
-              </h3>
-              <p className="text-sm text-slate-700 leading-relaxed">
-                Our internal administrative team continuously monitors live tower listings via an administrative dashboard:
-              </p>
-              <ul className="list-disc list-inside text-xs sm:text-sm text-slate-700 space-y-1.5 pl-2 leading-relaxed">
-                <li><strong>Instant Takedown Authority:</strong> Any listing discovered to violate prohibited content policies is immediately removed from the skyscraper without notice.</li>
-                <li><strong>User Reporting Mechanism:</strong> Platform visitors can report suspicious listings directly to <span className="text-orange-600 font-mono font-medium">support@getopfloor.com</span> for review within 24 hours.</li>
-                <li><strong>Account &amp; Domain Blacklisting:</strong> Violators and associated customer emails are permanently banned from placing future claims.</li>
-              </ul>
-            </div>
+          <div className="legal-card" style={{ marginTop: "16px" }}>
+            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", margin: "0 0 8px 0" }}>
+              B. Post-Placement Continuous Monitoring &amp; Admin Takedown
+            </h3>
+            <p className="legal-text" style={{ fontSize: "14px", marginBottom: "10px" }}>
+              Our internal administrative team continuously monitors live tower listings via an administrative dashboard:
+            </p>
+            <ul className="legal-list">
+              <li className="legal-list-item">
+                <strong>Instant Takedown Authority:</strong> Any listing discovered to violate prohibited content policies is immediately removed from the skyscraper without notice.
+              </li>
+              <li className="legal-list-item">
+                <strong>User Reporting Mechanism:</strong> Platform visitors can report suspicious listings directly to <span style={{ color: "#ea580c", fontWeight: 600 }}>support@getopfloor.com</span> for review within 24 hours.
+              </li>
+              <li className="legal-list-item">
+                <strong>Account &amp; Domain Blacklisting:</strong> Violators and associated customer emails are permanently banned from placing future claims.
+              </li>
+            </ul>
           </div>
         </section>
 
         {/* Section 5 */}
-        <section className="space-y-4 border-t border-slate-200 pt-8">
-          <h2 className="text-xl font-bold text-slate-900">
+        <section className="legal-section" style={{ borderTop: "1px solid #e2e8f0", paddingTop: "32px" }}>
+          <h2 className="legal-section-title" style={{ borderLeft: "none", paddingLeft: 0 }}>
             5. Reporting Violations &amp; Support
           </h2>
-          <p className="text-slate-700 leading-relaxed text-sm">
+          <p className="legal-text" style={{ fontSize: "14px" }}>
             If you identify a website on the tower that violates our policies, or if you have questions regarding these guidelines, please contact our compliance team immediately:
           </p>
-          <div className="bg-slate-100 border border-slate-200 rounded-xl p-5 text-sm space-y-1 text-slate-800">
-            <p><strong>GeTopFloor Compliance Team</strong></p>
-            <p>Email: <a href="mailto:support@getopfloor.com" className="text-orange-600 hover:underline">support@getopfloor.com</a></p>
-            <p className="text-slate-500 text-xs">Response time: Within 24 hours for all content and compliance inquiries.</p>
+          <div className="legal-card" style={{ marginTop: "12px" }}>
+            <p style={{ margin: "0 0 6px 0", fontWeight: 700, fontSize: "14px", color: "#0f172a" }}>GeTopFloor Compliance Team</p>
+            <p style={{ margin: "0 0 4px 0", fontSize: "13.5px", color: "#475569" }}>Email: <a href="mailto:support@getopfloor.com" style={{ color: "#ea580c", fontWeight: 600, textDecoration: "underline" }}>support@getopfloor.com</a></p>
+            <p style={{ margin: 0, fontSize: "13.5px", color: "#475569" }}>Website: <a href="https://getopfloor.com" style={{ color: "#ea580c", fontWeight: 600, textDecoration: "underline" }}>https://getopfloor.com</a></p>
           </div>
         </section>
 
         {/* Footer Navigation */}
-        <footer className="border-t border-slate-200 pt-8 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500">
-          <div className="flex gap-4">
-            <Link href="/terms" className="hover:text-slate-900 transition-colors">Terms of Service</Link>
-            <Link href="/privacy" className="hover:text-slate-900 transition-colors">Privacy Policy</Link>
-            <Link href="/rules" className="font-semibold text-slate-900">Platform Rules</Link>
+        <footer className="legal-footer-nav">
+          <div className="legal-footer-links">
+            <Link href="/terms" className="legal-footer-link">Terms of Service</Link>
+            <Link href="/rules" className="legal-footer-link active">Platform Rules</Link>
+            <Link href="/privacy" className="legal-footer-link">Privacy Policy</Link>
           </div>
-          <Link href="/" className="font-semibold text-orange-600 hover:text-orange-700">Return to Skyscraper →</Link>
+          <Link href="/" className="legal-footer-home">
+            Return to Skyscraper →
+          </Link>
         </footer>
 
       </div>

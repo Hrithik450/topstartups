@@ -104,7 +104,7 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
   const userEmail = user?.email?.toLowerCase().trim();
   const lockHolderEmail = targetLock.lockedByEmail?.toLowerCase().trim();
   const isHeldByMe = Boolean(userEmail && lockHolderEmail && userEmail === lockHolderEmail);
-  const isTargetLocked = Boolean(targetLock.isLocked && !isHeldByMe);
+  const isTargetLocked = Boolean(targetLock.isLocked);
 
   // Sync current floors pricing ladder and concurrency locks across all 50 floors
   const fetchFloorsAndLocks = () => {
@@ -659,12 +659,22 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
           type="submit"
           className={`claim-btn ${isTargetLocked ? "claim-btn-locked" : ""}`}
           disabled={isSubmitting || isTargetLocked}
-          title={isTargetLocked ? `Someone is currently in checkout claiming Floor #${targetRank}` : undefined}
+          title={
+            isTargetLocked
+              ? isHeldByMe
+                ? `You are currently claiming Floor #${targetRank} in checkout on another device`
+                : `Someone is currently in checkout claiming Floor #${targetRank}`
+              : undefined
+          }
         >
           {isSubmitting ? (
             "Verifying..."
           ) : isTargetLocked ? (
-            <>🔒 Floor #{targetRank} claim in progress...</>
+            isHeldByMe ? (
+              <>⏳ You are claiming Floor #{targetRank}...</>
+            ) : (
+              <>🔒 Someone is claiming Floor #{targetRank}...</>
+            )
           ) : targetRank === 1 ? (
             <>Claim top floor <Arrow /></>
           ) : (

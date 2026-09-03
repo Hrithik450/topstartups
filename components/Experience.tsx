@@ -104,49 +104,26 @@ export default function Experience() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.floors)) {
-          const claimedMap = new Map<number, any>(data.floors.map((f: any) => [f.rank, f]));
-          const full50: Listing[] = Array.from({ length: 50 }, (_, i) => {
-            const rank = i + 1;
-            const f = claimedMap.get(rank);
-            if (f) {
-              return {
-                id: String(f.id),
-                url_or_handle: f.url,
-                title: f.companyName,
-                description: f.description || f.tagline,
-                category: f.category || "Startup",
-                total_paid: f.pricePaid,
-                created_at: f.createdAt || new Date().toISOString(),
-                is_claimed: true,
-                is_locked: Boolean(f.isLocked),
-                lock_info: f.lockInfo,
-                rank: f.rank,
-                image_url: f.logoUrl,
-                logoUrl: f.logoUrl,
-                logo_url: f.logoUrl,
-                owner_email: f.ownerEmail,
-                clicks: 0,
-                views: 0,
-              };
-            }
-            return {
-              id: `floor-slot-${rank}`,
-              url_or_handle: "https://getopfloor.com",
-              title: `Open Floor #${rank}`,
-              description: "Spot reserved for your startup — Outbid & claim top floor",
-              category: "Available Floor",
-              total_paid: 0,
-              created_at: new Date().toISOString(),
-              is_claimed: false,
-              is_locked: false,
-              rank,
-              country_code: "IN",
-              country_name: "India",
-              hiring: false,
-              views: 0,
-            };
-          });
-          setListings(full50);
+          const mapped: Listing[] = data.floors.map((f: any) => ({
+            id: String(f.id),
+            url_or_handle: f.url,
+            title: f.companyName,
+            description: f.description || f.tagline,
+            category: f.category || "Startup",
+            total_paid: f.pricePaid,
+            created_at: f.createdAt || new Date().toISOString(),
+            is_claimed: true,
+            is_locked: Boolean(f.isLocked),
+            lock_info: f.lockInfo,
+            rank: f.rank,
+            image_url: f.logoUrl,
+            logoUrl: f.logoUrl,
+            logo_url: f.logoUrl,
+            owner_email: f.ownerEmail,
+            clicks: 0,
+            views: 0,
+          }));
+          setListings(mapped);
         }
       })
       .catch((err) => {

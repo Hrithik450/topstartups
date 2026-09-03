@@ -22,29 +22,8 @@ export interface Listing {
   [key: string]: any;
 }
 
-/**
- * 50 architectural floor slots for the 3D Skyscraper.
- */
 export function createDefaultPlaceholderListings(): Listing[] {
-  return Array.from({ length: 50 }, (_, i) => {
-    const rank = i + 1;
-    return {
-      id: `floor-slot-${rank}`,
-      url_or_handle: "https://getopfloor.com",
-      title: `Open Floor #${rank}`,
-      description: "Spot reserved for your startup — Outbid & claim top floor",
-      category: "Available Floor",
-      total_paid: 0,
-      clicks: 0,
-      created_at: new Date().toISOString(),
-      is_claimed: false,
-      rank,
-      country_code: "IN",
-      country_name: "India",
-      hiring: false,
-      views: 0,
-    };
-  });
+  return [];
 }
 
-export const INITIAL_LISTINGS: Listing[] = createDefaultPlaceholderListings();
+export const INITIAL_LISTINGS: Listing[] = [];

@@ -28,35 +28,47 @@ export default function TowerScene({
   const listingsRef = useRef(listings);
   listingsRef.current = listings;
 
-  // 1. Mount Three.js Tower EXACTLY ONCE on initial load
+  const prevFloorCountRef = useRef<number | null>(null);
+
+  // 1. Mount or rebuild Three.js Tower when listings are available or floor count changes
   useEffect(() => {
-    let handle: TowerHandle | null = null;
+    if (!listings) return;
+    if (!mount.current) return;
+
+    // If already mounted with the exact same floor count, just update textures
+    if (handleRef.current && prevFloorCountRef.current === listings.length) {
+      handleRef.current.updateListings?.(listings);
+      return;
+    }
+
+    // Clean up previous instance if rebuilding due to new floor count
+    if (handleRef.current) {
+      handleRef.current.dispose();
+      handleRef.current = null;
+    }
+
+    prevFloorCountRef.current = listings.length;
     let disposed = false;
 
     import("@/lib/three/app").then(({ createTower }) => {
       if (disposed || !mount.current) return;
-      handle = createTower(mount.current, {
+      const handle = createTower(mount.current, {
         onFloorHover: (data) => onFloorHoverRef.current?.(data),
         theme,
-        listings: listingsRef.current,
+        listings,
         onLoaded: () => onLoadedRef.current?.(),
       });
       handleRef.current = handle;
-      if (listingsRef.current && handle.updateListings) {
-        handle.updateListings(listingsRef.current);
-      }
     });
 
     return () => {
       disposed = true;
-      handle?.dispose();
-      handleRef.current = null;
     };
-  }, []); // Strictly empty dependency array: NEVER re-mount or restart intro animation!
+  }, [listings?.length]);
 
   // 2. Reactively update listings when loaded without recreating the scene
   useEffect(() => {
-    if (listings && handleRef.current?.updateListings) {
+    if (listings && handleRef.current?.updateListings && prevFloorCountRef.current === listings.length) {
       handleRef.current.updateListings(listings);
     }
   }, [listings]);

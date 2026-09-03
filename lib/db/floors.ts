@@ -67,7 +67,7 @@ export async function initializeFloorsIfEmpty(): Promise<void> {
     if (count < 50) {
       const placeholders: NewFloor[] = [];
       for (let rank = count + 1; rank <= 50; rank++) {
-        const price = 50; // All open placeholder floors start at ₹50
+        const price = 50 + (50 - rank); // Pricing ladder: Floor 50 = ₹50, Floor 1 = ₹99
         const title =
           rank === 1
             ? "Penthouse Floor #1 — Open for Claim"

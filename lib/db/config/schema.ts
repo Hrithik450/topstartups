@@ -84,6 +84,7 @@ export const claims = pgTable(
     category: varchar("category", { length: 128 }),
     amount: integer("amount").notNull(), // amount in INR
     currency: varchar("currency", { length: 10 }).notNull().default("INR"),
+    targetRank: integer("target_rank").default(1),
     customerEmail: varchar("customer_email", { length: 255 }),
     customerPhone: varchar("customer_phone", { length: 50 }),
     userId: uuid("user_id").references(() => users.id),

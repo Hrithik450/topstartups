@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Globe, Building, Arrow, Minus, Plus, Search, Close, Check } from "./icons";
+import { Globe, Building, Arrow, Minus, Plus, Search, Close, Check, ChevronDown } from "./icons";
 import { MAIN_CATEGORIES, SPECIAL_OPTIONS, IndustryCategory } from "@/lib/categories";
 import { validateWebsiteSyntax } from "@/lib/validation/domain";
 import { useUserAuth } from "@/lib/auth/use-user-auth";
@@ -84,44 +84,70 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
   } | null>(null);
 
   const [minPrice, setMinPrice] = useState(50);
+  const [topFloorPrice, setTopFloorPrice] = useState(99);
   const [topFloorClaimed, setTopFloorClaimed] = useState(false);
-  const [topFloorLock, setTopFloorLock] = useState<{
+  const [allLocks, setAllLocks] = useState<Record<number, {
     isLocked: boolean;
     companyName?: string | null;
     secondsRemaining?: number;
-  }>({ isLocked: false });
+  }>>({});
 
-  // Sync current top floor outbid price and concurrency lock status
+  // Dynamic target floor rank derived from current price
+  const targetRank = useMemo(() => {
+    if (price >= topFloorPrice) return 1;
+    const offset = topFloorPrice - price;
+    return Math.min(50, Math.max(1, 1 + offset));
+  }, [price, topFloorPrice]);
+
+  const targetLock = allLocks[targetRank] || { isLocked: false };
+  const isTargetLocked = Boolean(targetLock.isLocked);
+
+  // Sync current floors pricing ladder and concurrency locks across all 50 floors
   useEffect(() => {
-    const fetchTopFloorPrice = () => {
+    const fetchFloorsAndLocks = () => {
       fetch("/api/floors", { cache: "no-store" })
         .then((res) => res.json())
         .then((data) => {
-          if (data.lock) {
-            setTopFloorLock(data.lock);
+          if (data.locks) {
+            setAllLocks(data.locks);
           }
           if (data.floors && data.floors.length > 0) {
             const top = data.floors[0];
             if (top.isClaimed) {
               setTopFloorClaimed(true);
-              const requiredMin = Number(top.pricePaid || 50) + 1;
-              setMinPrice(requiredMin);
-              setPrice((prev) => Math.max(requiredMin, prev));
+              const requiredTopPrice = Number(top.pricePaid || 50) + 1;
+              setTopFloorPrice(requiredTopPrice);
+              setPrice((prev) => (prev === 50 ? requiredTopPrice : prev));
             } else {
               setTopFloorClaimed(false);
-              setMinPrice(50);
-              setPrice(50);
+              setTopFloorPrice(99);
+              setPrice((prev) => (prev === 50 ? 99 : prev));
             }
           }
         })
         .catch(() => {});
     };
 
-    fetchTopFloorPrice();
+    fetchFloorsAndLocks();
 
-    window.addEventListener("floors-refresh", fetchTopFloorPrice);
+    window.addEventListener("floors-refresh", fetchFloorsAndLocks);
     return () => {
-      window.removeEventListener("floors-refresh", fetchTopFloorPrice);
+      window.removeEventListener("floors-refresh", fetchFloorsAndLocks);
+    };
+  }, []);
+
+  // Handle floor selection from 3D scene / hover card
+  useEffect(() => {
+    const handleSelectFloorPrice = (e: any) => {
+      const detail = e.detail;
+      if (detail && typeof detail.price === "number") {
+        setPrice(Math.max(50, detail.price));
+      }
+    };
+
+    window.addEventListener("select-floor-price", handleSelectFloorPrice);
+    return () => {
+      window.removeEventListener("select-floor-price", handleSelectFloorPrice);
     };
   }, []);
 
@@ -370,6 +396,7 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
           url: verifiedUrl,
           category: selectedCategory?.name || "Startup",
           price: Math.max(50, price),
+          targetRank,
         }),
       });
 
@@ -430,13 +457,28 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
       )}
 
       <h1 className="headline">
-        {topFloorClaimed ? "Outbid top floor for" : "Claim top floor for"}
+        {targetRank === 1 ? (
+          topFloorClaimed ? "Outbid top floor for" : "Claim top floor for"
+        ) : (
+          `Claim Floor #${targetRank} for`
+        )}
         <span className="price-stepper">
-          <button className="step-btn" onClick={() => setPrice((p) => Math.max(minPrice, p - 1))} aria-label="Lower bid" disabled={price <= minPrice}>
+          <button
+            type="button"
+            className="step-btn"
+            onClick={() => setPrice((p) => Math.max(50, p - 1))}
+            aria-label="Lower bid"
+            disabled={price <= 50}
+          >
             <Minus />
           </button>
           <span className="price">₹{price}</span>
-          <button className="step-btn" onClick={() => setPrice((p) => p + 1)} aria-label="Raise bid">
+          <button
+            type="button"
+            className="step-btn"
+            onClick={() => setPrice((p) => p + 1)}
+            aria-label="Raise bid"
+          >
             <Plus />
           </button>
         </span>
@@ -459,66 +501,58 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
           <div
             ref={categoryWrapperRef}
             className="category-wrapper"
-            style={{ position: "relative", zIndex: open ? 120 : 10 }}
           >
             <button
               type="button"
-              className={`field select category-field ${open ? "open" : ""}`}
-              onClick={() => setOpen((o) => !o)}
+              className="category-select-btn"
+              onClick={() => setOpen((prev) => !prev)}
               aria-haspopup="listbox"
               aria-expanded={open}
             >
-              {selectedCategory?.icon ? (
-                <span className="selected-category-icon">
-                  {selectedCategory.icon === ">_" ? (
-                    <span className="category-code-tag">&gt;_</span>
-                  ) : (
-                    selectedCategory.icon
-                  )}
-                </span>
-              ) : (
-                <Building />
-              )}
-              <span className="category-label">{selectedCategory?.name ?? "Category"}</span>
-              <span className="caret">▾</span>
+              <span className="selected-category-icon">
+                {selectedCategory?.icon === ">_" ? (
+                  <span className="category-code-tag">&gt;_</span>
+                ) : (
+                  selectedCategory?.icon || "🌐"
+                )}
+              </span>
+              <span className="category-label-text">
+                {selectedCategory?.name || "Startup"}
+              </span>
+              <span className={`category-chevron ${open ? "open" : ""}`}>
+                <ChevronDown />
+              </span>
             </button>
 
+            {/* Dropdown Popover */}
             {open && (
-              <div className="category-popover" role="listbox" aria-label="Industry Categories">
-                {/* Sticky Search Header */}
-                <div className="category-search-header">
-                  <div className="category-search-box">
-                    <span className="category-search-icon">
-                      <Search />
-                    </span>
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      className="category-search-input"
-                      placeholder="Search industries..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && filteredMain.length > 0) {
-                          e.preventDefault();
-                          handleSelect(filteredMain[0]);
-                        }
-                      }}
-                    />
-                    {searchQuery && (
-                      <button
-                        type="button"
-                        className="category-search-clear"
-                        onClick={() => {
-                          setSearchQuery("");
-                          searchInputRef.current?.focus();
-                        }}
-                        aria-label="Clear search"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
+              <div
+                className="category-popover animate-category-popover"
+                role="listbox"
+              >
+                {/* Search Bar */}
+                <div className="category-search-box">
+                  <span className="category-search-icon">
+                    <Search />
+                  </span>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    className="category-search-input"
+                    placeholder="Search industries (e.g. AI, SaaS, DevTools)..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      className="category-search-clear"
+                      onClick={() => setSearchQuery("")}
+                      aria-label="Clear search"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
 
                 {/* Scrollable Categories List */}
@@ -602,16 +636,18 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
 
         <button
           type="submit"
-          className={`claim-btn ${topFloorLock.isLocked ? "claim-btn-locked" : ""}`}
-          disabled={isSubmitting || topFloorLock.isLocked}
-          title={topFloorLock.isLocked ? "Someone is currently in checkout claiming the Top Floor (#1)" : undefined}
+          className={`claim-btn ${isTargetLocked ? "claim-btn-locked" : ""}`}
+          disabled={isSubmitting || isTargetLocked}
+          title={isTargetLocked ? `Someone is currently in checkout claiming Floor #${targetRank}` : undefined}
         >
           {isSubmitting ? (
             "Verifying..."
-          ) : topFloorLock.isLocked ? (
-            <>🔒 Claim in progress...</>
-          ) : (
+          ) : isTargetLocked ? (
+            <>🔒 Floor #{targetRank} claim in progress...</>
+          ) : targetRank === 1 ? (
             <>Claim top floor <Arrow /></>
+          ) : (
+            <>Claim Floor #{targetRank} <Arrow /></>
           )}
         </button>
       </form>

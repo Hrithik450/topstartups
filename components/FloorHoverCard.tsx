@@ -259,6 +259,12 @@ export default function FloorHoverCard({
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
+                    const floorPrice = Number(listing.total_paid) || (50 + (50 - rank));
+                    window.dispatchEvent(
+                      new CustomEvent("select-floor-price", {
+                        detail: { price: floorPrice, rank },
+                      })
+                    );
                     const inputEl = document.querySelector<HTMLInputElement>(".url-field input");
                     if (inputEl) {
                       inputEl.focus();
@@ -266,7 +272,7 @@ export default function FloorHoverCard({
                     }
                   }}
                 >
-                  <span>🚀 Claim Top Floor for ₹50</span>
+                  <span>🚀 Claim Floor #{rank} for ₹{Number(listing.total_paid) || (50 + (50 - rank))}</span>
                 </button>
               )}
 

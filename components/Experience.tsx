@@ -171,6 +171,55 @@ export default function Experience() {
     };
   }, [refreshFloors]);
 
+  // Real-time multi-device SSE synchronization
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let eventSource: EventSource | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    let isMounted = true;
+
+    const connectSSE = () => {
+      if (!isMounted) return;
+      try {
+        eventSource = new EventSource("/api/events");
+
+        eventSource.addEventListener("floor-claimed", (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            // Broadcast to local components & 3D scene
+            window.dispatchEvent(
+              new CustomEvent("floor-claimed-success", { detail: data })
+            );
+          } catch {}
+        });
+
+        eventSource.addEventListener("lock-updated", () => {
+          refreshFloors();
+        });
+
+        eventSource.onerror = () => {
+          eventSource?.close();
+          if (isMounted) {
+            reconnectTimeout = setTimeout(connectSSE, 3500);
+          }
+        };
+      } catch (err) {
+        if (isMounted) {
+          reconnectTimeout = setTimeout(connectSSE, 5000);
+        }
+      }
+    };
+
+    connectSSE();
+
+    return () => {
+      isMounted = false;
+      if (eventSource) eventSource.close();
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    };
+  }, [refreshFloors]);
+
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "sunset" : "dark";
     setTheme(nextTheme);

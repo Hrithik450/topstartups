@@ -43,7 +43,7 @@ export function createDefaultPlaceholderListings(): Listing[] {
 
   return Array.from({ length: 50 }, (_, i) => {
     const rank = i + 1;
-    const price = Math.max(50, 95 - (rank - 1));
+    const price = 50 + (50 - rank); // Pricing ladder: Floor 50 = ₹50, Floor 1 = ₹99
     const title = rank <= 10 ? TITLES[rank - 1] : `Tower Floor #${rank}`;
 
     return {

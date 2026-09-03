@@ -81,6 +81,7 @@ export async function seedFloors() {
         category VARCHAR(128),
         amount INTEGER NOT NULL,
         currency VARCHAR(10) NOT NULL DEFAULT 'INR',
+        target_rank INTEGER DEFAULT 1,
         customer_email VARCHAR(255),
         customer_phone VARCHAR(50),
         user_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -112,10 +113,11 @@ export async function seedFloors() {
       return;
     }
 
-    console.log(`Generating 50 premium placeholder floors...`);
+    console.log(`Generating 50 premium placeholder floors with pricing ladder (Floor 50 = ₹50, Floor 1 = ₹99)...`);
     const placeholderFloors = Array.from({ length: 50 }, (_, i) => {
       const rank = i + 1;
-      const price = 50;
+      // Pricing ladder: Base floor #50 is ₹50, Floor 49 is ₹51, ..., Top Penthouse Floor #1 is ₹99
+      const price = 50 + (50 - rank);
       return {
         rank,
         isClaimed: false,

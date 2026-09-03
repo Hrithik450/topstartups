@@ -237,12 +237,22 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
         if (pending.url) {
           setUrl(pending.url);
           if (pending.price) setPrice(pending.price);
+
+          const syntaxCheck = validateWebsiteSyntax(pending.url);
+          if (!syntaxCheck.valid) {
+            setPaymentNotice({
+              type: "error",
+              message: syntaxCheck.error || "Please enter a valid, secure HTTPS website.",
+            });
+            return;
+          }
+
           setIsSubmitting(true);
           fetch("/api/checkout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              url: pending.url,
+              url: syntaxCheck.cleanUrl || pending.url,
               category: pending.category || "Startup",
               price: pending.price || 50,
             }),

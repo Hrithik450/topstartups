@@ -17,6 +17,29 @@ const BLOCKED_TLDS = new Set([
   "corp",
 ]);
 
+// Known dummy / test / placeholder domains to reject immediately on client and server
+const BLOCKED_DOMAINS = new Set([
+  "teststartup.com",
+  "teststartup.org",
+  "teststartup.net",
+  "teststartup.io",
+  "teststartup.ai",
+  "test.com",
+  "test.org",
+  "test.net",
+  "example.com",
+  "example.org",
+  "example.net",
+  "dummy.com",
+  "fake.com",
+  "placeholder.com",
+  "testsite.com",
+  "mytest.com",
+  "testdomain.com",
+  "sample.com",
+  "demo.com",
+]);
+
 export interface ValidationResult {
   valid: boolean;
   cleanUrl?: string;
@@ -103,6 +126,19 @@ export function validateWebsiteSyntax(inputUrl: string): ValidationResult {
   const tld = parts[parts.length - 1];
   if (BLOCKED_TLDS.has(tld) || !/^[a-z]{2,24}$/.test(tld)) {
     return { valid: false, error: `The .${tld} domain extension is not a valid public web extension.` };
+  }
+
+  // 5. Block known test and placeholder dummy domains immediately
+  if (
+    BLOCKED_DOMAINS.has(hostname) ||
+    hostname.startsWith("teststartup.") ||
+    hostname.startsWith("fakestartup.") ||
+    hostname.startsWith("dummystartup.")
+  ) {
+    return {
+      valid: false,
+      error: "Test and placeholder domains (like teststartup.com) are not accepted. Please enter your genuine live startup website URL.",
+    };
   }
 
   // Clean canonical URL (root or path, normalized lowercase host)

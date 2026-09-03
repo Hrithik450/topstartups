@@ -120,6 +120,67 @@ function resolveUrl(relativeUrl: string, baseUrl: string): string {
   }
 }
 
+function extractFaviconFromHtml(html: string, baseUrl: string, fallback: string): string {
+  // 1. JSON-LD schema logo
+  const jsonLdMatch = html.match(/"logo"\s*:\s*"([^"]+)"/i) || html.match(/\\"logo\\"\s*:\s*\\"([^\\"]+)\\"/i);
+  if (jsonLdMatch?.[1]) {
+    const u = decodeHtmlEntities(jsonLdMatch[1].replace(/\\\//g, "/"));
+    if (u.startsWith("http") || u.startsWith("/")) return resolveUrl(u, baseUrl);
+  }
+
+  // 2. Next.js RSC streaming payload icons
+  const rscAppleMatch =
+    html.match(/\\"rel\\":\\"apple-touch-icon[^\\"]*\\",\\"href\\":\\"([^\\"]+)\\"/i) ||
+    html.match(/"rel":"apple-touch-icon[^"]*","href":"([^"]+)"/i);
+  if (rscAppleMatch?.[1]) {
+    return resolveUrl(decodeHtmlEntities(rscAppleMatch[1].replace(/\\\//g, "/")), baseUrl);
+  }
+
+  const rscIconMatch =
+    html.match(/\\"rel\\":\\"(?:shortcut icon|icon)\\",\\"href\\":\\"([^\\"]+)\\"/i) ||
+    html.match(/"rel":"(?:shortcut icon|icon)","href":"([^"]+)"/i);
+  if (rscIconMatch?.[1]) {
+    return resolveUrl(decodeHtmlEntities(rscIconMatch[1].replace(/\\\//g, "/")), baseUrl);
+  }
+
+  // 3. Parse all HTML <link> tags
+  const linkTagRegex = /<link\b([^>]+)>/gi;
+  const linkMatches = [...html.matchAll(linkTagRegex)];
+
+  let appleTouchIcon: string | null = null;
+  let svgOrPngIcon: string | null = null;
+  let standardIcon: string | null = null;
+
+  for (const match of linkMatches) {
+    const attrsStr = match[1];
+    const relMatch = attrsStr.match(/\brel=["']([^"']+)["']/i);
+    const hrefMatch = attrsStr.match(/\bhref=["']([^"']+)["']/i);
+    if (!relMatch || !hrefMatch) continue;
+
+    const rel = relMatch[1].toLowerCase().trim();
+    const href = decodeHtmlEntities(hrefMatch[1].trim());
+    if (!href) continue;
+
+    if (rel.includes("apple-touch-icon")) {
+      if (!appleTouchIcon) appleTouchIcon = resolveUrl(href, baseUrl);
+    } else if (rel.includes("icon")) {
+      const typeMatch = attrsStr.match(/\btype=["']([^"']+)["']/i);
+      const type = typeMatch?.[1]?.toLowerCase() || "";
+      if (type.includes("svg") || type.includes("png") || href.endsWith(".svg") || href.endsWith(".png")) {
+        if (!svgOrPngIcon) svgOrPngIcon = resolveUrl(href, baseUrl);
+      } else {
+        if (!standardIcon) standardIcon = resolveUrl(href, baseUrl);
+      }
+    }
+  }
+
+  if (appleTouchIcon) return appleTouchIcon;
+  if (svgOrPngIcon) return svgOrPngIcon;
+  if (standardIcon) return standardIcon;
+
+  return fallback;
+}
+
 /**
  * Scrape website metadata, OpenGraph tags, and icons using native HTTP + optional Firecrawl.
  */
@@ -168,7 +229,8 @@ export async function scrapeWebsiteMetadata(targetUrl: string): Promise<WebsiteM
         const meta = fcData.data?.metadata || {};
         const title = meta.title || meta.ogTitle || "";
         const desc = meta.description || meta.ogDescription || "";
-        const ogImage = meta.ogImage || fallbackFavicon;
+        const fcIcon = meta.appleTouchIcon || meta.favicon || meta.icon || meta.logo || meta.ogImage;
+        const logoUrl = fcIcon ? resolveUrl(decodeHtmlEntities(fcIcon), cleanUrl) : fallbackFavicon;
 
         const name = cleanCompanyName(title, hostname);
         const tagline = cleanDescription(desc, 110);
@@ -179,7 +241,7 @@ export async function scrapeWebsiteMetadata(targetUrl: string): Promise<WebsiteM
           companyName: name,
           tagline,
           description,
-          logoUrl: ogImage || fallbackFavicon,
+          logoUrl,
           category,
         };
       }
@@ -233,40 +295,8 @@ export async function scrapeWebsiteMetadata(targetUrl: string): Promise<WebsiteM
     const tagline = rawDesc ? cleanDescription(rawDesc, 110) : `${companyName} — Official Skyscraper Floor`;
     const description = rawDesc ? cleanDescription(rawDesc, 260) : `Claimed top floor on GeTopFloor skyscraper.`;
 
-    // Extract Icons & Favicons with multi-tier favicon crawler (HTML + Next.js RSC + JSON-LD Schema)
-    const appleTouchIconMatch =
-      html.match(/<link[^>]+rel=["'](?:apple-touch-icon|apple-touch-icon-precomposed)["'][^>]+href=["']([^"']+)["']/i) ||
-      html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:apple-touch-icon|apple-touch-icon-precomposed)["']/i) ||
-      html.match(/\\"rel\\":\\"apple-touch-icon\\",\\"href\\":\\"([^\\"]+)\\"/i) ||
-      html.match(/"rel":"apple-touch-icon","href":"([^"]+)"/i);
-
-    const jsonLdLogoMatch =
-      html.match(/"logo":"([^"]+)"/i) ||
-      html.match(/\\"logo\\":\\"([^\\"]+)\\"/i);
-
-    const pngIconMatch =
-      html.match(/<link[^>]+rel=["'](?:shortcut icon|icon)["'][^>]+type=["']image\/(?:png|svg\+xml)["'][^>]+href=["']([^"']+)["']/i) ||
-      html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:shortcut icon|icon)["'][^>]+type=["']image\/(?:png|svg\+xml)["']/i);
-
-    const iconMatch =
-      html.match(/<link[^>]+rel=["'](?:shortcut icon|icon)["'][^>]+href=["']([^"']+)["']/i) ||
-      html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:shortcut icon|icon)["']/i) ||
-      html.match(/\\"rel\\":\\"(?:shortcut icon|icon)\\",\\"href\\":\\"([^\\"]+)\\"/i) ||
-      html.match(/"rel":"(?:shortcut icon|icon)","href":"([^"]+)"/i);
-
-    let logoUrl = fallbackFavicon;
-    if (appleTouchIconMatch?.[1]) {
-      logoUrl = resolveUrl(appleTouchIconMatch[1], cleanUrl);
-    } else if (jsonLdLogoMatch?.[1]) {
-      logoUrl = resolveUrl(jsonLdLogoMatch[1], cleanUrl);
-    } else if (pngIconMatch?.[1]) {
-      logoUrl = resolveUrl(pngIconMatch[1], cleanUrl);
-    } else if (iconMatch?.[1]) {
-      logoUrl = resolveUrl(iconMatch[1], cleanUrl);
-    } else {
-      logoUrl = fallbackFavicon;
-    }
-
+    // Extract high-res favicon/logo using accurate attribute parsing
+    const logoUrl = extractFaviconFromHtml(html, cleanUrl, fallbackFavicon);
     const category = guessCategory(`${companyName} ${tagline} ${description}`);
 
     return {

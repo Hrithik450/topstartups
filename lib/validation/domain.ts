@@ -219,7 +219,18 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
       clearTimeout(timeoutId);
     }
 
-    if (!response.ok && response.status !== 401 && response.status !== 403) {
+    // If server responded, check if status is acceptable:
+    // 2xx, 3xx, 401 (Auth required), 403 (Cloudflare / Bot protection), 405, 429, 503 (Cloudflare challenge)
+    // All indicate an active, live web server hosting the domain.
+    const isLiveServer =
+      response.ok ||
+      response.status === 401 ||
+      response.status === 403 ||
+      response.status === 405 ||
+      response.status === 429 ||
+      response.status === 503;
+
+    if (!isLiveServer) {
       return {
         valid: false,
         error: "This website is not valid, please enter a valid website.",

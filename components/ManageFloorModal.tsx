@@ -243,28 +243,14 @@ export default function ManageFloorModal({
           </div>
         ) : !user ? (
           /* ─── 2. GOOGLE LOGIN REQUIRED IF NOT LOGGED IN ─── */
-          <div style={{ marginTop: "24px", textAlign: "center", padding: "20px 0" }}>
-            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "14px", marginBottom: "20px" }}>
+          <div className="manage-auth-box">
+            <p className="manage-auth-desc">
               Access and manage all your claimed startup floors across any device.
             </p>
             <button
               type="button"
               onClick={() => login()}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "10px",
-                background: "linear-gradient(135deg, rgba(255, 159, 67, 0.2), rgba(238, 82, 83, 0.2))",
-                border: "1px solid rgba(255, 159, 67, 0.5)",
-                color: "#fff",
-                padding: "12px 28px",
-                borderRadius: "999px",
-                fontSize: "14px",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
+              className="manage-google-btn"
             >
               <svg width="18" height="18" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -277,17 +263,18 @@ export default function ManageFloorModal({
           </div>
         ) : ownedFloors.length === 0 ? (
           /* ─── 3. ZERO CLAIMED PRODUCTS STATE ─── */
-          <div style={{ marginTop: "20px", textAlign: "center", padding: "28px 16px", background: "rgba(255,255,255,0.03)", borderRadius: "14px", border: "1px dashed rgba(255,255,255,0.15)" }}>
+          <div className="manage-empty-box">
             <div style={{ fontSize: "32px", marginBottom: "12px" }}>🏢</div>
-            <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", marginBottom: "6px" }}>
+            <h3 className="manage-empty-title">
               0 Claimed Products / Floors
             </h3>
-            <p style={{ fontSize: "13.5px", color: "rgba(255,255,255,0.65)", maxWidth: "340px", margin: "0 auto 20px auto", lineHeight: "1.5" }}>
-              No claimed skyscraper floors found for <strong style={{ color: "#fff" }}>{user.email}</strong>. Claim a floor to feature your company on the 3D tower!
+            <p className="manage-empty-desc">
+              No claimed skyscraper floors found for <strong>{user.email}</strong>. Claim a floor to feature your company on the 3D tower!
             </p>
             <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
               <button
                 type="button"
+                className="manage-btn-primary"
                 onClick={() => {
                   onClose();
                   setTimeout(() => {
@@ -298,32 +285,13 @@ export default function ManageFloorModal({
                     }
                   }, 150);
                 }}
-                style={{
-                  background: "linear-gradient(135deg,#ff9f43,#ee5253)",
-                  border: "none",
-                  color: "#fff",
-                  padding: "10px 22px",
-                  borderRadius: "999px",
-                  fontSize: "13.5px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: "0 4px 14px rgba(255,159,67,0.35)",
-                }}
               >
                 Claim Top Floor Now
               </button>
               <button
                 type="button"
+                className="manage-btn-secondary"
                 onClick={() => login()}
-                style={{
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  color: "rgba(255,255,255,0.85)",
-                  padding: "10px 18px",
-                  borderRadius: "999px",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                }}
               >
                 Switch Account
               </button>

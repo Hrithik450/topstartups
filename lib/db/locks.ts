@@ -12,10 +12,13 @@ export interface LockStatus {
   secondsRemaining?: number;
 }
 
+let hasEnsuredFloorLocksTable = false;
+
 /**
- * Ensures table exists in database
+ * Ensures table exists in database (runs only once per process lifecycle)
  */
 export async function ensureFloorLocksTable(): Promise<void> {
+  if (hasEnsuredFloorLocksTable) return;
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS floor_locks (
@@ -27,6 +30,7 @@ export async function ensureFloorLocksTable(): Promise<void> {
         expires_at TIMESTAMP WITH TIME ZONE NOT NULL
       );
     `);
+    hasEnsuredFloorLocksTable = true;
   } catch (err) {
     console.warn("Could not ensure floor_locks table:", err);
   }

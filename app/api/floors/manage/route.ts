@@ -115,6 +115,11 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    try {
+      const { revalidateTag } = await import("next/cache");
+      revalidateTag("floors");
+    } catch {}
+
     return NextResponse.json({
       success: true,
       message: "Floor updated successfully",

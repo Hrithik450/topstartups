@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
-import { getActiveFloors } from "@/lib/db/floors";
+import { getCachedActiveFloors } from "@/lib/db/floors";
 import { getAllFloorLocks } from "@/lib/db/locks";
-import { createDefaultPlaceholderListings } from "@/lib/three/listings";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     const [floors, locks] = await Promise.all([
-      getActiveFloors(),
+      getCachedActiveFloors(),
       getAllFloorLocks(),
     ]);
 
@@ -30,22 +29,36 @@ export async function GET() {
         };
       });
 
-      return NextResponse.json({
-        success: true,
-        floors: enrichedFloors,
-        locks,
-        lock: locks[1] || { isLocked: false },
-        totalCount: enrichedFloors.length,
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          floors: enrichedFloors,
+          locks,
+          lock: locks[1] || { isLocked: false },
+          totalCount: enrichedFloors.length,
+        },
+        {
+          headers: {
+            "Cache-Control": "public, s-maxage=10, stale-while-revalidate=59",
+          },
+        }
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      floors: [],
-      locks: {},
-      lock: { isLocked: false },
-      totalCount: 0,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        floors: [],
+        locks: {},
+        lock: { isLocked: false },
+        totalCount: 0,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=10, stale-while-revalidate=59",
+        },
+      }
+    );
   } catch (err: any) {
     console.error("Error in /api/floors:", err?.message);
     return NextResponse.json({

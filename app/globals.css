@@ -2782,6 +2782,26 @@ button.chip:focus-visible {
   color: rgba(15, 23, 42, 0.22);
 }
 
+/* Executive Light-Mode Legal Document Pages */
+.legal-doc-page {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  z-index: 100;
+  font-family: var(--font-bricolage), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-overflow-scrolling: touch;
+}
+
+.legal-doc-container {
+  max-width: 860px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+
 
 
 

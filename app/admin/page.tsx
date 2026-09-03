@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 interface Product {
-  id: number;
+  id: string | number;
   rank: number;
   companyName: string;
   url: string;
@@ -14,7 +14,7 @@ interface Product {
 }
 
 interface UserItem {
-  id: number;
+  id: string | number;
   email: string;
   name: string | null;
   phone: string | null;

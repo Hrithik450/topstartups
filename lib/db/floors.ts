@@ -187,7 +187,7 @@ export async function claimTopFloorTransactional(
     await tx.update(floors).set({ rank: sql`(${floors.rank} * -1) + 1` });
 
     // 3. Upsert user in 'users' table using pure Drizzle
-    let userId: number | null = null;
+    let userId: string | null = null;
     const cleanEmail = input.customerEmail?.toLowerCase().trim() || null;
     const cleanPhone = input.customerPhone?.trim() || null;
 
@@ -312,7 +312,7 @@ export async function getFloorsByEmail(email: string): Promise<Floor[]> {
  * Update a floor owned by a verified email using pure Drizzle.
  */
 export async function updateFloorByEmail(
-  floorId: number,
+  floorId: string,
   email: string,
   updates: UpdateFloorInput
 ): Promise<Floor | null> {
@@ -350,7 +350,7 @@ export async function updateFloorByEmail(
  * Vacate a floor owned by a verified email using pure Drizzle.
  */
 export async function deleteFloorByEmail(
-  floorId: number,
+  floorId: string,
   email: string
 ): Promise<{ success: boolean; message: string }> {
   const cleanEmail = email.toLowerCase().trim();

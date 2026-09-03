@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 
 export interface SessionUser {
-  id: number;
+  id: string;
   email: string;
   name: string | null;
   avatarUrl: string | null;
@@ -34,7 +34,7 @@ function base64UrlDecode(str: string): string {
  * Create a secure HMAC-signed user session token (30-day expiration).
  */
 export function createUserSessionToken(user: {
-  id: number;
+  id: string;
   email: string;
   name?: string | null;
   avatarUrl?: string | null;

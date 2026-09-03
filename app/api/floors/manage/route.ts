@@ -99,7 +99,7 @@ export async function PATCH(req: NextRequest) {
       verifiedUrl = verification.cleanUrl;
     }
 
-    const updated = await updateFloorByEmail(Number(floorId), authorizedEmail, {
+    const updated = await updateFloorByEmail(String(floorId), authorizedEmail, {
       companyName,
       url: verifiedUrl,
       category,
@@ -147,7 +147,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized session" }, { status: 401 });
     }
 
-    const vacated = await deleteFloorByEmail(Number(floorId), authorizedEmail);
+    const vacated = await deleteFloorByEmail(String(floorId), authorizedEmail);
     if (!vacated) {
       return NextResponse.json(
         { error: "Floor not found or you are not authorized to vacate it." },

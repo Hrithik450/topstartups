@@ -1,6 +1,6 @@
 import {
   pgTable,
-  serial,
+  uuid,
   integer,
   varchar,
   text,
@@ -16,7 +16,7 @@ import {
 export const users = pgTable(
   "users",
   {
-    id: serial("id").primaryKey(),
+    id: uuid("id").defaultRandom().primaryKey(),
     email: varchar("email", { length: 255 }).notNull().unique(),
     name: varchar("name", { length: 255 }),
     phone: varchar("phone", { length: 50 }),
@@ -40,7 +40,7 @@ export type NewUser = typeof users.$inferInsert;
 export const floors = pgTable(
   "floors",
   {
-    id: serial("id").primaryKey(),
+    id: uuid("id").defaultRandom().primaryKey(),
     rank: integer("rank").notNull().unique(), // 1 = top penthouse floor, 50 = base
     isClaimed: boolean("is_claimed").notNull().default(false),
     companyName: varchar("company_name", { length: 255 }).notNull(),
@@ -52,7 +52,7 @@ export const floors = pgTable(
     pricePaid: integer("price_paid").notNull().default(0), // in INR
     manageToken: varchar("manage_token", { length: 128 }),
     ownerEmail: varchar("owner_email", { length: 255 }),
-    userId: integer("user_id").references(() => users.id),
+    userId: uuid("user_id").references(() => users.id),
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -76,7 +76,7 @@ export type NewFloor = typeof floors.$inferInsert;
 export const claims = pgTable(
   "claims",
   {
-    id: serial("id").primaryKey(),
+    id: uuid("id").defaultRandom().primaryKey(),
     paymentId: varchar("payment_id", { length: 255 }).notNull().unique(), // Dodo payment id or mock id
     status: varchar("status", { length: 64 }).notNull().default("pending"), // 'pending' | 'succeeded' | 'failed'
     companyName: varchar("company_name", { length: 255 }).notNull(),
@@ -86,7 +86,7 @@ export const claims = pgTable(
     currency: varchar("currency", { length: 10 }).notNull().default("INR"),
     customerEmail: varchar("customer_email", { length: 255 }),
     customerPhone: varchar("customer_phone", { length: 50 }),
-    userId: integer("user_id").references(() => users.id),
+    userId: uuid("user_id").references(() => users.id),
     manageToken: varchar("manage_token", { length: 128 }),
     checkoutUrl: text("checkout_url"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

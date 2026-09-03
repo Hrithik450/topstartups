@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import type { Floor } from "@/lib/db/config/schema";
 
 export interface AuthUser {
-  id: number;
+  id: string;
   email: string;
   name: string | null;
   avatarUrl: string | null;
@@ -17,7 +17,7 @@ interface UserAuthContextType {
   login: (returnTo?: string) => void;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  isOwnerOfFloor: (floorIdOrRank: number) => boolean;
+  isOwnerOfFloor: (floorIdOrRank: string | number) => boolean;
 }
 
 const UserAuthContext = createContext<UserAuthContextType>({
@@ -85,9 +85,11 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isOwnerOfFloor = useCallback(
-    (floorIdOrRank: number) => {
+    (floorIdOrRank: string | number) => {
       if (!user || ownedFloors.length === 0) return false;
-      return ownedFloors.some((f) => f.id === floorIdOrRank || f.rank === floorIdOrRank);
+      return ownedFloors.some(
+        (f) => String(f.id) === String(floorIdOrRank) || f.rank === Number(floorIdOrRank)
+      );
     },
     [user, ownedFloors]
   );

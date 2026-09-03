@@ -13,7 +13,7 @@ interface ManageFloorModalProps {
 }
 
 interface FloorItem {
-  id: number;
+  id: string | number;
   rank: number;
   companyName: string;
   url: string;
@@ -33,7 +33,7 @@ export default function ManageFloorModal({
   const { user, login, loading: authLoading } = useUserAuth();
 
   const [ownedFloors, setOwnedFloors] = useState<FloorItem[]>([]);
-  const [selectedFloorId, setSelectedFloorId] = useState<number | null>(null);
+  const [selectedFloorId, setSelectedFloorId] = useState<string | number | null>(null);
 
   // Status & loading
   const [loading, setLoading] = useState(true);

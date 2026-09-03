@@ -5,7 +5,7 @@ import { eq, desc } from "drizzle-orm";
 export type { User, NewUser };
 
 export interface UserProduct {
-  id: number;
+  id: string;
   rank: number;
   companyName: string;
   url: string;
@@ -15,7 +15,7 @@ export interface UserProduct {
 }
 
 export interface UserWithProducts {
-  id: number;
+  id: string;
   email: string;
   name: string | null;
   phone: string | null;
@@ -90,7 +90,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
  * Update user details using pure Drizzle ORM.
  */
 export async function updateUser(
-  id: number,
+  id: string,
   data: { name?: string; phone?: string; avatarUrl?: string }
 ): Promise<User | null> {
   const [updated] = await db

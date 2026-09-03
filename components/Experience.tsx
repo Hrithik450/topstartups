@@ -9,7 +9,7 @@ import Controls from "./Controls";
 import FloorHoverCard, { type HoverData } from "./FloorHoverCard";
 import ManageFloorModal from "./ManageFloorModal";
 import BuildingLoader from "./BuildingLoader";
-import { Moon, Sun, ManageIcon } from "./icons";
+import { Moon, Sun, ManageIcon, SoundOn, SoundOff } from "./icons";
 import type { Listing } from "@/lib/three/listings";
 import { useUserAuth } from "@/lib/auth/use-user-auth";
 
@@ -19,11 +19,18 @@ export default function Experience() {
   const handleRef = useRef<TowerHandle | null>(null);
   const [hoveredData, setHoveredData] = useState<HoverData | null>(null);
   const [theme, setTheme] = useState<"dark" | "sunset">("sunset");
+  const [isSoundOn, setIsSoundOn] = useState(false);
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [isBuildingLoading, setIsBuildingLoading] = useState(true);
   const [listings, setListings] = useState<Listing[] | undefined>(undefined);
   const { user, login } = useUserAuth();
+
+  const toggleSound = useCallback(() => {
+    const next = handleRef.current?.toggleSound?.() ?? false;
+    setIsSoundOn(next);
+    return next;
+  }, []);
 
   const isCardHoveredRef = useRef(false);
   const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -269,6 +276,14 @@ export default function Experience() {
             >
               {theme === "dark" ? <Moon /> : <Sun />}
             </button>
+            <button
+              className={`mobile-header-btn ${isSoundOn ? "highlight" : ""}`}
+              onClick={toggleSound}
+              aria-label="Toggle ambient sky and birds sound"
+              title="Toggle Sky & Birds Ambient Sound"
+            >
+              {isSoundOn ? <SoundOn /> : <SoundOff />}
+            </button>
             {user ? (
               <button
                 className="mobile-header-btn"
@@ -322,6 +337,8 @@ export default function Experience() {
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenStats={() => setIsMobileStatsOpen(true)}
+          isSoundOn={isSoundOn}
+          onToggleSound={toggleSound}
         />
         <FloorHoverCard
           data={hoveredData}

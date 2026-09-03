@@ -7,6 +7,8 @@ import {
   Plus,
   Minus,
   Ruler,
+  SoundOn,
+  SoundOff,
   Moon,
   Sun,
   ChevLeft,
@@ -24,15 +26,32 @@ export default function Controls({
   theme = "dark",
   onToggleTheme,
   onOpenStats,
+  isSoundOn,
+  onToggleSound,
 }: {
   handleRef: React.MutableRefObject<TowerHandle | null>;
   theme?: "dark" | "sunset";
   onToggleTheme?: () => void;
   onOpenStats?: () => void;
+  isSoundOn?: boolean;
+  onToggleSound?: () => void;
 }) {
   const [ruler, setRuler] = useState(false);
+  const [localSound, setLocalSound] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const h = () => handleRef.current;
+
+  const sound = isSoundOn !== undefined ? isSoundOn : localSound;
+
+  const handleSoundClick = () => {
+    if (onToggleSound) {
+      onToggleSound();
+    } else {
+      const next = h()?.toggleSound?.() ?? false;
+      setLocalSound(next);
+      showTooltip(next ? "🕊️ Sky & Birds On" : "🔇 Sound Off");
+    }
+  };
 
   const handleThemeClick = () => {
     if (onToggleTheme) {
@@ -70,6 +89,15 @@ export default function Controls({
         <button className={`ctrl ${theme === "dark" ? "active" : ""}`} onClick={handleThemeClick} title="Toggle Night / Evening Mode">
           {theme === "dark" ? <Moon /> : <Sun />}
           <span>{theme === "dark" ? "Night" : "Evening"}</span>
+        </button>
+
+        <button
+          className={`ctrl ${sound ? "active" : ""}`}
+          onClick={handleSoundClick}
+          title="Toggle Ambient Sky & Birds Sound"
+        >
+          {sound ? <SoundOn /> : <SoundOff />}
+          <span>Sound {sound ? "on" : "off"}</span>
         </button>
 
         <button className={`ctrl ${ruler ? "active" : ""}`} onClick={() => setRuler(h()?.toggleRuler() ?? false)}>
@@ -148,30 +176,14 @@ export default function Controls({
         <div className="dock-divider" />
 
         <button
-          className="dock-btn"
-          onClick={() => {
-            h()?.moveFloors(1);
-            showTooltip("🔼 Floor Up");
-          }}
-          aria-label="Move up one floor"
+          className={`dock-btn ${sound ? "active" : ""}`}
+          onClick={handleSoundClick}
+          aria-label="Toggle sky and birds sound"
+          title="Toggle Sky & Birds Sound"
         >
-          <ArrowUp />
-          <span className="dock-label">Up</span>
+          {sound ? <SoundOn /> : <SoundOff />}
+          <span className="dock-label">Sound</span>
         </button>
-
-        <button
-          className="dock-btn"
-          onClick={() => {
-            h()?.moveFloors(-1);
-            showTooltip("🔽 Floor Down");
-          }}
-          aria-label="Move down one floor"
-        >
-          <ArrowDown />
-          <span className="dock-label">Down</span>
-        </button>
-
-        <div className="dock-divider" />
 
         <button
           className={`dock-btn ${ruler ? "active" : ""}`}

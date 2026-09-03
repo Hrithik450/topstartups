@@ -1434,6 +1434,173 @@ function makeLaptop(): THREE.Group {
   return laptop;
 }
 
+// Procedural Soothing Sky Wind Breeze & Cheerful Birdsong Ambient Sound Synthesizer
+function createSkyAndBirdsAudio() {
+  let ctx: AudioContext | null = null;
+  let masterGain: GainNode | null = null;
+  let isPlaying = false;
+  let birdIntervalTimer: NodeJS.Timeout | null = null;
+  let windSource: AudioBufferSourceNode | null = null;
+
+  function initAudio() {
+    if (ctx) return;
+    const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const audio = new AudioContextClass();
+    ctx = audio;
+
+    const mainGain = audio.createGain();
+    mainGain.gain.setValueAtTime(0.0001, audio.currentTime);
+    mainGain.connect(audio.destination);
+    masterGain = mainGain;
+
+    // 1. Soft high-altitude sky breeze (warm pink/brown atmospheric noise)
+    const sampleRate = audio.sampleRate;
+    const bufferSize = sampleRate * 4;
+    const noiseBuffer = audio.createBuffer(2, bufferSize, sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const output = noiseBuffer.getChannelData(ch);
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.035;
+        b6 = white * 0.115926;
+      }
+    }
+
+    const src = audio.createBufferSource();
+    src.buffer = noiseBuffer;
+    src.loop = true;
+    windSource = src;
+
+    // Atmospheric dynamic bandpass filter
+    const windFilter = audio.createBiquadFilter();
+    windFilter.type = "bandpass";
+    windFilter.frequency.setValueAtTime(360, audio.currentTime);
+    windFilter.Q.setValueAtTime(1.1, audio.currentTime);
+
+    // Gentle wind volume
+    const windGain = audio.createGain();
+    windGain.gain.setValueAtTime(0.22, audio.currentTime);
+
+    src.connect(windFilter);
+    windFilter.connect(windGain);
+    windGain.connect(mainGain);
+
+    src.start(0);
+  }
+
+  function playBirdChirpSequence() {
+    if (!ctx || !masterGain || !isPlaying) return;
+    const now = ctx.currentTime;
+    const numChirps = 2 + Math.floor(Math.random() * 3);
+    const baseFreq = 2400 + Math.random() * 1100;
+    const panPos = (Math.random() - 0.5) * 1.3;
+
+    let panner: StereoPannerNode | null = null;
+    if (ctx.createStereoPanner) {
+      panner = ctx.createStereoPanner();
+      panner.pan.setValueAtTime(panPos, now);
+      panner.connect(masterGain);
+    }
+
+    for (let c = 0; c < numChirps; c++) {
+      const chirpStart = now + c * (0.09 + Math.random() * 0.06);
+      const chirpDuration = 0.065 + Math.random() * 0.035;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      const startF = baseFreq + (Math.random() - 0.5) * 350;
+      const peakF = startF + 750 + Math.random() * 550;
+      const endF = startF - 250 + Math.random() * 250;
+
+      osc.frequency.setValueAtTime(startF, chirpStart);
+      osc.frequency.exponentialRampToValueAtTime(peakF, chirpStart + chirpDuration * 0.4);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(200, endF), chirpStart + chirpDuration);
+
+      gain.gain.setValueAtTime(0.0001, chirpStart);
+      gain.gain.exponentialRampToValueAtTime(0.07, chirpStart + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, chirpStart + chirpDuration);
+
+      osc.connect(gain);
+      if (panner) {
+        gain.connect(panner);
+      } else {
+        gain.connect(masterGain);
+      }
+
+      osc.start(chirpStart);
+      osc.stop(chirpStart + chirpDuration + 0.05);
+    }
+  }
+
+  function scheduleNextBird() {
+    if (!isPlaying) return;
+    const delay = 2200 + Math.random() * 3800;
+    birdIntervalTimer = setTimeout(() => {
+      if (isPlaying) {
+        playBirdChirpSequence();
+        scheduleNextBird();
+      }
+    }, delay);
+  }
+
+  return {
+    toggle() {
+      initAudio();
+      if (!ctx || !masterGain) return false;
+
+      if (ctx.state === "suspended") {
+        ctx.resume();
+      }
+
+      isPlaying = !isPlaying;
+
+      if (isPlaying) {
+        masterGain.gain.cancelScheduledValues(ctx.currentTime);
+        masterGain.gain.setValueAtTime(Math.max(0.0001, masterGain.gain.value), ctx.currentTime);
+        masterGain.gain.exponentialRampToValueAtTime(0.85, ctx.currentTime + 0.6);
+        playBirdChirpSequence();
+        scheduleNextBird();
+      } else {
+        masterGain.gain.cancelScheduledValues(ctx.currentTime);
+        masterGain.gain.setValueAtTime(Math.max(0.0001, masterGain.gain.value), ctx.currentTime);
+        masterGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+        if (birdIntervalTimer) {
+          clearTimeout(birdIntervalTimer);
+          birdIntervalTimer = null;
+        }
+      }
+
+      return isPlaying;
+    },
+    isPlaying() {
+      return isPlaying;
+    },
+    dispose() {
+      if (birdIntervalTimer) clearTimeout(birdIntervalTimer);
+      if (windSource) {
+        try {
+          windSource.stop();
+          windSource.disconnect();
+        } catch {}
+      }
+      if (ctx && ctx.state !== "closed") {
+        try {
+          ctx.close();
+        } catch {}
+      }
+    },
+  };
+}
+
 export interface CreateTowerOptions {
   listings?: Listing[];
   onFloorHover?: (data: { listing: Listing; rank: number; pinned?: boolean } | null) => void;
@@ -1445,6 +1612,8 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   const onFloorHover = options?.onFloorHover;
   let currentTheme: "dark" | "sunset" = options?.theme || "sunset";
   const disposables: (THREE.Material | THREE.BufferGeometry | THREE.Texture | { dispose: () => void })[] = [];
+
+  const skyAndBirdsAudio = createSkyAndBirdsAudio();
 
   const isMobileDevice = typeof window !== "undefined" && window.innerWidth < 768;
 
@@ -2875,6 +3044,9 @@ function createMoonTexture(): THREE.CanvasTexture {
       rulerGroup.visible = !rulerGroup.visible;
       return rulerGroup.visible;
     },
+    toggleSound() {
+      return skyAndBirdsAudio.toggle();
+    },
     toggleTheme() {
       const nextTheme = currentTheme === "dark" ? "sunset" : "dark";
       applyTheme(nextTheme);
@@ -2904,6 +3076,7 @@ function createMoonTexture(): THREE.CanvasTexture {
       if (typeof document !== "undefined") {
         document.removeEventListener("visibilitychange", onVisibilityChange);
       }
+      skyAndBirdsAudio.dispose();
       renderer.domElement.removeEventListener("wheel", onWheel);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
       renderer.domElement.removeEventListener("touchstart", onTouchStart);

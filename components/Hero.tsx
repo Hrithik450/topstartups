@@ -88,6 +88,7 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
   const [topFloorClaimed, setTopFloorClaimed] = useState(false);
   const [allLocks, setAllLocks] = useState<Record<number, {
     isLocked: boolean;
+    lockedByEmail?: string | null;
     companyName?: string | null;
     secondsRemaining?: number;
   }>>({});
@@ -100,32 +101,35 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
   }, [price, topFloorPrice]);
 
   const targetLock = allLocks[targetRank] || { isLocked: false };
-  const isTargetLocked = Boolean(targetLock.isLocked);
+  const userEmail = user?.email?.toLowerCase().trim();
+  const lockHolderEmail = targetLock.lockedByEmail?.toLowerCase().trim();
+  const isHeldByMe = Boolean(userEmail && lockHolderEmail && userEmail === lockHolderEmail);
+  const isTargetLocked = Boolean(targetLock.isLocked && !isHeldByMe);
 
   // Sync current floors pricing ladder and concurrency locks across all 50 floors
-  useEffect(() => {
-    const fetchFloorsAndLocks = () => {
-      fetch("/api/floors", { cache: "no-store" })
-        .then((res) => res.json())
-        .then((data) => {
-          setAllLocks(data.locks || {});
-          if (data.floors && data.floors.length > 0) {
-            const top = data.floors[0];
-            if (top.isClaimed) {
-              setTopFloorClaimed(true);
-              const requiredTopPrice = Number(top.pricePaid || 50) + 1;
-              setTopFloorPrice(requiredTopPrice);
-              setPrice((prev) => (prev <= 50 ? requiredTopPrice : prev));
-            } else {
-              setTopFloorClaimed(false);
-              setTopFloorPrice(99);
-              setPrice((prev) => (prev <= 50 ? 99 : prev));
-            }
+  const fetchFloorsAndLocks = () => {
+    fetch("/api/floors", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        setAllLocks(data.locks || {});
+        if (data.floors && data.floors.length > 0) {
+          const top = data.floors[0];
+          if (top.isClaimed) {
+            setTopFloorClaimed(true);
+            const requiredTopPrice = Number(top.pricePaid || 50) + 1;
+            setTopFloorPrice(requiredTopPrice);
+            setPrice((prev) => (prev <= 50 ? requiredTopPrice : prev));
+          } else {
+            setTopFloorClaimed(false);
+            setTopFloorPrice(99);
+            setPrice((prev) => (prev <= 50 ? 99 : prev));
           }
-        })
-        .catch(() => {});
-    };
+        }
+      })
+      .catch(() => {});
+  };
 
+  useEffect(() => {
     fetchFloorsAndLocks();
 
     window.addEventListener("floors-refresh", fetchFloorsAndLocks);
@@ -151,7 +155,7 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
     };
   }, []);
 
-  // Handle browser Back / Forward navigation (bfcache restoration)
+  // Handle browser Back / Forward navigation and abandoned checkout return
   useEffect(() => {
     const handlePageShow = () => {
       setIsSubmitting(false);
@@ -160,19 +164,24 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
       const sessionId = params.get("session_id") || params.get("checkout_id");
       if (!paymentId && !sessionId && params.get("claimed") !== "true") {
         setPaymentNotice(null);
+        // Release abandoned lock for current user
         fetch("/api/floors/lock-status", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rank: 1 }),
-        }).catch(() => {});
+          body: JSON.stringify({ rank: targetRank, email: user?.email }),
+        })
+          .then(() => fetchFloorsAndLocks())
+          .catch(() => {});
       }
     };
 
     window.addEventListener("pageshow", handlePageShow);
+    window.addEventListener("focus", handlePageShow);
     return () => {
       window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("focus", handlePageShow);
     };
-  }, []);
+  }, [targetRank, user?.email]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

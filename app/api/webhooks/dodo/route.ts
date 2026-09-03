@@ -72,6 +72,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, rank: result.rank });
     }
 
+    // Process payment.failed or checkout.expired / cancelled events
+    if (
+      eventType === "payment.failed" ||
+      eventType === "payment_failed" ||
+      eventType === "checkout.expired" ||
+      eventType === "checkout.cancelled"
+    ) {
+      const data = payload.data || payload;
+      const paymentId = data.payment_id || data.id || payload.id;
+      const checkoutSessionId = data.checkout_session_id || data.checkout_id || payload.checkout_session_id;
+
+      await releaseFloorLock(1, paymentId, checkoutSessionId);
+      console.log(`Released floor lock on failed/expired webhook event (${eventType}):`, paymentId || checkoutSessionId);
+
+      return NextResponse.json({ success: true, message: "Lock released on failure/expiry" });
+    }
+
     return NextResponse.json({ received: true, eventType });
   } catch (err: any) {
     console.error("Error processing Dodo Payments webhook:", err);

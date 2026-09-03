@@ -115,8 +115,9 @@ export async function GET(req: NextRequest) {
 
     const pendingClaim = matchingClaims[0];
 
-    // If payment failed
-    if (paymentStatus === "failed") {
+    // If payment failed, cancelled, or expired
+    if (paymentStatus === "failed" || paymentStatus === "cancelled" || paymentStatus === "expired") {
+      await releaseFloorLock(1, paymentId, checkoutSessionId);
       if (pendingClaim && pendingClaim.status === "pending") {
         await db
           .update(claims)
@@ -125,7 +126,7 @@ export async function GET(req: NextRequest) {
       }
       return NextResponse.json({
         status: "failed",
-        error: "Payment was not successful. Please choose another payment method (such as UPI for INR transactions).",
+        error: "Payment was not completed. The reservation has been released.",
       });
     }
 

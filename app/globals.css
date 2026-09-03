@@ -2738,77 +2738,50 @@ button.chip:focus-visible {
   transform: translateY(-1px);
 }
 
-/* Highly visible policy & moderation links footer bar */
-.policy-footer-bar {
-  display: inline-flex;
+/* Clean minimal policy links with white underline on hover */
+.policy-links-container {
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 6px 14px;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 9999px;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  transition: all 0.2s ease;
+  gap: 10px;
+  margin-top: 12px;
 }
 
-[data-theme="sunset"] .policy-footer-bar {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-}
-
-.policy-pill-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+.policy-link {
   font-size: 11.5px;
-  font-weight: 600;
-  color: #cbd5e1;
+  color: rgba(255, 255, 255, 0.55);
   text-decoration: none;
-  padding: 3px 8px;
-  border-radius: 6px;
-  transition: all 0.15s ease;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
 }
 
-[data-theme="sunset"] .policy-pill-link {
-  color: #475569;
-}
-
-.policy-pill-link:hover {
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.12);
-  transform: translateY(-1px);
-}
-
-.policy-pill-link.highlight {
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.25);
-}
-
-.policy-pill-link.highlight:hover {
+.policy-link:hover {
   color: #ffffff;
-  background: rgba(251, 191, 36, 0.24);
-  border-color: rgba(251, 191, 36, 0.5);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: #ffffff;
 }
 
-.policy-divider {
-  color: rgba(255, 255, 255, 0.2);
-  font-size: 11px;
+[data-theme="sunset"] .policy-link {
+  color: rgba(15, 23, 42, 0.55);
+}
+
+[data-theme="sunset"] .policy-link:hover {
+  color: #0f172a;
+  text-decoration-color: #0f172a;
+}
+
+.policy-dot {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.22);
   user-select: none;
 }
 
-[data-theme="sunset"] .policy-divider {
-  color: rgba(0, 0, 0, 0.2);
+[data-theme="sunset"] .policy-dot {
+  color: rgba(15, 23, 42, 0.22);
 }
 
-.policy-icon {
-  font-size: 12px;
-  line-height: 1;
-}
 
 
 

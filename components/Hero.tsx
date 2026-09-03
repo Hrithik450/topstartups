@@ -621,23 +621,12 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
         You&apos;ll pay the difference &amp; claim top floor.
       </p>
 
-      <div className="flex items-center justify-center">
-        <div className="policy-footer-bar" role="navigation" aria-label="Platform Guidelines and Policies">
-          <a href="/rules" className="policy-pill-link highlight" title="View Content Moderation and Platform Rules">
-            <span className="policy-icon">🛡️</span>
-            <span>Platform Rules</span>
-          </a>
-          <span className="policy-divider">/</span>
-          <a href="/terms" className="policy-pill-link" title="Terms of Service">
-            <span className="policy-icon">⚖️</span>
-            <span>Terms</span>
-          </a>
-          <span className="policy-divider">/</span>
-          <a href="/privacy" className="policy-pill-link" title="Privacy Policy">
-            <span className="policy-icon">🔒</span>
-            <span>Privacy</span>
-          </a>
-        </div>
+      <div className="policy-links-container">
+        <a href="/rules" className="policy-link">Platform Rules</a>
+        <span className="policy-dot">•</span>
+        <a href="/terms" className="policy-link">Terms</a>
+        <span className="policy-dot">•</span>
+        <a href="/privacy" className="policy-link">Privacy</a>
       </div>
     </section>
   );

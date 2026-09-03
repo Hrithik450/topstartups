@@ -197,7 +197,15 @@ export default function Experience() {
           } catch {}
         });
 
-        eventSource.addEventListener("lock-updated", () => {
+        eventSource.addEventListener("lock-updated", (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data.locks) {
+              window.dispatchEvent(
+                new CustomEvent("locks-updated", { detail: data.locks })
+              );
+            }
+          } catch {}
           refreshFloors();
           window.dispatchEvent(new CustomEvent("floors-refresh"));
         });

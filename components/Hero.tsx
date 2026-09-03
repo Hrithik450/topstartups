@@ -132,11 +132,33 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
   useEffect(() => {
     fetchFloorsAndLocks();
 
+    const handleLocksUpdated = (e: any) => {
+      const raw = e.detail;
+      if (!raw) return;
+      if (Array.isArray(raw)) {
+        const lockMap: Record<number, any> = {};
+        for (const l of raw) {
+          lockMap[l.targetRank] = {
+            isLocked: true,
+            targetRank: l.targetRank,
+            lockedByEmail: l.lockedByEmail,
+            companyName: l.companyName,
+            secondsRemaining: 360,
+          };
+        }
+        setAllLocks(lockMap);
+      } else if (typeof raw === "object") {
+        setAllLocks(raw);
+      }
+    };
+
     window.addEventListener("floors-refresh", fetchFloorsAndLocks);
     window.addEventListener("floor-claimed-success", fetchFloorsAndLocks);
+    window.addEventListener("locks-updated", handleLocksUpdated);
     return () => {
       window.removeEventListener("floors-refresh", fetchFloorsAndLocks);
       window.removeEventListener("floor-claimed-success", fetchFloorsAndLocks);
+      window.removeEventListener("locks-updated", handleLocksUpdated);
     };
   }, []);
 

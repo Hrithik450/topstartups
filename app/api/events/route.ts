@@ -30,6 +30,22 @@ export async function GET(req: NextRequest) {
         encoder.encode(`event: connected\ndata: ${JSON.stringify({ time: Date.now() })}\n\n`)
       );
 
+      // Send initial lock state on connection
+      try {
+        const initialLocks = await db.select().from(floorLocks);
+        lastLockState = initialLocks
+          .map((l) => `${l.targetRank}:${l.expiresAt?.toISOString()}`)
+          .join(",");
+        controller.enqueue(
+          encoder.encode(
+            `event: lock-updated\ndata: ${JSON.stringify({
+              locks: initialLocks,
+              timestamp: Date.now(),
+            })}\n\n`
+          )
+        );
+      } catch {}
+
       // Get initial latest top floor claim timestamp
       try {
         const topFloors = await db
@@ -104,8 +120,8 @@ export async function GET(req: NextRequest) {
           // Ignore transient DB pool errors during stream
         }
 
-        // Wait 1.8s between event checks
-        await new Promise((resolve) => setTimeout(resolve, 1800));
+        // Wait 1.0s between event checks for fast real-time responsiveness
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
       // Gracefully close stream so browser EventSource auto-reconnects seamlessly

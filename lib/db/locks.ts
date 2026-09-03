@@ -203,14 +203,21 @@ export const acquireTopFloorLock = (args: Parameters<typeof acquireFloorLock>[0]
 
 /**
  * Release claim lock for a specific floor rank.
+ * If paymentId / checkoutSessionId is provided, matches against either.
+ * If neither is provided, releases the lock on that rank unconditionally.
  */
-export async function releaseFloorLock(targetRank = 1, paymentId?: string | null): Promise<void> {
+export async function releaseFloorLock(
+  targetRank = 1,
+  paymentId?: string | null,
+  checkoutSessionId?: string | null
+): Promise<void> {
   try {
-    if (paymentId) {
+    await ensureFloorLocksTable();
+    if (paymentId || checkoutSessionId) {
       await db
         .delete(floorLocks)
         .where(
-          sql`${floorLocks.targetRank} = ${targetRank} AND (${floorLocks.lockedByPaymentId} = ${paymentId} OR ${floorLocks.lockedByPaymentId} IS NULL)`
+          sql`${floorLocks.targetRank} = ${targetRank} AND (${paymentId ? sql`${floorLocks.lockedByPaymentId} = ${paymentId}` : sql`false`} OR ${checkoutSessionId ? sql`${floorLocks.lockedByPaymentId} = ${checkoutSessionId}` : sql`false`} OR ${floorLocks.lockedByPaymentId} IS NULL)`
         );
     } else {
       await db.delete(floorLocks).where(eq(floorLocks.targetRank, targetRank));
@@ -220,4 +227,5 @@ export async function releaseFloorLock(targetRank = 1, paymentId?: string | null
   }
 }
 
-export const releaseTopFloorLock = (targetRank = 1, paymentId?: string | null) => releaseFloorLock(targetRank, paymentId);
+export const releaseTopFloorLock = (targetRank = 1, paymentId?: string | null, checkoutSessionId?: string | null) =>
+  releaseFloorLock(targetRank, paymentId, checkoutSessionId);

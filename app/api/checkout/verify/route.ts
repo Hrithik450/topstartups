@@ -3,6 +3,7 @@ import { db } from "@/lib/db/config/client";
 import { claims } from "@/lib/db/config/schema";
 import { eq, or } from "drizzle-orm";
 import { claimTopFloorTransactional } from "@/lib/db/floors";
+import { releaseFloorLock } from "@/lib/db/locks";
 
 export const dynamic = "force-dynamic";
 
@@ -154,6 +155,7 @@ export async function GET(req: NextRequest) {
 
       // If already claimed, return immediate confirmation
       if (pendingClaim && pendingClaim.status === "succeeded") {
+        await releaseFloorLock(1);
         return NextResponse.json({
           status: "succeeded",
           rank: 1,
@@ -173,6 +175,8 @@ export async function GET(req: NextRequest) {
         customerEmail: finalEmail || undefined,
         customerPhone: finalPhone || undefined,
       });
+
+      await releaseFloorLock(1);
 
       return NextResponse.json({
         status: "succeeded",

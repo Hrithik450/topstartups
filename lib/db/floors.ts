@@ -169,6 +169,7 @@ export async function claimTopFloorTransactional(
       .limit(1);
 
     if (existingClaim.length > 0 && existingClaim[0].status === "succeeded") {
+      await releaseTopFloorLock(1);
       return {
         success: true,
         rank: 1,
@@ -290,7 +291,7 @@ export async function claimTopFloorTransactional(
   });
 
   // Release lock after transaction completes
-  await releaseTopFloorLock(1, input.paymentId);
+  await releaseTopFloorLock(1);
 
   return result;
 }

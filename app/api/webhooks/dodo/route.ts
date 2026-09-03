@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyDodoWebhookSignature } from "@/lib/dodo";
 import { claimTopFloorTransactional } from "@/lib/db/floors";
+import { releaseFloorLock } from "@/lib/db/locks";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,8 @@ export async function POST(req: NextRequest) {
         customerEmail,
         customerPhone,
       });
+
+      await releaseFloorLock(1);
 
       console.log("Webhook transaction result:", result);
       return NextResponse.json({ success: true, rank: result.rank });

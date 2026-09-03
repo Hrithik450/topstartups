@@ -34,6 +34,8 @@ export default function ManageFloorModal({
 
   const [ownedFloors, setOwnedFloors] = useState<FloorItem[]>([]);
   const [selectedFloorId, setSelectedFloorId] = useState<string | number | null>(null);
+  const [topFloorPrice, setTopFloorPrice] = useState(99);
+  const [outbidding, setOutbidding] = useState(false);
 
   // Status & loading
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,7 @@ export default function ManageFloorModal({
     logoUrl: "",
   });
 
-  // Load latest owned floors every time the modal opens
+  // Load latest owned floors and current top floor price every time the modal opens
   useEffect(() => {
     if (!isOpen) return;
 
@@ -66,14 +68,26 @@ export default function ManageFloorModal({
     setLoading(true);
     setStatusMsg(null);
 
-    fetch("/api/auth/me", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
+    Promise.all([
+      fetch("/api/auth/me", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/floors", { cache: "no-store" }).then((r) => r.json()),
+    ])
+      .then(([userData, floorsData]) => {
         if (!isMounted) return;
-        if (data.authenticated && Array.isArray(data.ownedFloors) && data.ownedFloors.length > 0) {
-          setOwnedFloors(data.ownedFloors);
+
+        if (floorsData.floors && floorsData.floors.length > 0) {
+          const top = floorsData.floors[0];
+          if (top.isClaimed) {
+            setTopFloorPrice(Number(top.pricePaid || 50) + 1);
+          } else {
+            setTopFloorPrice(99);
+          }
+        }
+
+        if (userData.authenticated && Array.isArray(userData.ownedFloors) && userData.ownedFloors.length > 0) {
+          setOwnedFloors(userData.ownedFloors);
           setSelectedFloorId((prev) =>
-            prev && data.ownedFloors.some((f: any) => f.id === prev) ? prev : data.ownedFloors[0].id
+            prev && userData.ownedFloors.some((f: any) => f.id === prev) ? prev : userData.ownedFloors[0].id
           );
         } else {
           setOwnedFloors([]);
@@ -110,6 +124,40 @@ export default function ManageFloorModal({
       });
     }
   }, [selectedFloorId, ownedFloors]);
+
+  // Outbid and reclaim Top Floor #1 for the difference price
+  const handleOutbidUpgrade = async () => {
+    const current = ownedFloors.find((f) => f.id === selectedFloorId);
+    if (!current) return;
+
+    setOutbidding(true);
+    setStatusMsg(null);
+
+    try {
+      const diff = Math.max(1, topFloorPrice - Number(current.pricePaid || 0));
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: current.url,
+          category: current.category || "Startup",
+          companyName: current.companyName,
+          price: diff,
+          targetRank: 1,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.checkoutUrl) {
+        throw new Error(data.error || "Failed to initiate outbid checkout");
+      }
+
+      window.location.href = data.checkoutUrl;
+    } catch (err: any) {
+      setStatusMsg({ type: "error", text: err.message || "Could not start outbid upgrade." });
+      setOutbidding(false);
+    }
+  };
 
   // Save floor details
   const handleSave = async (e: React.FormEvent) => {
@@ -318,6 +366,79 @@ export default function ManageFloorModal({
                 </select>
               </div>
             )}
+
+            {/* Outbid & Reclaim Top Floor Upgrade Banner */}
+            {(() => {
+              const current = ownedFloors.find((f) => f.id === selectedFloorId);
+              if (!current) return null;
+              if (current.rank > 1) {
+                const diff = Math.max(1, topFloorPrice - Number(current.pricePaid || 0));
+                return (
+                  <div
+                    style={{
+                      marginTop: "16px",
+                      padding: "14px 16px",
+                      background: "linear-gradient(135deg, rgba(255, 107, 0, 0.12), rgba(255, 170, 0, 0.08))",
+                      border: "1px solid rgba(255, 120, 0, 0.35)",
+                      borderRadius: "10px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: "12px",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 600, color: "#ff8c00", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span>⚡ Reclaim Penthouse Floor #1</span>
+                        <span style={{ fontSize: "12px", opacity: 0.9, color: "#fff", background: "rgba(255,255,255,0.15)", padding: "2px 8px", borderRadius: "4px" }}>
+                          Currently Floor #{current.rank}
+                        </span>
+                      </div>
+                      <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "rgba(255, 255, 255, 0.75)" }}>
+                        You previously paid ₹{current.pricePaid}. Pay only the <strong>₹{diff} difference</strong> to boost this startup back to Top Floor #1!
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleOutbidUpgrade}
+                      disabled={outbidding}
+                      style={{
+                        padding: "8px 16px",
+                        background: "#ff6b00",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontWeight: 600,
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        boxShadow: "0 4px 12px rgba(255, 107, 0, 0.35)",
+                      }}
+                    >
+                      {outbidding ? "Connecting..." : `⚡ Outbid for ₹${diff} →`}
+                    </button>
+                  </div>
+                );
+              } else if (current.rank === 1) {
+                return (
+                  <div
+                    style={{
+                      marginTop: "16px",
+                      padding: "10px 14px",
+                      background: "rgba(16, 185, 129, 0.12)",
+                      border: "1px solid rgba(16, 185, 129, 0.35)",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      color: "#10b981",
+                      fontWeight: 600,
+                    }}
+                  >
+                    👑 Currently occupying the #1 Top Penthouse Floor (₹{current.pricePaid} paid)
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             {/* Edit Form */}
             <form onSubmit={handleSave} style={{ marginTop: "16px" }}>

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createDodoCheckout } from "@/lib/dodo";
 import { db } from "@/lib/db/config/client";
-import { claims } from "@/lib/db/config/schema";
+import { claims, floors } from "@/lib/db/config/schema";
+import { eq } from "drizzle-orm";
 import { verifyWebsiteLive } from "@/lib/validation/domain";
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { acquireFloorLock } from "@/lib/db/locks";
@@ -41,26 +42,65 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanUrl = verification.cleanUrl;
+    const cleanHost = cleanUrl
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .split("/")[0]
+      .toLowerCase()
+      .trim();
+
+    // Check if website is already claimed on the skyscraper
+    const allActiveFloors = await db
+      .select()
+      .from(floors)
+      .where(eq(floors.isClaimed, true));
+
+    const existingFloor = allActiveFloors.find((f) => {
+      const fHost = (f.url || "")
+        .replace(/^https?:\/\//i, "")
+        .replace(/^www\./i, "")
+        .split("/")[0]
+        .toLowerCase()
+        .trim();
+      return fHost === cleanHost;
+    });
+
+    let effectiveTargetRank = targetRank;
+    let amount = Math.max(50, Math.min(100000, Number(price) || 50));
+
+    if (existingFloor) {
+      if (existingFloor.rank === 1) {
+        return NextResponse.json(
+          { error: "This startup is already at Top Penthouse Floor #1!" },
+          { status: 400 }
+        );
+      }
+
+      // Reclaiming Top Floor: compute required difference
+      const topFloor = allActiveFloors.find((f) => f.rank === 1);
+      const topPrice = topFloor?.isClaimed ? Number(topFloor.pricePaid) + 1 : 99;
+      const minDifference = Math.max(1, topPrice - Number(existingFloor.pricePaid || 0));
+      amount = Math.max(minDifference, Number(price) || minDifference);
+      effectiveTargetRank = 1; // Outbid always targets Floor #1
+    }
 
     // SECURITY: Validate and sanitize text inputs
     const name = sanitizeText(
-      companyName?.trim() || cleanUrl.replace(/^https?:\/\//, "").replace(/\/.*$/, "")
+      companyName?.trim() || existingFloor?.companyName || cleanUrl.replace(/^https?:\/\//, "").replace(/\/.*$/, "")
     );
     if (name.length < 1 || name.length > 255) {
       return NextResponse.json({ error: "Company name must be 1-255 characters" }, { status: 400 });
     }
 
-    const cleanCategory = sanitizeText(category || "Startup", 128);
+    const cleanCategory = sanitizeText(category || existingFloor?.category || "Startup", 128);
 
     // Prefer authenticated Google email
-    const finalEmail = session?.email || body.customerEmail?.trim() || null;
+    const finalEmail = session?.email || body.customerEmail?.trim() || existingFloor?.ownerEmail || null;
     const finalUserId = session?.id || null;
-
-    const amount = Math.max(50, Math.min(100000, Number(price) || 50));
 
     // CONCURRENCY LOCK: Reserve floor rank for 6 minutes (360s) during checkout
     const lockResult = await acquireFloorLock({
-      targetRank,
+      targetRank: effectiveTargetRank,
       email: finalEmail,
       companyName: name,
       durationSeconds: 360,
@@ -91,7 +131,7 @@ export async function POST(req: NextRequest) {
       category: cleanCategory,
       companyName: name,
       customerName: session?.name || (body.customerName && body.customerName !== name ? body.customerName.trim() : undefined),
-      targetRank,
+      targetRank: effectiveTargetRank,
       price: amount,
       customerEmail: finalEmail || undefined,
       returnUrl: origin,
@@ -100,7 +140,7 @@ export async function POST(req: NextRequest) {
     // Update lock with exact payment session ID
     if (checkout.paymentId) {
       await acquireFloorLock({
-        targetRank,
+        targetRank: effectiveTargetRank,
         email: finalEmail,
         paymentId: checkout.paymentId,
         companyName: name,
@@ -117,7 +157,7 @@ export async function POST(req: NextRequest) {
         url: cleanUrl,
         category: cleanCategory,
         amount,
-        targetRank,
+        targetRank: effectiveTargetRank,
         currency: "INR",
         customerEmail: finalEmail,
         userId: finalUserId,

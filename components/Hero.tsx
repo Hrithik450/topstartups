@@ -93,12 +93,50 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
     secondsRemaining?: number;
   }>>({});
 
+  const [activeFloors, setActiveFloors] = useState<any[]>([]);
+
+  // Check if current URL input already exists on the skyscraper
+  const existingFloorOnTower = useMemo(() => {
+    if (!url || url.trim().length < 3) return null;
+    const cleanHost = url
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .split("/")[0]
+      .toLowerCase()
+      .trim();
+    if (!cleanHost || cleanHost.length < 3) return null;
+    return activeFloors.find((f) => {
+      if (!f.isClaimed) return false;
+      const fHost = (f.url || "")
+        .replace(/^https?:\/\//i, "")
+        .replace(/^www\./i, "")
+        .split("/")[0]
+        .toLowerCase()
+        .trim();
+      return fHost === cleanHost;
+    });
+  }, [url, activeFloors]);
+
+  // Difference price required to reclaim top floor #1
+  const differencePrice = useMemo(() => {
+    if (!existingFloorOnTower || existingFloorOnTower.rank === 1) return 0;
+    return Math.max(1, topFloorPrice - Number(existingFloorOnTower.pricePaid || 0));
+  }, [existingFloorOnTower, topFloorPrice]);
+
+  // If existing floor detected on lower rank, auto-switch to difference price
+  useEffect(() => {
+    if (existingFloorOnTower && existingFloorOnTower.rank > 1) {
+      setPrice(differencePrice);
+    }
+  }, [existingFloorOnTower, differencePrice]);
+
   // Dynamic target floor rank derived from current price
   const targetRank = useMemo(() => {
+    if (existingFloorOnTower && existingFloorOnTower.rank > 1) return 1;
     if (price >= topFloorPrice) return 1;
     const offset = topFloorPrice - price;
     return Math.min(50, Math.max(1, 1 + offset));
-  }, [price, topFloorPrice]);
+  }, [price, topFloorPrice, existingFloorOnTower]);
 
   const targetLock = allLocks[targetRank] || { isLocked: false };
   const userEmail = user?.email?.toLowerCase().trim();
@@ -113,6 +151,7 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
       .then((data) => {
         setAllLocks(data.locks || {});
         if (data.floors && data.floors.length > 0) {
+          setActiveFloors(data.floors);
           const top = data.floors[0];
           if (top.isClaimed) {
             setTopFloorClaimed(true);
@@ -473,32 +512,63 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
         </div>
       )}
 
+      {/* Existing Floor Reclaim / Top Floor Status Notice */}
+      {existingFloorOnTower && existingFloorOnTower.rank === 1 && (
+        <div className="claimed-banner celebration" style={{ marginBottom: "16px" }} role="status">
+          <span>👑 <strong>{existingFloorOnTower.companyName || url}</strong> is already featured at Top Penthouse Floor #1!</span>
+          <button type="button" className="claimed-edit-btn" onClick={() => onOpenManage?.()}>
+            Manage
+          </button>
+        </div>
+      )}
+
+      {existingFloorOnTower && existingFloorOnTower.rank > 1 && (
+        <div
+          className="claimed-banner payment-notice info"
+          style={{ marginBottom: "16px", background: "rgba(255, 107, 0, 0.12)", border: "1px solid rgba(255, 120, 0, 0.35)", color: "#ff8c00" }}
+          role="status"
+        >
+          <span>
+            ⚡ <strong>{existingFloorOnTower.companyName || url}</strong> is on Floor #{existingFloorOnTower.rank} (₹{existingFloorOnTower.pricePaid} paid). Reclaim Top Floor #1 for just <strong>₹{differencePrice} difference</strong>!
+          </span>
+          <button type="button" className="claimed-edit-btn" style={{ background: "#ff6b00", color: "#fff", borderColor: "#ff6b00" }} onClick={() => onOpenManage?.()}>
+            Manage
+          </button>
+        </div>
+      )}
+
       <h1 className="headline">
-        {targetRank === 1 ? (
+        {existingFloorOnTower && existingFloorOnTower.rank > 1 ? (
+          "Outbid & reclaim top floor for"
+        ) : existingFloorOnTower && existingFloorOnTower.rank === 1 ? (
+          "Featured at Top Penthouse Floor #1"
+        ) : targetRank === 1 ? (
           topFloorClaimed ? "Outbid top floor for" : "Claim top floor for"
         ) : (
           `Claim Floor #${targetRank} for`
         )}
-        <span className="price-stepper">
-          <button
-            type="button"
-            className="step-btn"
-            onClick={() => setPrice((p) => Math.max(50, p - 1))}
-            aria-label="Lower bid"
-            disabled={price <= 50}
-          >
-            <Minus />
-          </button>
-          <span className="price">₹{price}</span>
-          <button
-            type="button"
-            className="step-btn"
-            onClick={() => setPrice((p) => p + 1)}
-            aria-label="Raise bid"
-          >
-            <Plus />
-          </button>
-        </span>
+        {(!existingFloorOnTower || existingFloorOnTower.rank > 1) && (
+          <span className="price-stepper">
+            <button
+              type="button"
+              className="step-btn"
+              onClick={() => setPrice((p) => Math.max(existingFloorOnTower && existingFloorOnTower.rank > 1 ? differencePrice : 50, p - 1))}
+              aria-label="Lower bid"
+              disabled={price <= (existingFloorOnTower && existingFloorOnTower.rank > 1 ? differencePrice : 50)}
+            >
+              <Minus />
+            </button>
+            <span className="price">₹{price}</span>
+            <button
+              type="button"
+              className="step-btn"
+              onClick={() => setPrice((p) => p + 1)}
+              aria-label="Raise bid"
+            >
+              <Plus />
+            </button>
+          </span>
+        )}
       </h1>
 
       <form className="form" onSubmit={handleSubmit}>
@@ -664,10 +734,12 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
 
         <button
           type="submit"
-          className={`claim-btn ${isTargetLocked ? "claim-btn-locked" : ""}`}
-          disabled={isSubmitting || isTargetLocked}
+          className={`claim-btn ${isTargetLocked || (existingFloorOnTower && existingFloorOnTower.rank === 1) ? "claim-btn-locked" : ""}`}
+          disabled={isSubmitting || isTargetLocked || Boolean(existingFloorOnTower && existingFloorOnTower.rank === 1)}
           title={
-            isTargetLocked
+            existingFloorOnTower && existingFloorOnTower.rank === 1
+              ? "This startup is already at Top Penthouse Floor #1"
+              : isTargetLocked
               ? isHeldByMe
                 ? `You are currently claiming Floor #${targetRank} in checkout on another device`
                 : `Someone is currently in checkout claiming Floor #${targetRank}`
@@ -676,12 +748,16 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
         >
           {isSubmitting ? (
             "Verifying..."
+          ) : existingFloorOnTower && existingFloorOnTower.rank === 1 ? (
+            <>👑 Already Top Floor #1</>
           ) : isTargetLocked ? (
             isHeldByMe ? (
               <>⏳ You are claiming Floor #{targetRank}...</>
             ) : (
               <>🔒 Someone is claiming Floor #{targetRank}...</>
             )
+          ) : existingFloorOnTower && existingFloorOnTower.rank > 1 ? (
+            <>⚡ Outbid & Reclaim Top Floor #1 for ₹{price} <Arrow /></>
           ) : targetRank === 1 ? (
             <>Claim top floor <Arrow /></>
           ) : (

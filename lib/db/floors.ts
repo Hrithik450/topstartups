@@ -1,6 +1,6 @@
 import { db } from "./config/client";
 import { floors, claims, users, type Floor, type NewFloor } from "./config/schema";
-import { eq, asc, and, gt, gte, lte, sql } from "drizzle-orm";
+import { eq, asc, and, gt, gte, lte, lt, sql } from "drizzle-orm";
 import { releaseFloorLock } from "./locks";
 import crypto from "crypto";
 
@@ -187,16 +187,75 @@ export async function claimTopFloorTransactional(
       };
     }
 
-    // 2. Atomic sequential shift only for floors at or below targetRank
-    await tx
-      .update(floors)
-      .set({ rank: sql`${floors.rank} * -1` })
-      .where(gte(floors.rank, targetRank));
+    // Check if this website is already claimed on the skyscraper
+    const cleanHost = input.url
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .split("/")[0]
+      .toLowerCase()
+      .trim();
 
-    await tx
-      .update(floors)
-      .set({ rank: sql`(${floors.rank} * -1) + 1` })
-      .where(lte(floors.rank, -1 * targetRank));
+    const existingClaimedFloors = await tx
+      .select()
+      .from(floors)
+      .where(eq(floors.isClaimed, true));
+
+    const existingFloor = existingClaimedFloors.find((f) => {
+      const fHost = (f.url || "")
+        .replace(/^https?:\/\//i, "")
+        .replace(/^www\./i, "")
+        .split("/")[0]
+        .toLowerCase()
+        .trim();
+      return fHost === cleanHost;
+    });
+
+    let finalPrice = Math.max(1, input.price);
+    let floorToken = token;
+
+    if (existingFloor) {
+      const oldRank = existingFloor.rank;
+      finalPrice = Number(existingFloor.pricePaid || 0) + input.price;
+      floorToken = existingFloor.manageToken || token;
+
+      // Delete existing floor at oldRank
+      await tx.delete(floors).where(eq(floors.id, existingFloor.id));
+
+      if (targetRank < oldRank) {
+        // Shift floors from targetRank up to oldRank - 1 down by 1
+        await tx
+          .update(floors)
+          .set({ rank: sql`${floors.rank} * -1` })
+          .where(and(gte(floors.rank, targetRank), lt(floors.rank, oldRank)));
+
+        await tx
+          .update(floors)
+          .set({ rank: sql`(${floors.rank} * -1) + 1` })
+          .where(and(lte(floors.rank, -1 * targetRank), gt(floors.rank, -1 * oldRank)));
+      } else if (targetRank > oldRank) {
+        // Shift floors from oldRank + 1 down to targetRank up by 1
+        await tx
+          .update(floors)
+          .set({ rank: sql`${floors.rank} * -1` })
+          .where(and(gt(floors.rank, oldRank), lte(floors.rank, targetRank)));
+
+        await tx
+          .update(floors)
+          .set({ rank: sql`(${floors.rank} * -1) - 1` })
+          .where(and(lt(floors.rank, -1 * oldRank), gte(floors.rank, -1 * targetRank)));
+      }
+    } else {
+      // Normal new startup insertion: shift all floors at or below targetRank down by 1
+      await tx
+        .update(floors)
+        .set({ rank: sql`${floors.rank} * -1` })
+        .where(gte(floors.rank, targetRank));
+
+      await tx
+        .update(floors)
+        .set({ rank: sql`(${floors.rank} * -1) + 1` })
+        .where(lte(floors.rank, -1 * targetRank));
+    }
 
     // 3. Upsert user in 'users' table using pure Drizzle
     let userId: string | null = null;
@@ -223,9 +282,7 @@ export async function claimTopFloorTransactional(
       userId = upsertedUser?.id ?? null;
     }
 
-    // 4. Insert newly claimed startup at targetRank
-    const finalPrice = Math.max(50, input.price);
-
+    // 4. Insert newly claimed or promoted startup at targetRank
     await tx.insert(floors).values({
       rank: targetRank,
       isClaimed: true,
@@ -236,7 +293,7 @@ export async function claimTopFloorTransactional(
       description: finalDescription,
       logoUrl: finalLogoUrl || null,
       pricePaid: finalPrice,
-      manageToken: token,
+      manageToken: floorToken,
       ownerEmail: cleanEmail,
       userId: userId,
       claimedAt: new Date(),

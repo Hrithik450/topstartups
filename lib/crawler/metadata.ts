@@ -1,6 +1,14 @@
 /**
- * Ultra-fast, zero-dependency OpenGraph & HTML metadata scraper with Firecrawl support.
- * Extracts: Company Name, Tagline/Snippet, Description, High-Res Logo/Favicon, and Category.
+ * Simple & Reliable Website Metadata Crawler
+ * 
+ * Uses Firecrawl (if FIRECRAWL_API_KEY is configured) to extract:
+ * 1. Company Name
+ * 2. Tagline (One-Liner)
+ * 3. Description
+ * 4. High-Resolution Favicon / Logo
+ * 5. Industry Category
+ * 
+ * Falls back to a fast direct HTML parser if Firecrawl is not configured.
  */
 
 export interface WebsiteMetadata {
@@ -11,293 +19,163 @@ export interface WebsiteMetadata {
   category: string;
 }
 
-function decodeHtmlEntities(text: string): string {
-  if (!text) return "";
-  return text
-    .replace(/&#x27;/gi, "'")
-    .replace(/&#39;/gi, "'")
-    .replace(/&apos;/gi, "'")
-    .replace(/&quot;/gi, '"')
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&#(\d+);/g, (_, dec) => {
-      try {
-        return String.fromCharCode(Number(dec));
-      } catch {
-        return "";
-      }
-    })
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
-      try {
-        return String.fromCharCode(parseInt(hex, 16));
-      } catch {
-        return "";
-      }
-    });
-}
+// ─────────────────────────────────────────────────────────────
+// 1. HELPER UTILITIES
+// ─────────────────────────────────────────────────────────────
 
 /**
- * Clean up title strings by stripping common marketing fluff suffixes.
+ * Extracts a clean company name from page title or hostname.
  * e.g. "Linear – A better way to build software" -> "Linear"
  */
-function cleanCompanyName(title: string, hostname: string): string {
-  const decoded = decodeHtmlEntities(title || "");
-  if (!decoded) {
-    const cleanHost = hostname.replace(/^www\./, "").split(".")[0];
-    return cleanHost.charAt(0).toUpperCase() + cleanHost.slice(1);
+function cleanTitle(title: string, hostname: string): string {
+  if (!title) {
+    const raw = hostname.replace(/^www\./, "").split(".")[0];
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
   }
 
-  // Split on common delimiters: " | ", " – ", " - ", " : ", " • "
-  const parts = decoded.split(/\s+[-|–—:•]\s+/);
+  // Split on common separators: " | ", " - ", " – ", " : "
+  const parts = title.split(/\s+[-|–—:•]\s+/);
   if (parts.length > 1 && parts[0].trim().length > 1 && parts[0].trim().length < 40) {
     return parts[0].trim();
   }
 
-  // If title is short enough, return it
-  if (decoded.length <= 40) return decoded.trim();
-
-  // Otherwise fallback to hostname capitalized
-  const cleanHost = hostname.replace(/^www\./, "").split(".")[0];
-  return cleanHost.charAt(0).toUpperCase() + cleanHost.slice(1);
+  return title.length <= 40 ? title.trim() : hostname.replace(/^www\./, "").split(".")[0];
 }
 
 /**
- * Clean and truncate description to a concise snippet.
+ * Clean and truncate description text.
  */
-function cleanDescription(desc: string, maxLength = 240): string {
-  if (!desc) return "Next-generation startup on GeTopFloor skyscraper.";
-  const decoded = decodeHtmlEntities(desc);
-  const clean = decoded.replace(/\s+/g, " ").trim();
-  if (clean.length <= maxLength) return clean;
-  return clean.slice(0, maxLength - 3) + "...";
+function truncate(text: string, maxLength: number): string {
+  if (!text) return "";
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  return cleaned.length <= maxLength ? cleaned : cleaned.slice(0, maxLength - 3) + "...";
 }
 
 /**
- * Auto-detect likely startup category from keywords.
+ * Automatically guess category based on common startup keywords.
  */
 function guessCategory(text: string): string {
-  const lower = text.toLowerCase();
-  if (lower.includes("ai") || lower.includes("artificial intelligence") || lower.includes("gpt") || lower.includes("agent") || lower.includes("llm") || lower.includes("machine learning")) {
+  const t = text.toLowerCase();
+  if (t.includes("ai") || t.includes("gpt") || t.includes("agent") || t.includes("llm") || t.includes("machine learning")) {
     return "AI & Machine Learning";
   }
-  if (lower.includes("api") || lower.includes("developer") || lower.includes("code") || lower.includes("github") || lower.includes("sdk") || lower.includes("framework") || lower.includes("dev tool")) {
+  if (t.includes("developer") || t.includes("api") || t.includes("code") || t.includes("github") || t.includes("sdk")) {
     return "Developer Tools";
   }
-  if (lower.includes("crypto") || lower.includes("web3") || lower.includes("blockchain") || lower.includes("token") || lower.includes("defi")) {
+  if (t.includes("crypto") || t.includes("web3") || t.includes("blockchain") || t.includes("token")) {
     return "Web3 & Crypto";
   }
-  if (lower.includes("pay") || lower.includes("banking") || lower.includes("finance") || lower.includes("investment") || lower.includes("billing") || lower.includes("invoice")) {
+  if (t.includes("pay") || t.includes("finance") || t.includes("bank") || t.includes("invoice") || t.includes("billing")) {
     return "Fintech";
   }
-  if (lower.includes("shop") || lower.includes("store") || lower.includes("ecommerce") || lower.includes("checkout") || lower.includes("cart") || lower.includes("d2c")) {
+  if (t.includes("shop") || t.includes("store") || t.includes("ecommerce") || t.includes("cart") || t.includes("d2c")) {
     return "E-Commerce";
   }
-  if (lower.includes("health") || lower.includes("medical") || lower.includes("doctor") || lower.includes("care") || lower.includes("wellness") || lower.includes("fitness")) {
-    return "Health & Wellness";
-  }
-  if (lower.includes("design") || lower.includes("figma") || lower.includes("ui") || lower.includes("ux") || lower.includes("creative") || lower.includes("graphic")) {
+  if (t.includes("design") || t.includes("figma") || t.includes("ui") || t.includes("creative")) {
     return "Design & Creative";
   }
-  if (lower.includes("security") || lower.includes("auth") || lower.includes("cyber") || lower.includes("privacy") || lower.includes("compliance")) {
-    return "Security & Privacy";
-  }
-  if (lower.includes("saas") || lower.includes("software") || lower.includes("crm") || lower.includes("analytics") || lower.includes("dashboard") || lower.includes("productivity")) {
+  if (t.includes("saas") || t.includes("software") || t.includes("crm") || t.includes("analytics") || t.includes("dashboard")) {
     return "B2B SaaS";
   }
   return "Startup";
 }
 
 /**
- * Resolve relative URLs to absolute URLs against origin.
+ * Resolve relative URL to absolute URL against the base target URL.
  */
-function resolveUrl(relativeUrl: string, baseUrl: string): string {
+function resolveUrl(url: string, baseUrl: string): string {
   try {
-    return new URL(relativeUrl, baseUrl).href;
+    return new URL(url, baseUrl).href;
   } catch {
-    return relativeUrl;
+    return url;
   }
 }
 
-function extractFaviconFromHtml(html: string, baseUrl: string, fallback: string): string {
-  // 1. JSON-LD schema logo
-  const jsonLdMatch = html.match(/"logo"\s*:\s*"([^"]+)"/i) || html.match(/\\"logo\\"\s*:\s*\\"([^\\"]+)\\"/i);
-  if (jsonLdMatch?.[1]) {
-    const u = decodeHtmlEntities(jsonLdMatch[1].replace(/\\\//g, "/"));
-    if (u.startsWith("http") || u.startsWith("/")) return resolveUrl(u, baseUrl);
-  }
+// ─────────────────────────────────────────────────────────────
+// 2. FIRECRAWL SCRAPER
+// ─────────────────────────────────────────────────────────────
 
-  // 2. Next.js RSC streaming payload icons
-  const rscAppleMatch =
-    html.match(/\\"rel\\":\\"apple-touch-icon[^\\"]*\\",\\"href\\":\\"([^\\"]+)\\"/i) ||
-    html.match(/"rel":"apple-touch-icon[^"]*","href":"([^"]+)"/i);
-  if (rscAppleMatch?.[1]) {
-    return resolveUrl(decodeHtmlEntities(rscAppleMatch[1].replace(/\\\//g, "/")), baseUrl);
-  }
+async function crawlWithFirecrawl(url: string, apiKey: string): Promise<WebsiteMetadata | null> {
+  const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      url,
+      formats: ["markdown"],
+      onlyMainContent: true,
+    }),
+    signal: AbortSignal.timeout(6000),
+  });
 
-  const rscIconMatch =
-    html.match(/\\"rel\\":\\"(?:shortcut icon|icon)\\",\\"href\\":\\"([^\\"]+)\\"/i) ||
-    html.match(/"rel":"(?:shortcut icon|icon)","href":"([^"]+)"/i);
-  if (rscIconMatch?.[1]) {
-    return resolveUrl(decodeHtmlEntities(rscIconMatch[1].replace(/\\\//g, "/")), baseUrl);
-  }
+  if (!response.ok) return null;
 
-  // 3. Parse all HTML <link> tags
-  const linkTagRegex = /<link\b([^>]+)>/gi;
-  const linkMatches = [...html.matchAll(linkTagRegex)];
+  const data = await response.json();
+  const meta = data.data?.metadata || {};
+  const hostname = new URL(url).hostname;
 
-  let appleTouchIcon: string | null = null;
-  let svgOrPngIcon: string | null = null;
-  let standardIcon: string | null = null;
+  const title = meta.title || meta.ogTitle || "";
+  const desc = meta.description || meta.ogDescription || "";
+  const icon = meta.appleTouchIcon || meta.favicon || meta.icon || meta.logo || meta.ogImage;
 
-  for (const match of linkMatches) {
-    const attrsStr = match[1];
-    const relMatch = attrsStr.match(/\brel=["']([^"']+)["']/i);
-    const hrefMatch = attrsStr.match(/\bhref=["']([^"']+)["']/i);
-    if (!relMatch || !hrefMatch) continue;
+  const companyName = cleanTitle(title, hostname);
+  const tagline = truncate(desc, 110) || `${companyName} — Official Skyscraper Floor`;
+  const description = truncate(desc, 240) || `Claimed top floor on GeTopFloor skyscraper.`;
+  const logoUrl = icon ? resolveUrl(icon, url) : `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
+  const category = guessCategory(`${companyName} ${desc}`);
 
-    const rel = relMatch[1].toLowerCase().trim();
-    const href = decodeHtmlEntities(hrefMatch[1].trim());
-    if (!href) continue;
-
-    if (rel.includes("apple-touch-icon")) {
-      if (!appleTouchIcon) appleTouchIcon = resolveUrl(href, baseUrl);
-    } else if (rel.includes("icon")) {
-      const typeMatch = attrsStr.match(/\btype=["']([^"']+)["']/i);
-      const type = typeMatch?.[1]?.toLowerCase() || "";
-      if (type.includes("svg") || type.includes("png") || href.endsWith(".svg") || href.endsWith(".png")) {
-        if (!svgOrPngIcon) svgOrPngIcon = resolveUrl(href, baseUrl);
-      } else {
-        if (!standardIcon) standardIcon = resolveUrl(href, baseUrl);
-      }
-    }
-  }
-
-  if (appleTouchIcon) return appleTouchIcon;
-  if (svgOrPngIcon) return svgOrPngIcon;
-  if (standardIcon) return standardIcon;
-
-  return fallback;
+  return {
+    companyName,
+    tagline,
+    description,
+    logoUrl,
+    category,
+  };
 }
 
-/**
- * Scrape website metadata, OpenGraph tags, and icons using native HTTP + optional Firecrawl.
- */
-export async function scrapeWebsiteMetadata(targetUrl: string): Promise<WebsiteMetadata> {
-  let cleanUrl = targetUrl.trim();
-  if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
-    cleanUrl = `https://${cleanUrl}`;
-  }
+// ─────────────────────────────────────────────────────────────
+// 3. SIMPLE DIRECT HTML PARSER (FALLBACK)
+// ─────────────────────────────────────────────────────────────
 
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(cleanUrl);
-  } catch {
-    return {
-      companyName: "Startup",
-      tagline: "Spot reserved for your startup — Outbid & claim top floor",
-      description: "Claimed top floor on GeTopFloor skyscraper.",
-      logoUrl: `https://www.google.com/s2/favicons?domain=getopfloor.com&sz=128`,
-      category: "Startup",
-    };
-  }
-
-  const hostname = parsedUrl.hostname;
+async function crawlDirectHtml(url: string): Promise<WebsiteMetadata> {
+  const parsed = new URL(url);
+  const hostname = parsed.hostname;
   const fallbackFavicon = `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
 
-  // 1. Optional Firecrawl API Integration (if FIRECRAWL_API_KEY is configured in env)
-  const firecrawlKey = process.env.FIRECRAWL_API_KEY?.trim();
-  if (firecrawlKey) {
-    try {
-      const fcRes = await fetch("https://api.firecrawl.dev/v1/scrape", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${firecrawlKey}`,
-        },
-        body: JSON.stringify({
-          url: cleanUrl,
-          formats: ["markdown", "extract"],
-          onlyMainContent: true,
-        }),
-        signal: AbortSignal.timeout(5000),
-      });
-
-      if (fcRes.ok) {
-        const fcData = await fcRes.json();
-        const meta = fcData.data?.metadata || {};
-        const title = meta.title || meta.ogTitle || "";
-        const desc = meta.description || meta.ogDescription || "";
-        const fcIcon = meta.appleTouchIcon || meta.favicon || meta.icon || meta.logo || meta.ogImage;
-        const logoUrl = fcIcon ? resolveUrl(decodeHtmlEntities(fcIcon), cleanUrl) : fallbackFavicon;
-
-        const name = cleanCompanyName(title, hostname);
-        const tagline = cleanDescription(desc, 110);
-        const description = cleanDescription(desc, 260);
-        const category = guessCategory(`${name} ${desc}`);
-
-        return {
-          companyName: name,
-          tagline,
-          description,
-          logoUrl,
-          category,
-        };
-      }
-    } catch (fcErr) {
-      console.warn("Firecrawl scrape attempt timed out, falling back to direct OpenGraph parser:", fcErr);
-    }
-  }
-
-  // 2. High-Performance Direct OpenGraph & HTML Parser
   try {
-    const res = await fetch(cleanUrl, {
-      method: "GET",
+    const res = await fetch(url, {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 GeTopFloorBot/1.0",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 GeTopFloorBot/1.0",
+        Accept: "text/html,application/xhtml+xml",
       },
       signal: AbortSignal.timeout(4000),
       redirect: "follow",
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
-
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const html = await res.text();
 
-    // Extract OpenGraph site name or title
-    const ogSiteNameMatch = html.match(/<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["']/i) ||
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:site_name["']/i);
+    // 1. Extract Title
+    const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)?.[1];
+    const htmlTitle = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1];
+    const companyName = cleanTitle(ogTitle || htmlTitle || "", hostname);
 
-    const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+    // 2. Extract Description
+    const ogDesc = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)?.[1];
+    const metaDesc = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)?.[1];
+    const rawDesc = ogDesc || metaDesc || "";
+    const tagline = truncate(rawDesc, 110) || `${companyName} — Official Skyscraper Floor`;
+    const description = truncate(rawDesc, 240) || `Claimed top floor on GeTopFloor skyscraper.`;
 
-    const titleTagMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    // 3. Extract Favicon
+    const appleIcon = html.match(/<link[^>]+rel=["'][^"']*apple-touch-icon[^"']*["'][^>]+href=["']([^"']+)["']/i)?.[1];
+    const stdIcon = html.match(/<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+href=["']([^"']+)["']/i)?.[1];
+    const rawIcon = appleIcon || stdIcon;
+    const logoUrl = rawIcon ? resolveUrl(rawIcon, url) : fallbackFavicon;
 
-    const rawTitle = ogSiteNameMatch?.[1] || ogTitleMatch?.[1] || titleTagMatch?.[1] || "";
-    const companyName = cleanCompanyName(rawTitle, hostname);
-
-    // Extract Description / Tagline
-    const ogDescMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i) ||
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
-
-    const metaDescMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
-
-    const twitterDescMatch = html.match(/<meta[^>]+name=["']twitter:description["'][^>]+content=["']([^"']+)["']/i) ||
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:description["']/i);
-
-    const rawDesc = ogDescMatch?.[1] || metaDescMatch?.[1] || twitterDescMatch?.[1] || "";
-    const tagline = rawDesc ? cleanDescription(rawDesc, 110) : `${companyName} — Official Skyscraper Floor`;
-    const description = rawDesc ? cleanDescription(rawDesc, 260) : `Claimed top floor on GeTopFloor skyscraper.`;
-
-    // Extract high-res favicon/logo using accurate attribute parsing
-    const logoUrl = extractFaviconFromHtml(html, cleanUrl, fallbackFavicon);
-    const category = guessCategory(`${companyName} ${tagline} ${description}`);
+    const category = guessCategory(`${companyName} ${rawDesc}`);
 
     return {
       companyName,
@@ -306,11 +184,9 @@ export async function scrapeWebsiteMetadata(targetUrl: string): Promise<WebsiteM
       logoUrl,
       category,
     };
-  } catch (err) {
-    console.warn(`Direct metadata scrape fallback for ${cleanUrl}:`, err);
-    const cleanName = hostname.replace(/^www\./, "").split(".")[0];
-    const companyName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
-
+  } catch {
+    const cleanHost = hostname.replace(/^www\./, "").split(".")[0];
+    const companyName = cleanHost.charAt(0).toUpperCase() + cleanHost.slice(1);
     return {
       companyName,
       tagline: `${companyName} — Official Skyscraper Floor`,
@@ -319,4 +195,29 @@ export async function scrapeWebsiteMetadata(targetUrl: string): Promise<WebsiteM
       category: "Startup",
     };
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 4. MAIN EXPORTED SCRAPER FUNCTION
+// ─────────────────────────────────────────────────────────────
+
+export async function scrapeWebsiteMetadata(targetUrl: string): Promise<WebsiteMetadata> {
+  let cleanUrl = targetUrl.trim();
+  if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+    cleanUrl = `https://${cleanUrl}`;
+  }
+
+  // 1. Try Firecrawl if API key is provided
+  const firecrawlKey = process.env.FIRECRAWL_API_KEY?.trim();
+  if (firecrawlKey) {
+    try {
+      const result = await crawlWithFirecrawl(cleanUrl, firecrawlKey);
+      if (result) return result;
+    } catch (err) {
+      console.warn("Firecrawl request failed, falling back to direct parser:", err);
+    }
+  }
+
+  // 2. Fallback to direct HTML parser
+  return crawlDirectHtml(cleanUrl);
 }

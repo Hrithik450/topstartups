@@ -133,15 +133,20 @@ export default function Experience() {
       const detail = e.detail || {};
       const targetRank = detail.rank || 1;
 
-      // 1. Refresh floor data from server
+      // 1. Refresh floor data from server for everyone
       refreshFloors();
 
-      // 2. Smoothly fly elevator camera to the top penthouse floor
+      // Only fly camera and pin overview card on the ACTUAL PURCHASER'S device
+      if (!detail.isOwner) {
+        return;
+      }
+
+      // 2. Smoothly fly elevator camera to the top penthouse floor for the owner
       setTimeout(() => {
         handleRef.current?.jumpToTop();
       }, 350);
 
-      // 3. Immediately display the floor hover preview card with company name, logo, and snippet
+      // 3. Immediately display the floor hover preview card for the owner
       setTimeout(() => {
         const topListing: Listing = {
           id: String(targetRank),
@@ -184,13 +189,10 @@ export default function Experience() {
       try {
         eventSource = new EventSource("/api/events");
 
+        // When another device claims a floor: silently sync 3D tower and floor list
         eventSource.addEventListener("floor-claimed", (e) => {
           try {
-            const data = JSON.parse(e.data);
-            // Broadcast to local components & 3D scene
-            window.dispatchEvent(
-              new CustomEvent("floor-claimed-success", { detail: data })
-            );
+            refreshFloors();
             window.dispatchEvent(new CustomEvent("floors-refresh"));
           } catch {}
         });

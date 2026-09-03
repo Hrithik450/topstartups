@@ -210,10 +210,11 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
               localStorage.setItem("getopfloor_manage_email", data.customerEmail);
             }
 
-            // Broadcast floor claim event
+            // Broadcast floor claim event for the owner
             window.dispatchEvent(
               new CustomEvent("floor-claimed-success", {
                 detail: {
+                  isOwner: true,
                   rank: data.rank || 1,
                   companyName: data.companyName,
                   url: data.url,

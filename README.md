@@ -67,9 +67,11 @@
 | Layer | Technology |
 |---|---|
 | **Frontend & SSR** | [Next.js 14](https://nextjs.org/) (App Router, Server Components & Route Handlers) |
-| **3D Graphics Engine** | [Three.js](https://threejs.org/) (WebGL, GLTFLoader, PCFShadowMap, ACESFilmicToneMapping) |
+| **3D Graphics Engine** | [Three.js](https://threejs.org/) (WebGL, GLTFLoader, PCFSoftShadowMap, ACESFilmicToneMapping, Antialiasing) |
+| **Asset Storage & CDN** | [Vercel Blob Storage](https://vercel.com/docs/storage/vercel-blob) (Automatic logo CDN caching & custom file uploads) |
+| **Web Metadata Crawler** | [Firecrawl](https://firecrawl.dev/) + High-Performance Direct OpenGraph/HTML Parser |
 | **ORM** | [Drizzle ORM](https://orm.drizzle.team/) (100% Type-Safe SQL queries) |
-| **Database** | PostgreSQL (Compatible with [Supabase](https://supabase.com/) & self-hosted VPS PostgreSQL) |
+| **Database** | PostgreSQL (Compatible with [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres), [Supabase](https://supabase.com/), [Neon](https://neon.tech/), & self-hosted VPS) |
 | **Payments** | [Dodo Payments](https://dodopayments.com/) (Merchant of Record with UPI & Cards) |
 | **Authentication** | Direct Google OAuth 2.0 (Zero external auth libraries) |
 | **Styling** | Modern CSS Variables, Custom Theme Switching, Responsive Layouts |
@@ -85,9 +87,10 @@ outbid/
 │   ├── api/                      # ⚡ REST API Endpoints
 │   │   ├── admin/                # Admin login, logout, and founder queries
 │   │   ├── auth/                 # Direct Google OAuth 2.0 (url, callback, me, logout)
-│   │   ├── checkout/             # Dodo payment session creation & verification
+│   │   ├── checkout/             # Dodo payment session creation, verification & lock release
 │   │   ├── floors/               # Active skyscraper floors & founder CRUD
 │   │   ├── stats/                # Real-time live statistics ping & session metrics
+│   │   ├── upload/               # ☁️ Vercel Blob Storage logo upload endpoint
 │   │   └── webhooks/dodo/        # Cryptographically verified Dodo webhook handler
 │   ├── globals.css               # Theme styling (Dark & Sunset themes)
 │   ├── layout.tsx                # Metadata, OpenGraph, JSON-LD schema, and UserAuthProvider
@@ -99,7 +102,7 @@ outbid/
 │   ├── Hero.tsx                  # Interactive claim form & direct Google payment flow
 │   ├── FloorHoverCard.tsx        # 3D raycast hover card with startup preview & owner controls
 │   ├── StatChips.tsx             # Real-time live metrics & Manage button
-│   ├── ManageFloorModal.tsx      # Google-authenticated multi-product management drawer
+│   ├── ManageFloorModal.tsx      # Google-authenticated multi-product management drawer with Logo Uploader
 │   └── BuildingLoader.tsx        # 3D building initialization progress indicator
 │
 ├── lib/
@@ -107,14 +110,19 @@ outbid/
 │   │   ├── google.ts             # Direct Google OAuth 2.0 token exchange & userinfo fetch
 │   │   ├── session.ts            # Tamper-proof HMAC user session tokens
 │   │   └── use-user-auth.tsx     # Client auth provider & user hook
+│   ├── crawler/                  # 🕷️ Firecrawl & HTML Favicon/Logo Metadata Scraper
+│   │   └── metadata.ts           # Multi-tier website metadata & logo extractor
+│   ├── storage/                  # ☁️ Vercel Blob Storage Client
+│   │   └── blob.ts               # Direct file upload, external image CDN persistence & deletion
 │   ├── db/
 │   │   ├── config/               # ⚙️ Infrastructure & Configuration ONLY
-│   │   │   ├── client.ts         # Lazy connection pooler compatible with Supabase & VPS
-│   │   │   ├── schema.ts         # Drizzle schemas (users, floors, claims, site_stats)
+│   │   │   ├── client.ts         # Lazy connection pooler compatible with Vercel, Supabase & VPS
+│   │   │   ├── schema.ts         # Drizzle schemas (users, floors, claims, floor_locks, site_stats)
 │   │   │   ├── pool-config.ts    # Multi-tier connection pooler (:5432 & :6543)
 │   │   │   ├── ssl.ts            # Auto-detecting SSL for VPS, Docker & Cloud
 │   │   │   └── seed.ts           # 50-floor skyscraper database seeder
 │   │   ├── floors.ts             # Skyscraper business logic & queries (pure Drizzle)
+│   │   ├── locks.ts              # Floor concurrency locking & auto-expiration engine
 │   │   ├── users.ts              # Founder accounts & directory queries (pure Drizzle)
 │   │   └── stats.ts              # Real-time live statistics queries (pure Drizzle)
 │   ├── three/
@@ -134,7 +142,7 @@ outbid/
 
 ## ⚙️ Environment Variables
 
-Copy `.env.example` to `.env.local` (for local development) or `.env` (for production):
+Copy `.env.example` to `.env.local` (for local development) or configure in Vercel / VPS:
 
 ```bash
 cp .env.example .env.local
@@ -142,13 +150,15 @@ cp .env.example .env.local
 
 | Variable | Description | Example / Default |
 |---|---|---|
-| `DATABASE_URL` | PostgreSQL connection string (Supabase or VPS) | `postgresql://postgres:postgres@127.0.0.1:5432/outbid` |
+| `DATABASE_URL` | PostgreSQL connection string (Vercel Postgres, Supabase, Neon, or VPS) | `postgresql://postgres:postgres@127.0.0.1:5432/outbid` |
 | `DATABASE_DIRECT_URL` | Direct port 5432 connection for migrations & seeding | `postgresql://postgres:postgres@127.0.0.1:5432/outbid` |
-| `DATABASE_SSL` | Force SSL on/off (`false` for VPS/Docker, `true` for Cloud) | `false` |
+| `DATABASE_SSL` | Force SSL on/off (`false` for local/Docker, `true` for Cloud) | `false` |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob Storage token for permanent logo CDN storage | `vercel_blob_rw_...` |
+| `FIRECRAWL_API_KEY` | Optional: Firecrawl API key for AI web metadata & favicon scraping | `fc-...` |
 | `DODO_PAYMENTS_API_KEY` | Dodo Payments API key (leave empty for mock sandbox mode) | `test_...` |
 | `DODO_PAYMENTS_WEBHOOK_SECRET` | Webhook verification secret from Dodo Dashboard | `whsec_...` |
 | `DODO_PAYMENTS_ENVIRONMENT` | Gateway environment (`test` or `live`) | `test` |
-| `DODO_PAYMENTS_PRODUCT_ID` | Product ID configured in Dodo Dashboard | `pdt_...` |
+| `DODO_PAYMENTS_PRODUCT_ID` | Product ID configured in Dodo Dashboard (min. ₹50 or $0.50) | `pdt_...` |
 | `GOOGLE_CLIENT_ID` | Google OAuth 2.0 Client ID from Google Cloud Console | `your_client_id.apps.googleusercontent.com` |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 Client Secret from Google Cloud Console | `GOCSPX-...` |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID`| Public Google Client ID | `your_client_id.apps.googleusercontent.com` |
@@ -221,16 +231,26 @@ npm run build
 pm2 start npm --name "getopfloor" -- start
 ```
 
+### Option C: Deploying to Vercel (Cloud Serverless)
+
+1. **Deploy Repository**: Import your Git repository into [Vercel](https://vercel.com).
+2. **Connect Vercel Blob**:
+   - In Vercel Project Settings $\rightarrow$ **Storage** $\rightarrow$ **Create Database** $\rightarrow$ select **Blob**.
+   - Connect the Blob store to your project (Vercel automatically sets `BLOB_READ_WRITE_TOKEN`).
+3. **Connect Database**: Add your PostgreSQL / Neon / Supabase `DATABASE_URL` under **Environment Variables**.
+4. **Configure Google OAuth & Dodo Payments**: Add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DODO_PAYMENTS_API_KEY`, etc.
+
 ---
 
 ## 📡 REST API Reference
 
 | Method | Endpoint | Description | Auth Required |
 |---|---|---|---|
-| `GET` | `/api/floors` | Fetch the 50 skyscraper floors (Rank 1 to 50) | Public |
+| `GET` | `/api/floors` | Fetch the 50 skyscraper floors & active concurrency locks | Public |
 | `GET` | `/api/floors/manage` | Fetch claimed floors owned by an authenticated founder | User Session |
 | `PATCH` | `/api/floors/manage` | Update claimed startup details (title, URL, tagline, logo) | User Session |
 | `DELETE` | `/api/floors/manage` | Vacate/reset a floor back to an available slot | User Session |
+| `POST` | `/api/upload` | Upload custom startup logo to Vercel Blob Storage CDN | User Session |
 | `GET` | `/api/auth/google/url` | Generate Google OAuth 2.0 authorization URL | Public |
 | `GET` | `/api/auth/google/callback` | Exchange Google code for tokens & set user session cookie | Public |
 | `GET` | `/api/auth/me` | Fetch active user profile and owned skyscraper floors | User Session |
@@ -239,6 +259,7 @@ pm2 start npm --name "getopfloor" -- start
 | `POST` | `/api/stats` | Record tab-session view and heartbeat ping | Public |
 | `POST` | `/api/checkout` | Create Dodo Payments checkout session with domain verification | Public / Optional User Session |
 | `GET` | `/api/checkout/verify` | Verify payment status and atomically claim top floor | Public |
+| `POST` | `/api/checkout/release-lock` | Release active floor concurrency lock on navigation back | Public / User Session |
 | `POST` | `/api/webhooks/dodo` | Receive and process payment webhook events | Dodo Signature |
 | `POST` | `/api/admin/login` | Authenticate admin against `.env` credentials | Public |
 | `POST` | `/api/admin/logout` | Clear admin authentication cookie | Admin Cookie |

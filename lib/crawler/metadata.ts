@@ -233,19 +233,32 @@ export async function scrapeWebsiteMetadata(targetUrl: string): Promise<WebsiteM
     const tagline = rawDesc ? cleanDescription(rawDesc, 110) : `${companyName} — Official Skyscraper Floor`;
     const description = rawDesc ? cleanDescription(rawDesc, 260) : `Claimed top floor on GeTopFloor skyscraper.`;
 
-    // Extract Icons & Favicons with multi-tier favicon crawler
-    const appleTouchIconMatch = html.match(/<link[^>]+rel=["'](?:apple-touch-icon|apple-touch-icon-precomposed)["'][^>]+href=["']([^"']+)["']/i) ||
-      html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:apple-touch-icon|apple-touch-icon-precomposed)["']/i);
+    // Extract Icons & Favicons with multi-tier favicon crawler (HTML + Next.js RSC + JSON-LD Schema)
+    const appleTouchIconMatch =
+      html.match(/<link[^>]+rel=["'](?:apple-touch-icon|apple-touch-icon-precomposed)["'][^>]+href=["']([^"']+)["']/i) ||
+      html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:apple-touch-icon|apple-touch-icon-precomposed)["']/i) ||
+      html.match(/\\"rel\\":\\"apple-touch-icon\\",\\"href\\":\\"([^\\"]+)\\"/i) ||
+      html.match(/"rel":"apple-touch-icon","href":"([^"]+)"/i);
 
-    const pngIconMatch = html.match(/<link[^>]+rel=["'](?:shortcut icon|icon)["'][^>]+type=["']image\/(?:png|svg\+xml)["'][^>]+href=["']([^"']+)["']/i) ||
+    const jsonLdLogoMatch =
+      html.match(/"logo":"([^"]+)"/i) ||
+      html.match(/\\"logo\\":\\"([^\\"]+)\\"/i);
+
+    const pngIconMatch =
+      html.match(/<link[^>]+rel=["'](?:shortcut icon|icon)["'][^>]+type=["']image\/(?:png|svg\+xml)["'][^>]+href=["']([^"']+)["']/i) ||
       html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:shortcut icon|icon)["'][^>]+type=["']image\/(?:png|svg\+xml)["']/i);
 
-    const iconMatch = html.match(/<link[^>]+rel=["'](?:shortcut icon|icon)["'][^>]+href=["']([^"']+)["']/i) ||
-      html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:shortcut icon|icon)["']/i);
+    const iconMatch =
+      html.match(/<link[^>]+rel=["'](?:shortcut icon|icon)["'][^>]+href=["']([^"']+)["']/i) ||
+      html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:shortcut icon|icon)["']/i) ||
+      html.match(/\\"rel\\":\\"(?:shortcut icon|icon)\\",\\"href\\":\\"([^\\"]+)\\"/i) ||
+      html.match(/"rel":"(?:shortcut icon|icon)","href":"([^"]+)"/i);
 
     let logoUrl = fallbackFavicon;
     if (appleTouchIconMatch?.[1]) {
       logoUrl = resolveUrl(appleTouchIconMatch[1], cleanUrl);
+    } else if (jsonLdLogoMatch?.[1]) {
+      logoUrl = resolveUrl(jsonLdLogoMatch[1], cleanUrl);
     } else if (pngIconMatch?.[1]) {
       logoUrl = resolveUrl(pngIconMatch[1], cleanUrl);
     } else if (iconMatch?.[1]) {

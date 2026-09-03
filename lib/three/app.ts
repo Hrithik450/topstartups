@@ -1449,12 +1449,12 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   const isMobileDevice = typeof window !== "undefined" && window.innerWidth < 768;
 
   const renderer = new THREE.WebGLRenderer({
-    antialias: !isMobileDevice,
+    antialias: true,   // always on — topfloor.company uses this too
     alpha: true,
     powerPreference: "high-performance",
   });
-  // Mobile: cap at 1.0 DPR to halve pixel fill; desktop: cap at 1.5
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobileDevice ? 1.0 : 1.5));
+  // Cap at 2x like topfloor.company — covers all Retina/AMOLED screens without overshoot
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.shadowMap.enabled = !isMobileDevice;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;

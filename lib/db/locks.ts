@@ -217,7 +217,7 @@ export async function releaseFloorLock(
       await db
         .delete(floorLocks)
         .where(
-          sql`${floorLocks.targetRank} = ${targetRank} AND (${paymentId ? sql`${floorLocks.lockedByPaymentId} = ${paymentId}` : sql`false`} OR ${checkoutSessionId ? sql`${floorLocks.lockedByPaymentId} = ${checkoutSessionId}` : sql`false`} OR ${floorLocks.lockedByPaymentId} IS NULL)`
+          sql`${floorLocks.targetRank} = ${targetRank} OR ${paymentId ? sql`${floorLocks.lockedByPaymentId} = ${paymentId}` : sql`false`} OR ${checkoutSessionId ? sql`${floorLocks.lockedByPaymentId} = ${checkoutSessionId}` : sql`false`}`
         );
     } else {
       await db.delete(floorLocks).where(eq(floorLocks.targetRank, targetRank));

@@ -4,6 +4,7 @@ export interface CreateCheckoutInput {
   url: string;
   category?: string;
   companyName: string;
+  customerName?: string;
   price: number; // in INR
   customerEmail?: string;
   returnUrl: string;
@@ -62,13 +63,13 @@ export async function createDodoCheckout(
       },
       body: JSON.stringify({
         customer: {
-          email: input.customerEmail || "founder@example.com",
-          name: input.companyName,
+          ...(input.customerEmail ? { email: input.customerEmail } : {}),
+          ...(input.customerName ? { name: input.customerName } : {}),
         },
         product_cart: [
           {
             product_id: productId,
-            amount: input.price * 100, // Dodo amounts in subunits (paise / cents)
+            amount: Math.round(Number(input.price) * 100), // Dodo amounts in subunits (paise / cents)
             quantity: 1,
           },
         ],

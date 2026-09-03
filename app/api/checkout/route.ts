@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
       url: cleanUrl,
       category: cleanCategory,
       companyName: name,
+      customerName: session?.name || (body.customerName && body.customerName !== name ? body.customerName.trim() : undefined),
       price: amount,
       customerEmail: finalEmail || undefined,
       returnUrl: origin,

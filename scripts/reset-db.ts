@@ -96,6 +96,7 @@ async function resetDb() {
         category VARCHAR(128),
         amount INTEGER NOT NULL,
         currency VARCHAR(10) NOT NULL DEFAULT 'INR',
+        target_rank INTEGER DEFAULT 1,
         customer_email VARCHAR(255),
         customer_phone VARCHAR(50),
         user_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -148,9 +149,10 @@ async function resetDb() {
       ON CONFLICT (key) DO UPDATE SET total_views = 0, updated_at = NOW();
     `);
 
-    console.log("3. Seeding 50 pristine skyscraper floors (clean state, zero dummy claims)...");
+    console.log("3. Seeding 50 pristine skyscraper floors with pricing ladder (Floor 50 = ₹50, Floor 1 = ₹99)...");
     for (let rank = 1; rank <= 50; rank++) {
-      const price = 50;
+      // Pricing ladder: Floor 50 = ₹50, Floor 49 = ₹51, ..., Top Floor #1 = ₹99
+      const price = 50 + (50 - rank);
       await pool.query(
         `
         INSERT INTO floors (rank, is_claimed, company_name, url, category, tagline, description, price_paid, claimed_at, owner_email, user_id)

@@ -5,7 +5,7 @@ import { claims, floors } from "@/lib/db/config/schema";
 import { eq } from "drizzle-orm";
 import { verifyWebsiteLive } from "@/lib/validation/domain";
 import { getAuthenticatedUser } from "@/lib/auth/session";
-import { acquireFloorLock } from "@/lib/db/locks";
+import { acquireFloorLock, releaseFloorLock } from "@/lib/db/locks";
 
 export const dynamic = "force-dynamic";
 

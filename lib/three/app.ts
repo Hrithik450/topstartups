@@ -1781,7 +1781,21 @@ function createMoonTexture(): THREE.CanvasTexture {
   const floorRepainters: (() => void)[] = [];
   if (typeof document !== "undefined" && document.fonts) {
     document.fonts.ready.then(() => {
-      floorRepainters.forEach((fn) => fn());
+      // Stagger repainting after intro to avoid dropping frames during ascent
+      const runRepaints = () => {
+        let idx = 0;
+        const step = () => {
+          const end = Math.min(idx + 6, floorRepainters.length);
+          for (; idx < end; idx++) {
+            floorRepainters[idx]?.();
+          }
+          if (idx < floorRepainters.length) {
+            setTimeout(step, 25);
+          }
+        };
+        step();
+      };
+      setTimeout(runRepaints, isMobileDevice ? 3600 : 800);
     });
   }
 
@@ -1815,12 +1829,18 @@ function createMoonTexture(): THREE.CanvasTexture {
 
     repaintFloor();
 
-    const sideMat = new THREE.MeshPhysicalMaterial({
-      map: texture,
-      roughness: 0.24,
-      metalness: 0.35,
-      envMapIntensity: 0.9,
-    });
+    const sideMat = isMobileDevice
+      ? new THREE.MeshStandardMaterial({
+          map: texture,
+          roughness: 0.35,
+          metalness: 0.25,
+        })
+      : new THREE.MeshPhysicalMaterial({
+          map: texture,
+          roughness: 0.24,
+          metalness: 0.35,
+          envMapIntensity: 0.9,
+        });
     disposables.push(sideMat);
 
     const floorMesh = new THREE.Mesh(floorBodyGeo, [
@@ -2107,57 +2127,65 @@ function createMoonTexture(): THREE.CanvasTexture {
   const animMixers: THREE.AnimationMixer[] = [];
 
   // Rooftop Juice & Pizza Hut Cafe Pavilion (Rotated 90 deg clockwise with door facing helipad)
-  gltfLoader.load(
-    "/models/pizza-restaurant.glb",
-    (gltf) => {
-      const model = fitModelHeight(gltf.scene, 2.6);
-      model.position.set(3.6, roofY + 0.4, -2.4);
-      model.rotation.y = -Math.PI / 2;
-      scene.add(model);
-    },
-    undefined,
-    () => {}
-  );
-
-  // Penthouse Executive Team & Luxury Furnishings
-  const interiorDefs = [
-    // 1. CEO Presenting at Head of Conference Table
-    { url: "/models/businessman.glb", height: 0.86, x: -2.0, z: 0, rotY: Math.PI / 2 },
-    // 2. Executive / Board Member at North Side of Table
-    { url: "/models/businessman.glb", height: 0.82, x: 0.9, z: -1.25, rotY: 0 },
-    // 3. Partner / Co-Founder at South Side of Table
-    { url: "/models/businessman.glb", height: 0.82, x: -0.9, z: 1.25, rotY: Math.PI },
-    // 4. Lead Founder with Panoramic Skyline View
-    { url: "/models/businessman.glb", height: 0.85, x: 3.5, z: -3.2, rotY: -Math.PI / 4 },
-    // 5. Executive in VIP Discussion Area
-    { url: "/models/businessman.glb", height: 0.82, x: -3.3, z: 2.6, rotY: -Math.PI / 3 },
-
-    // Corner Executive Desk Suite
-    { url: "/models/desk.glb", height: 0.55, x: 3.4, z: 2.8, rotY: -Math.PI / 2 },
-
-    // Executive VIP Lounge Area
-    { url: "/models/sofa.glb", height: 0.5, x: -3.2, z: 2.2, rotY: Math.PI / 2 },
-    { url: "/models/tv.glb", height: 0.5, x: -1.7, z: 2.2, rotY: -Math.PI / 2 },
-
-    // Lush Office Architecture Plants
-    { url: "/models/plant-fiddle.glb", height: 0.7, x: 4.1, z: 4.1, rotY: 0 },
-    { url: "/models/plant-house.glb", height: 0.5, x: -4.1, z: -4.1, rotY: 0.6 },
-    { url: "/models/plant-orchid.glb", height: 0.45, x: 4.1, z: -4.1, rotY: 0 },
-    { url: "/models/plant-house.glb", height: 0.5, x: -4.1, z: 4.1, rotY: 0 },
-  ];
-
-  for (const def of interiorDefs) {
+  const loadGltfModels = () => {
     gltfLoader.load(
-      def.url,
+      "/models/pizza-restaurant.glb",
       (gltf) => {
-        const model = fitModelHeight(gltf.scene, def.height);
-        model.position.set(def.x, penthouseY + SLAB_HEIGHT, def.z);
-        model.rotation.y = def.rotY;
+        const model = fitModelHeight(gltf.scene, 2.6);
+        model.position.set(3.6, roofY + 0.4, -2.4);
+        model.rotation.y = -Math.PI / 2;
         scene.add(model);
       },
       undefined,
       () => {}
     );
+
+    // Penthouse Executive Team & Luxury Furnishings
+    const interiorDefs = [
+      // 1. CEO Presenting at Head of Conference Table
+      { url: "/models/businessman.glb", height: 0.86, x: -2.0, z: 0, rotY: Math.PI / 2 },
+      // 2. Executive / Board Member at North Side of Table
+      { url: "/models/businessman.glb", height: 0.82, x: 0.9, z: -1.25, rotY: 0 },
+      // 3. Partner / Co-Founder at South Side of Table
+      { url: "/models/businessman.glb", height: 0.82, x: -0.9, z: 1.25, rotY: Math.PI },
+      // 4. Lead Founder with Panoramic Skyline View
+      { url: "/models/businessman.glb", height: 0.85, x: 3.5, z: -3.2, rotY: -Math.PI / 4 },
+      // 5. Executive in VIP Discussion Area
+      { url: "/models/businessman.glb", height: 0.82, x: -3.3, z: 2.6, rotY: -Math.PI / 3 },
+
+      // Corner Executive Desk Suite
+      { url: "/models/desk.glb", height: 0.55, x: 3.4, z: 2.8, rotY: -Math.PI / 2 },
+
+      // Executive VIP Lounge Area
+      { url: "/models/sofa.glb", height: 0.5, x: -3.2, z: 2.2, rotY: Math.PI / 2 },
+      { url: "/models/tv.glb", height: 0.5, x: -1.7, z: 2.2, rotY: -Math.PI / 2 },
+
+      // Lush Office Architecture Plants
+      { url: "/models/plant-fiddle.glb", height: 0.7, x: 4.1, z: 4.1, rotY: 0 },
+      { url: "/models/plant-house.glb", height: 0.5, x: -4.1, z: -4.1, rotY: 0.6 },
+      { url: "/models/plant-orchid.glb", height: 0.45, x: 4.1, z: -4.1, rotY: 0 },
+      { url: "/models/plant-house.glb", height: 0.5, x: -4.1, z: 4.1, rotY: 0 },
+    ];
+
+    for (const def of interiorDefs) {
+      gltfLoader.load(
+        def.url,
+        (gltf) => {
+          const model = fitModelHeight(gltf.scene, def.height);
+          model.position.set(def.x, penthouseY + SLAB_HEIGHT, def.z);
+          model.rotation.y = def.rotY;
+          scene.add(model);
+        },
+        undefined,
+        () => {}
+      );
+    }
+  };
+
+  if (isMobileDevice) {
+    setTimeout(loadGltfModels, 3600);
+  } else {
+    loadGltfModels();
   }
 
   // Ground Plaza Crowd Watching Top Floor Companies with Lifted Heads
@@ -2519,10 +2547,14 @@ function createMoonTexture(): THREE.CanvasTexture {
   const mouse = new THREE.Vector2();
   let currentHoveredFloor = -1;
 
+  const _introSpherical = new THREE.Spherical();
+  const _introVec = new THREE.Vector3();
+  const _diffVec = new THREE.Vector3();
+
   // Intro Animation State
   let inIntro = true;
   const introStartTime = performance.now();
-  const INTRO_DURATION = 4000; // 4.0 seconds smooth ascent
+  const INTRO_DURATION = isMobileDevice ? 3400 : 4000; // 3.4s responsive ascent on mobile, 4.0s on desktop
 
   const clock = new THREE.Clock();
   let raf = 0;
@@ -2659,10 +2691,14 @@ function createMoonTexture(): THREE.CanvasTexture {
 
       travelY = 1.32 + (restingTargetY - 1.32) * eased;
       travelYTarget = travelY;
-      const currentAzimuth = initialAzimuth + 2 * Math.PI * eased;
+      // On mobile, a gentle 135-degree sweep prevents GPU raster thrashing, on desktop full 360 rotation
+      const totalRotation = isMobileDevice ? Math.PI * 0.75 : Math.PI * 2;
+      const currentAzimuth = initialAzimuth + totalRotation * eased;
 
       controls.target.set(0, travelY, 0);
-      camera.position.setFromSphericalCoords(zoomDist, 0.5 * Math.PI - restingTilt, currentAzimuth).add(controls.target);
+      _introSpherical.set(zoomDist, 0.5 * Math.PI - restingTilt, currentAzimuth);
+      _introVec.setFromSpherical(_introSpherical).add(controls.target);
+      camera.position.copy(_introVec);
       camera.lookAt(controls.target);
 
       if (progress >= 1) {
@@ -2681,9 +2717,9 @@ function createMoonTexture(): THREE.CanvasTexture {
       const dz = (zoomDistTarget - zoomDist) * 0.12;
       if (Math.abs(dz) > 0.001) {
         zoomDist += dz;
-        const diff = camera.position.clone().sub(controls.target);
-        diff.multiplyScalar(zoomDist / diff.length());
-        camera.position.copy(controls.target).add(diff);
+        _diffVec.copy(camera.position).sub(controls.target);
+        _diffVec.multiplyScalar(zoomDist / _diffVec.length());
+        camera.position.copy(controls.target).add(_diffVec);
       }
 
       controls.update();

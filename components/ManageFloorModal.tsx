@@ -134,7 +134,7 @@ export default function ManageFloorModal({
     setStatusMsg(null);
 
     try {
-      const diff = Math.max(1, topFloorPrice - Number(current.pricePaid || 0));
+      const diff = Math.max(50, topFloorPrice - Number(current.pricePaid || 0));
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -372,7 +372,7 @@ export default function ManageFloorModal({
               const current = ownedFloors.find((f) => f.id === selectedFloorId);
               if (!current) return null;
               if (current.rank > 1) {
-                const diff = Math.max(1, topFloorPrice - Number(current.pricePaid || 0));
+                const diff = Math.max(50, topFloorPrice - Number(current.pricePaid || 0));
                 return (
                   <div
                     style={{

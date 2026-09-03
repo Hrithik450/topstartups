@@ -126,16 +126,22 @@ export async function POST(req: NextRequest) {
     const origin = ALLOWED_ORIGINS.includes(candidateOrigin) ? candidateOrigin : ALLOWED_ORIGINS[0];
 
     // Create Dodo Payments checkout session
-    const checkout = await createDodoCheckout({
-      url: cleanUrl,
-      category: cleanCategory,
-      companyName: name,
-      customerName: session?.name || (body.customerName && body.customerName !== name ? body.customerName.trim() : undefined),
-      targetRank: effectiveTargetRank,
-      price: amount,
-      customerEmail: finalEmail || undefined,
-      returnUrl: origin,
-    });
+    let checkout;
+    try {
+      checkout = await createDodoCheckout({
+        url: cleanUrl,
+        category: cleanCategory,
+        companyName: name,
+        customerName: session?.name || (body.customerName && body.customerName !== name ? body.customerName.trim() : undefined),
+        targetRank: effectiveTargetRank,
+        price: amount,
+        customerEmail: finalEmail || undefined,
+        returnUrl: origin,
+      });
+    } catch (checkoutErr) {
+      await releaseFloorLock(effectiveTargetRank);
+      throw checkoutErr;
+    }
 
     // Update lock with exact payment session ID
     if (checkout.paymentId) {

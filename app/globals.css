@@ -80,10 +80,10 @@ body {
   color: var(--ink);
   background: linear-gradient(
     180deg,
-    #050811 0%,
-    #0a101d 28%,
-    #0e1626 65%,
-    #131c2e 100%
+    #e89163 0%,
+    #f5bca0 25%,
+    #fde0d0 60%,
+    #fff7f2 100%
   );
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
@@ -92,13 +92,13 @@ body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
-[data-theme="sunset"] body {
+[data-theme="dark"] body {
   background: linear-gradient(
     180deg,
-    #e89163 0%,
-    #f5bca0 25%,
-    #fde0d0 60%,
-    #fff7f2 100%
+    #050811 0%,
+    #0a101d 28%,
+    #0e1626 65%,
+    #131c2e 100%
   );
 }
 
@@ -2580,13 +2580,30 @@ button.chip:focus-visible {
   position: fixed;
   inset: 0;
   z-index: 99999;
-  background-color: #050811;
+  background: linear-gradient(
+    180deg,
+    #e89163 0%,
+    #f5bca0 25%,
+    #fde0d0 60%,
+    #fff7f2 100%
+  );
+  background-attachment: fixed;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: opacity 0.45s ease;
   opacity: 1;
   pointer-events: auto;
+}
+
+[data-theme="dark"] .building-loader-overlay {
+  background: linear-gradient(
+    180deg,
+    #050811 0%,
+    #0a101d 28%,
+    #0e1626 65%,
+    #131c2e 100%
+  );
 }
 
 .building-loader-overlay.fade-out {
@@ -2607,9 +2624,10 @@ button.chip:focus-visible {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.12);
+  border: 2.5px solid rgba(255, 255, 255, 0.4);
   border-top-color: #ff6b1a;
-  border-right-color: rgba(255, 107, 26, 0.6);
+  border-right-color: rgba(255, 107, 26, 0.85);
+  box-shadow: 0 4px 16px rgba(255, 107, 26, 0.25);
   animation: premiumLoaderSpin 0.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
@@ -2618,10 +2636,16 @@ button.chip:focus-visible {
   height: 72px;
   border-radius: 50%;
   overflow: hidden;
-  background-color: #0b1120;
+  background-color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+[data-theme="dark"] .premium-loader-logo-inner {
+  background-color: #0b1120;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .premium-loader-logo-img {

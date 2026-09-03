@@ -203,21 +203,36 @@ export const acquireTopFloorLock = (args: Parameters<typeof acquireFloorLock>[0]
 
 /**
  * Release claim lock for a specific floor rank.
+ * If email is provided, sweeps all locks held by this user.
  * If paymentId / checkoutSessionId is provided, matches against either.
  * If neither is provided, releases the lock on that rank unconditionally.
  */
 export async function releaseFloorLock(
   targetRank = 1,
   paymentId?: string | null,
-  checkoutSessionId?: string | null
+  checkoutSessionId?: string | null,
+  email?: string | null
 ): Promise<void> {
   try {
     await ensureFloorLocksTable();
-    if (paymentId || checkoutSessionId) {
+    const cleanEmail = email?.toLowerCase().trim() || null;
+
+    if (cleanEmail) {
       await db
         .delete(floorLocks)
         .where(
-          sql`${floorLocks.targetRank} = ${targetRank} OR ${paymentId ? sql`${floorLocks.lockedByPaymentId} = ${paymentId}` : sql`false`} OR ${checkoutSessionId ? sql`${floorLocks.lockedByPaymentId} = ${checkoutSessionId}` : sql`false`}`
+          sql`${floorLocks.targetRank} = ${targetRank} 
+            OR (${paymentId ? sql`${floorLocks.lockedByPaymentId} = ${paymentId}` : sql`false`}) 
+            OR (${checkoutSessionId ? sql`${floorLocks.lockedByPaymentId} = ${checkoutSessionId}` : sql`false`})
+            OR LOWER(${floorLocks.lockedByEmail}) = ${cleanEmail}`
+        );
+    } else if (paymentId || checkoutSessionId) {
+      await db
+        .delete(floorLocks)
+        .where(
+          sql`${floorLocks.targetRank} = ${targetRank} 
+            OR (${paymentId ? sql`${floorLocks.lockedByPaymentId} = ${paymentId}` : sql`false`}) 
+            OR (${checkoutSessionId ? sql`${floorLocks.lockedByPaymentId} = ${checkoutSessionId}` : sql`false`}`
         );
     } else {
       await db.delete(floorLocks).where(eq(floorLocks.targetRank, targetRank));
@@ -227,5 +242,9 @@ export async function releaseFloorLock(
   }
 }
 
-export const releaseTopFloorLock = (targetRank = 1, paymentId?: string | null, checkoutSessionId?: string | null) =>
-  releaseFloorLock(targetRank, paymentId, checkoutSessionId);
+export const releaseTopFloorLock = (
+  targetRank = 1,
+  paymentId?: string | null,
+  checkoutSessionId?: string | null,
+  email?: string | null
+) => releaseFloorLock(targetRank, paymentId, checkoutSessionId, email);

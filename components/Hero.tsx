@@ -143,6 +143,18 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
   const lockHolderEmail = targetLock.lockedByEmail?.toLowerCase().trim();
   const isHeldByMe = Boolean(userEmail && lockHolderEmail && userEmail === lockHolderEmail);
   const isTargetLocked = Boolean(targetLock.isLocked);
+  const isStrangerLocked = Boolean(isTargetLocked && !isHeldByMe);
+
+  const handleCancelMyLock = async () => {
+    try {
+      await fetch("/api/checkout/release-lock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user?.email, targetRank }),
+      });
+      fetchFloorsAndLocks();
+    } catch (e) {}
+  };
 
   // Sync current floors pricing ladder and concurrency locks across all 50 floors
   const fetchFloorsAndLocks = () => {
@@ -220,14 +232,24 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
   useEffect(() => {
     const handlePageShow = () => {
       setIsSubmitting(false);
-      fetchFloorsAndLocks();
+      if (user?.email) {
+        fetch("/api/checkout/release-lock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: user.email, targetRank }),
+        })
+          .then(() => fetchFloorsAndLocks())
+          .catch(() => fetchFloorsAndLocks());
+      } else {
+        fetchFloorsAndLocks();
+      }
     };
 
     window.addEventListener("pageshow", handlePageShow);
     return () => {
       window.removeEventListener("pageshow", handlePageShow);
     };
-  }, []);
+  }, [user, targetRank]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -512,6 +534,27 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
         </div>
       )}
 
+      {/* Active Lock Held by User Notice */}
+      {isHeldByMe && (
+        <div
+          className="claimed-banner payment-notice info"
+          style={{ marginBottom: "16px", background: "rgba(59, 130, 246, 0.12)", border: "1px solid rgba(59, 130, 246, 0.35)", color: "#3b82f6" }}
+          role="status"
+        >
+          <span>
+            ⏳ You have a checkout session in progress for Floor #{targetRank}.
+          </span>
+          <button
+            type="button"
+            className="claimed-edit-btn"
+            style={{ background: "rgba(239, 68, 68, 0.15)", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.35)", fontSize: "11px", padding: "3px 8px" }}
+            onClick={handleCancelMyLock}
+          >
+            Release Lock
+          </button>
+        </div>
+      )}
+
       {/* Existing Floor Reclaim / Top Floor Status Notice */}
       {existingFloorOnTower && existingFloorOnTower.rank === 1 && (
         <div className="claimed-banner celebration" style={{ marginBottom: "16px" }} role="status">
@@ -734,15 +777,13 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
 
         <button
           type="submit"
-          className={`claim-btn ${isTargetLocked || (existingFloorOnTower && existingFloorOnTower.rank === 1) ? "claim-btn-locked" : ""}`}
-          disabled={isSubmitting || isTargetLocked || Boolean(existingFloorOnTower && existingFloorOnTower.rank === 1)}
+          className={`claim-btn ${isStrangerLocked || (existingFloorOnTower && existingFloorOnTower.rank === 1) ? "claim-btn-locked" : ""}`}
+          disabled={isSubmitting || isStrangerLocked || Boolean(existingFloorOnTower && existingFloorOnTower.rank === 1)}
           title={
             existingFloorOnTower && existingFloorOnTower.rank === 1
               ? "This startup is already at Top Penthouse Floor #1"
-              : isTargetLocked
-              ? isHeldByMe
-                ? `You are currently claiming Floor #${targetRank} in checkout on another device`
-                : `Someone is currently in checkout claiming Floor #${targetRank}`
+              : isStrangerLocked
+              ? `Someone is currently in checkout claiming Floor #${targetRank}`
               : undefined
           }
         >
@@ -752,7 +793,7 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
             <>👑 Already Top Floor #1</>
           ) : isTargetLocked ? (
             isHeldByMe ? (
-              <>⏳ You are claiming Floor #{targetRank}...</>
+              <>⚡ Resume Claim Floor #{targetRank} <Arrow /></>
             ) : (
               <>🔒 Someone is claiming Floor #{targetRank}...</>
             )

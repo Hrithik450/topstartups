@@ -29,13 +29,13 @@ export default function ManageFloorModal({
   onClose,
   onFloorUpdated,
 }: ManageFloorModalProps) {
-  const { user, login } = useUserAuth();
+  const { user, login, loading: authLoading } = useUserAuth();
 
   const [ownedFloors, setOwnedFloors] = useState<FloorItem[]>([]);
   const [selectedFloorId, setSelectedFloorId] = useState<number | null>(null);
 
   // Status & loading
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
@@ -57,31 +57,42 @@ export default function ManageFloorModal({
     logoUrl: "",
   });
 
-  // Auto-load owned floors whenever modal opens or user logs in
+  // Load latest owned floors every time the modal opens
   useEffect(() => {
     if (!isOpen) return;
 
-    if (user?.email) {
-      setLoading(true);
-      setStatusMsg(null);
-      fetch("/api/auth/me", { cache: "no-store" })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.authenticated && Array.isArray(data.ownedFloors) && data.ownedFloors.length > 0) {
-            setOwnedFloors(data.ownedFloors);
-            setSelectedFloorId((prev) => (prev && data.ownedFloors.some((f: any) => f.id === prev) ? prev : data.ownedFloors[0].id));
-          } else {
-            setOwnedFloors([]);
-            setSelectedFloorId(null);
-          }
-        })
-        .catch((err) => console.warn("Failed to load user floors:", err))
-        .finally(() => setLoading(false));
-    } else {
-      setOwnedFloors([]);
-      setSelectedFloorId(null);
-    }
-  }, [isOpen, user]);
+    let isMounted = true;
+    setLoading(true);
+    setStatusMsg(null);
+
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.authenticated && Array.isArray(data.ownedFloors) && data.ownedFloors.length > 0) {
+          setOwnedFloors(data.ownedFloors);
+          setSelectedFloorId((prev) =>
+            prev && data.ownedFloors.some((f: any) => f.id === prev) ? prev : data.ownedFloors[0].id
+          );
+        } else {
+          setOwnedFloors([]);
+          setSelectedFloorId(null);
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        console.warn("Failed to load user floors:", err);
+        setOwnedFloors([]);
+        setSelectedFloorId(null);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   // When selected floor changes in dropdown, populate form
   useEffect(() => {
@@ -204,7 +215,9 @@ export default function ManageFloorModal({
           <div>
             <h2 className="manage-modal-title">Manage Your Skyscraper Floors</h2>
             <p className="manage-modal-subtitle">
-              {user
+              {loading || authLoading
+                ? "Connecting to verified startup skyscraper database..."
+                : user
                 ? `Logged in as ${user.email} — Update startup details, logos, or vacate floors anytime.`
                 : "Sign in with Google to manage your claimed skyscraper startups."}
             </p>
@@ -221,8 +234,15 @@ export default function ManageFloorModal({
           </div>
         )}
 
-        {/* ─── GOOGLE LOGIN REQUIRED IF NOT LOGGED IN ─── */}
-        {!user ? (
+        {/* ─── 1. CLEAN ANIMATED LOADER WHILE FETCHING ─── */}
+        {loading || authLoading ? (
+          <div className="manage-modal-loading">
+            <div className="manage-spinner" />
+            <h4 className="manage-loading-text">Fetching your skyscraper floors...</h4>
+            <p className="manage-loading-sub">Connecting securely to verified database</p>
+          </div>
+        ) : !user ? (
+          /* ─── 2. GOOGLE LOGIN REQUIRED IF NOT LOGGED IN ─── */
           <div style={{ marginTop: "24px", textAlign: "center", padding: "20px 0" }}>
             <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "14px", marginBottom: "20px" }}>
               Access and manage all your claimed startup floors across any device.
@@ -255,7 +275,8 @@ export default function ManageFloorModal({
               Sign In with Google
             </button>
           </div>
-        ) : ownedFloors.length === 0 && !loading ? (
+        ) : ownedFloors.length === 0 ? (
+          /* ─── 3. ZERO CLAIMED PRODUCTS STATE ─── */
           <div style={{ marginTop: "20px", textAlign: "center", padding: "28px 16px", background: "rgba(255,255,255,0.03)", borderRadius: "14px", border: "1px dashed rgba(255,255,255,0.15)" }}>
             <div style={{ fontSize: "32px", marginBottom: "12px" }}>🏢</div>
             <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", marginBottom: "6px" }}>
@@ -309,6 +330,7 @@ export default function ManageFloorModal({
             </div>
           </div>
         ) : (
+          /* ─── 4. EDIT FORM FOR CLAIMED PRODUCTS ─── */
           <div>
             {/* Floor Selector Dropdown */}
             {ownedFloors.length > 1 && (

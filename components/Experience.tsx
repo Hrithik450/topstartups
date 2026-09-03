@@ -248,7 +248,7 @@ export default function Experience() {
           </div>
         </header>
 
-        <Hero />
+        <Hero onOpenManage={() => setIsManageModalOpen(true)} />
         <StatChips onOpenManage={() => setIsManageModalOpen(true)} />
         <Controls
           handleRef={handleRef}

@@ -5,15 +5,13 @@ import { Globe, Building, Arrow, Minus, Plus, Search, Close, Check } from "./ico
 import { MAIN_CATEGORIES, SPECIAL_OPTIONS, IndustryCategory } from "@/lib/categories";
 import { validateWebsiteSyntax } from "@/lib/validation/domain";
 import { useUserAuth } from "@/lib/auth/use-user-auth";
-import ManageFloorModal from "./ManageFloorModal";
 
-export default function Hero() {
+export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {}) {
   const { user, ownedFloors, login, logout, loading: authLoading } = useUserAuth();
   const [price, setPrice] = useState(50);
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<IndustryCategory | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isManageOpen, setIsManageOpen] = useState(false);
 
   const categoryWrapperRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -323,7 +321,7 @@ export default function Hero() {
           <button
             type="button"
             className="claimed-edit-btn"
-            onClick={() => setIsManageOpen(true)}
+            onClick={() => onOpenManage?.()}
           >
             Edit Floor
           </button>
@@ -350,8 +348,6 @@ export default function Hero() {
           </button>
         </span>
       </h1>
-
-      <ManageFloorModal isOpen={isManageOpen} onClose={() => setIsManageOpen(false)} />
 
       <form className="form" onSubmit={handleSubmit}>
         <div className="form-inputs-row">

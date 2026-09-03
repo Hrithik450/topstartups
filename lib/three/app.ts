@@ -2276,40 +2276,61 @@ function createMoonTexture(): THREE.CanvasTexture {
   // 9. Camera & Controls Setup
   const camera = new THREE.PerspectiveCamera(38, container.clientWidth / container.clientHeight, 0.1, 500);
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
+  controls.enableDamping = false;
   controls.enablePan = false;
   controls.enableZoom = false;
   controls.enableRotate = false;
-  controls.autoRotate = true;
-  controls.autoRotateSpeed = 0.5;
+  controls.autoRotate = false;
 
   function calculateZoomDist(aspect: number): number {
     const t = Math.tan((38 * Math.PI) / 360);
-    return Math.min(48, Math.max(10, 5 + Math.max(15.925 / (2 * t), 12 / (2 * t * aspect))));
+    const baseDist = Math.max(16.5 / (2 * t), 13.0 / (2 * t * Math.min(aspect, 1.25)));
+    return Math.min(52, Math.max(14, baseDist * 1.08));
   }
 
   let zoomDist = calculateZoomDist(container.clientWidth / container.clientHeight);
   let zoomDistTarget = zoomDist;
 
   function calculateRestingTargetY(): number {
-    const h = container.clientHeight || 900;
-    const isMobile = window.innerWidth < 768;
-    return totalHeight + 4.4 - (0.5 - Math.min(0.45, (isMobile ? 210 : 295) / h)) * (2 * zoomDist * Math.tan((38 * Math.PI) / 360));
+    const h = container.clientHeight || (typeof window !== "undefined" ? window.innerHeight : 900);
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 900;
+    const fovY = 2 * zoomDist * Math.tan((38 * Math.PI) / 360);
+    // Position the top helicopter fan rotors exactly ~8px below the policy links (Platform Rules • Terms • Privacy)
+    const policyLinksBottomPx = isMobile ? 312 : 318;
+    const topFraction = (policyLinksBottomPx + 8) / h;
+    // Helicopter top rotor is at totalHeight + 4.52
+    return (totalHeight + 4.52) - (0.5 - topFraction) * fovY;
   }
 
   const restingTargetY = calculateRestingTargetY();
   let travelY = 1.32; // ground base elevation for intro
   let travelYTarget = restingTargetY;
   const initialAzimuth = -45 * (Math.PI / 180);
-  const restingTilt = 8.9 * (Math.PI / 180); // 6.4 deg + 2.5 deg elevation tilt
+  const restingTilt = 8.8 * (Math.PI / 180);
+
+  // Controlled, refined vertical bounds: ~30px drag room above top floor and ~30px below base
+  const MIN_TRAVEL_Y = 1.32 - 0.7;
+  const MAX_TRAVEL_Y = restingTargetY + 0.75;
+
+  // Playground Momentum & Physics State
+  let cameraAzimuth = initialAzimuth;
+  let angularVelocity = 0; // radians per second (smooth butter rotational fling)
+  let verticalVelocity = 0; // units per second
+  let isPointerDragging = false;
+  let pointerDownPos = { x: 0, y: 0, time: 0 };
+  let lastPointerPos = { x: 0, y: 0 };
+  let lastPointerTime = 0;
+  let idleTime = 0;
+  let autoRotateEnabled = true;
+  const AUTO_ROTATE_SPEED = 0.22; // radians per second
+
+  // Rolling movement samples for high-fidelity velocity calculation on gesture release
+  let moveHistory: { x: number; y: number; time: number }[] = [];
 
   // Position camera at start
   const targetVec = new THREE.Vector3(0, travelY, 0);
   controls.target.copy(targetVec);
   camera.position.setFromSphericalCoords(zoomDist, 0.5 * Math.PI - restingTilt, initialAzimuth).add(targetVec);
-  controls.minPolarAngle = 0.5 * Math.PI - restingTilt;
-  controls.maxPolarAngle = 0.5 * Math.PI - restingTilt;
   controls.update();
 
   const applyTheme = (newTheme: "dark" | "sunset") => {
@@ -2357,13 +2378,15 @@ function createMoonTexture(): THREE.CanvasTexture {
   // Set initial theme lighting
   applyTheme(currentTheme);
 
-  // Wheel interaction for floor ride
+  // Wheel interaction for floor ride & zoom
   const onWheel = (e: WheelEvent) => {
     e.preventDefault();
+    inIntro = false;
+    idleTime = 0;
     if (e.metaKey || e.ctrlKey) {
-      zoomDistTarget = THREE.MathUtils.clamp(zoomDistTarget + e.deltaY * 0.05, 12, 48);
+      zoomDistTarget = THREE.MathUtils.clamp(zoomDistTarget + e.deltaY * 0.05, 14, 52);
     } else {
-      travelYTarget = THREE.MathUtils.clamp(travelYTarget - e.deltaY * 0.015, 1.32, roofY);
+      travelYTarget = THREE.MathUtils.clamp(travelYTarget - e.deltaY * 0.008, MIN_TRAVEL_Y, MAX_TRAVEL_Y);
     }
   };
   renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
@@ -2392,19 +2415,17 @@ function createMoonTexture(): THREE.CanvasTexture {
     };
   }
 
-  // Pointer & Touch Interaction (Smooth touch swipe elevator scrolling, horizontal orbit, text tap to open)
-  let pointerDownPos = { x: 0, y: 0, time: 0 };
-  let lastPointerPos = { x: 0, y: 0 };
-  let isPointerDragging = false;
-  let dragAxis: "none" | "vertical" | "horizontal" = "none";
-  let scrollVelocityY = 0;
-
+  // Pointer & Touch Interaction (Smooth butter physics, natural 2D gestures, rotational fling, tap to inspect)
   const onPointerDown = (e: PointerEvent) => {
-    pointerDownPos = { x: e.clientX, y: e.clientY, time: performance.now() };
+    const now = performance.now();
+    pointerDownPos = { x: e.clientX, y: e.clientY, time: now };
     lastPointerPos = { x: e.clientX, y: e.clientY };
+    lastPointerTime = now;
+    moveHistory = [{ x: e.clientX, y: e.clientY, time: now }];
     isPointerDragging = false;
-    dragAxis = "none";
-    scrollVelocityY = 0;
+    angularVelocity = 0;
+    verticalVelocity = 0;
+    idleTime = 0;
     renderer.domElement.style.cursor = "grabbing";
     if (typeof document !== "undefined") document.body.classList.add("is-dragging");
     try {
@@ -2413,32 +2434,31 @@ function createMoonTexture(): THREE.CanvasTexture {
   };
 
   const onPointerMove = (e: PointerEvent) => {
-    // 1. Drag / Swipe Scroll Handling (For mobile touch and mouse drag)
+    const now = performance.now();
+
+    // 1. Drag & Gesture Handling (Free natural 2D motion with butter smoothness)
     if (pointerDownPos.time > 0) {
-      const deltaY = e.clientY - lastPointerPos.y;
       const deltaX = e.clientX - lastPointerPos.x;
+      const deltaY = e.clientY - lastPointerPos.y;
       const totalDist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
 
-      if (totalDist > 5) {
+      if (totalDist > 4) {
         isPointerDragging = true;
         inIntro = false;
-        if (dragAxis === "none") {
-          dragAxis = Math.abs(deltaY) >= Math.abs(deltaX) ? "vertical" : "horizontal";
-        }
+        idleTime = 0;
       }
 
       if (isPointerDragging) {
-        if (dragAxis === "vertical") {
-          // Vertical swipe: swipe UP (deltaY < 0) scrolls DOWN the tower, swipe DOWN (deltaY > 0) scrolls UP
-          const sensitivity = 0.08;
-          travelYTarget = THREE.MathUtils.clamp(travelYTarget + deltaY * sensitivity, 1.32, roofY);
-          scrollVelocityY = deltaY * sensitivity;
-        } else if (dragAxis === "horizontal") {
-          // Horizontal drag: orbit around tower
-          controls.autoRotate = false;
-          const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
-          spherical.theta -= deltaX * 0.006;
-          camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
+        // Horizontal drag: directly orbits azimuth
+        cameraAzimuth -= deltaX * 0.0055;
+
+        // Vertical drag: subtle, controlled range (~30px headroom and footroom)
+        travelYTarget = THREE.MathUtils.clamp(travelYTarget + deltaY * 0.022, MIN_TRAVEL_Y, MAX_TRAVEL_Y);
+
+        // Record recent move samples for release velocity
+        moveHistory.push({ x: e.clientX, y: e.clientY, time: now });
+        while (moveHistory.length > 1 && now - moveHistory[0].time > 120) {
+          moveHistory.shift();
         }
 
         if (currentHoveredFloor !== -1) {
@@ -2448,6 +2468,7 @@ function createMoonTexture(): THREE.CanvasTexture {
       }
 
       lastPointerPos = { x: e.clientX, y: e.clientY };
+      lastPointerTime = now;
       if (isPointerDragging) return;
     }
 
@@ -2490,15 +2511,31 @@ function createMoonTexture(): THREE.CanvasTexture {
     renderer.domElement.style.cursor = "grab";
     if (typeof document !== "undefined") document.body.classList.remove("is-dragging");
 
+    const now = performance.now();
     const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
-    const duration = performance.now() - pointerDownPos.time;
+    const duration = now - pointerDownPos.time;
 
     if (isPointerDragging) {
-      // Smooth inertial glide on flick/drag release
-      if (dragAxis === "vertical" && Math.abs(scrollVelocityY) > 0.05) {
-        travelYTarget = THREE.MathUtils.clamp(travelYTarget + scrollVelocityY * 4.0, 1.32, roofY);
+      // High-precision gesture momentum calculation (Flick & Fling physics)
+      if (moveHistory.length >= 2) {
+        const first = moveHistory[0];
+        const last = moveHistory[moveHistory.length - 1];
+        const dt = Math.max(0.015, (last.time - first.time) / 1000);
+        const vx = (last.x - first.x) / dt; // pixels per second
+        const vy = (last.y - first.y) / dt; // pixels per second
+
+        // Horizontal flick -> spins like butter for 1-2+ turns
+        if (Math.abs(vx) > 60) {
+          angularVelocity = THREE.MathUtils.clamp(-vx * 0.0032, -12.0, 12.0);
+        }
+
+        // Vertical flick -> subtle, controlled glide
+        if (Math.abs(vy) > 60) {
+          const verticalGlide = vy * 0.006;
+          travelYTarget = THREE.MathUtils.clamp(travelYTarget + verticalGlide, MIN_TRAVEL_Y, MAX_TRAVEL_Y);
+        }
       }
-    } else if (dist < 12 && duration < 650) {
+    } else if (dist < 10 && duration < 500) {
       inIntro = false;
       // Intentional clean tap/click on floor: open overview popup
       const rect = renderer.domElement.getBoundingClientRect();
@@ -2524,8 +2561,7 @@ function createMoonTexture(): THREE.CanvasTexture {
 
     pointerDownPos = { x: 0, y: 0, time: 0 };
     isPointerDragging = false;
-    dragAxis = "none";
-    scrollVelocityY = 0;
+    moveHistory = [];
   };
 
   const onPointerLeave = (e: PointerEvent) => {
@@ -2557,7 +2593,7 @@ function createMoonTexture(): THREE.CanvasTexture {
         e.touches[0].clientY - e.touches[1].clientY
       );
       const factor = initialPinchDist / Math.max(1, currentDist);
-      zoomDistTarget = THREE.MathUtils.clamp(initialPinchZoom * factor, 12, 48);
+      zoomDistTarget = THREE.MathUtils.clamp(initialPinchZoom * factor, 14, 52);
     }
   };
 
@@ -2720,10 +2756,10 @@ function createMoonTexture(): THREE.CanvasTexture {
       travelYTarget = travelY;
       // On mobile, a gentle 135-degree sweep prevents GPU raster thrashing, on desktop full 360 rotation
       const totalRotation = isMobileDevice ? Math.PI * 0.75 : Math.PI * 2;
-      const currentAzimuth = initialAzimuth + totalRotation * eased;
+      cameraAzimuth = initialAzimuth + totalRotation * eased;
 
       controls.target.set(0, travelY, 0);
-      _introSpherical.set(zoomDist, 0.5 * Math.PI - restingTilt, currentAzimuth);
+      _introSpherical.set(zoomDist, 0.5 * Math.PI - restingTilt, cameraAzimuth);
       _introVec.setFromSpherical(_introSpherical).add(controls.target);
       camera.position.copy(_introVec);
       camera.lookAt(controls.target);
@@ -2733,22 +2769,37 @@ function createMoonTexture(): THREE.CanvasTexture {
         controls.enabled = true;
       }
     } else {
-      // Smooth travelY & zoom interpolation
-      const dy = (travelYTarget - travelY) * 0.1;
-      if (Math.abs(dy) > 0.001) {
-        travelY += dy;
-        controls.target.y += dy;
-        camera.position.y += dy;
+      // 1. Inertial Rotation & Physics (Smooth butter momentum)
+      if (!isPointerDragging) {
+        if (Math.abs(angularVelocity) > 0.0001) {
+          cameraAzimuth += angularVelocity * dt;
+          // Silky smooth exponential friction damping: glides for 1-2+ full rotations on flick
+          angularVelocity *= Math.exp(-2.2 * dt);
+          idleTime = 0;
+        } else {
+          angularVelocity = 0;
+          idleTime += dt;
+          // Softly ease into gentle auto-rotation after 3.0s idle
+          if (autoRotateEnabled && idleTime > 3.0) {
+            const autoBlend = Math.min(1, (idleTime - 3.0) / 2.0);
+            cameraAzimuth += AUTO_ROTATE_SPEED * autoBlend * dt;
+          }
+        }
       }
 
-      const dz = (zoomDistTarget - zoomDist) * 0.12;
-      if (Math.abs(dz) > 0.001) {
-        zoomDist += dz;
-        _diffVec.copy(camera.position).sub(controls.target);
-        _diffVec.multiplyScalar(zoomDist / _diffVec.length());
-        camera.position.copy(controls.target).add(_diffVec);
-      }
+      // 2. Smooth vertical travel interpolation
+      const travelLerp = 1 - Math.exp(-12 * dt);
+      travelY += (travelYTarget - travelY) * travelLerp;
 
+      // 3. Smooth zoom distance interpolation
+      const zoomLerp = 1 - Math.exp(-10 * dt);
+      zoomDist += (zoomDistTarget - zoomDist) * zoomLerp;
+
+      // 4. Update camera & OrbitControls target
+      controls.target.set(0, travelY, 0);
+      _diffVec.setFromSphericalCoords(zoomDist, 0.5 * Math.PI - restingTilt, cameraAzimuth);
+      camera.position.copy(controls.target).add(_diffVec);
+      camera.lookAt(controls.target);
       controls.update();
     }
 
@@ -2786,14 +2837,15 @@ function createMoonTexture(): THREE.CanvasTexture {
 
   return {
     zoom(dir) {
-      zoomDistTarget = THREE.MathUtils.clamp(zoomDistTarget + (dir === 1 ? -4 : 4), 12, 48);
+      zoomDistTarget = THREE.MathUtils.clamp(zoomDistTarget + (dir === 1 ? -4 : 4), 14, 52);
     },
     reset() {
       zoomDistTarget = calculateZoomDist(container.clientWidth / container.clientHeight);
       travelYTarget = calculateRestingTargetY();
-      controls.target.set(0, travelYTarget, 0);
-      camera.position.setFromSphericalCoords(zoomDistTarget, 0.5 * Math.PI - restingTilt, initialAzimuth).add(controls.target);
-      controls.autoRotate = true;
+      cameraAzimuth = initialAzimuth;
+      angularVelocity = 0;
+      verticalVelocity = 0;
+      idleTime = 0;
       inIntro = false;
     },
     jumpToTop() {
@@ -2806,17 +2858,18 @@ function createMoonTexture(): THREE.CanvasTexture {
       travelYTarget = 1.32;
     },
     nudgeRotate(dir) {
-      controls.autoRotate = false;
-      const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
-      spherical.theta += dir * 0.4;
-      camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
+      inIntro = false;
+      angularVelocity += dir * 2.8;
+      idleTime = 0;
     },
     moveFloors(dir) {
-      travelYTarget = THREE.MathUtils.clamp(travelYTarget + dir * FLOOR_PITCH * 2, 1.32, roofY);
+      inIntro = false;
+      travelYTarget = THREE.MathUtils.clamp(travelYTarget + dir * FLOOR_PITCH * 2, MIN_TRAVEL_Y, MAX_TRAVEL_Y);
+      idleTime = 0;
     },
     toggleRotate() {
-      controls.autoRotate = !controls.autoRotate;
-      return controls.autoRotate;
+      autoRotateEnabled = !autoRotateEnabled;
+      return autoRotateEnabled;
     },
     toggleRuler() {
       rulerGroup.visible = !rulerGroup.visible;

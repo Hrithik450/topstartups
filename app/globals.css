@@ -1025,13 +1025,23 @@ button.chip:focus-visible {
     justify-content: space-between;
     padding: 0 16px;
     z-index: 45;
-    background: #0f172a;
-    border-bottom: 1px solid #1e293b;
+    background: transparent !important;
+    background-color: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   [data-theme="sunset"] .mobile-header {
-    background: #ffffff;
-    border-bottom-color: #e2e8f0;
+    background: transparent !important;
+    background-color: transparent !important;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  [data-theme="dark"] .mobile-header {
+    background: transparent !important;
+    background-color: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .mobile-brand-title {
@@ -1053,12 +1063,14 @@ button.chip:focus-visible {
     gap: 6px;
     padding: 6px 12px;
     border-radius: 9999px;
-    background: var(--pill);
-    border: 1px solid var(--pill-border);
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: var(--green);
     font-size: 12px;
     font-weight: 700;
-    box-shadow: var(--pill-shadow-sm);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
   }
 
   .mobile-header-chip .dot {
@@ -1075,12 +1087,20 @@ button.chip:focus-visible {
     border-radius: 50%;
     display: grid;
     place-items: center;
-    background: var(--pill);
-    border: 1px solid var(--pill-border);
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     color: var(--ink);
-    box-shadow: var(--pill-shadow-sm);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
     transition: transform 0.12s, background 0.15s;
     touch-action: manipulation;
+  }
+
+  [data-theme="dark"] .mobile-header-btn {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   }
 
   .mobile-header-btn svg {

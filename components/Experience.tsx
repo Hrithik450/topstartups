@@ -4,12 +4,12 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type { TowerHandle } from "@/lib/three/app";
 import Hero from "./Hero";
-import StatChips, { MobileStatsSheet, useLiveStats } from "./StatChips";
+import StatChips, { MobileStatsSheet } from "./StatChips";
 import Controls from "./Controls";
 import FloorHoverCard, { type HoverData } from "./FloorHoverCard";
 import ManageFloorModal from "./ManageFloorModal";
 import BuildingLoader from "./BuildingLoader";
-import { Moon, Sun, BarChart, ManageIcon } from "./icons";
+import { Moon, Sun, ManageIcon } from "./icons";
 import type { Listing } from "@/lib/three/listings";
 import { useUserAuth } from "@/lib/auth/use-user-auth";
 
@@ -259,7 +259,7 @@ export default function Experience() {
         <div className="brand desktop-brand">GeTopFloor</div>
 
         {/* Mobile Header Bar */}
-        <header className="mobile-header">
+        <header className="mobile-header" style={{ background: "transparent" }}>
           <div className="mobile-brand-title">GeTopFloor</div>
           <div className="mobile-header-actions">
             <button

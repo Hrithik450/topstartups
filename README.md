@@ -154,6 +154,8 @@ cp .env.example .env.local
 | `DATABASE_DIRECT_URL` | Direct port 5432 connection for migrations & seeding | `postgresql://postgres:postgres@127.0.0.1:5432/outbid` |
 | `DATABASE_SSL` | Force SSL on/off (`false` for local/Docker, `true` for Cloud) | `false` |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob Storage token for permanent logo CDN storage | `vercel_blob_rw_...` |
+| `BLOB_STORE_ID` | Vercel Blob Store unique identifier (e.g. `store_xz9LiwexGFvW3Y3V`) | `store_...` |
+| `BLOB_WEBHOOK_PUBLIC_KEY` | Public key for verifying Vercel Blob upload event signatures | `...` |
 | `FIRECRAWL_API_KEY` | Optional: Firecrawl API key for AI web metadata & favicon scraping | `fc-...` |
 | `DODO_PAYMENTS_API_KEY` | Dodo Payments API key (leave empty for mock sandbox mode) | `test_...` |
 | `DODO_PAYMENTS_WEBHOOK_SECRET` | Webhook verification secret from Dodo Dashboard | `whsec_...` |

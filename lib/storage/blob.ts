@@ -1,6 +1,18 @@
 import { put, del } from "@vercel/blob";
 
 /**
+ * Checks if Vercel Blob Storage environment is active.
+ */
+function isBlobConfigured(): boolean {
+  return Boolean(
+    process.env.BLOB_READ_WRITE_TOKEN ||
+    process.env.BLOB_STORE_ID ||
+    process.env.BLOB_WEBHOOK_PUBLIC_KEY ||
+    process.env.VERCEL
+  );
+}
+
+/**
  * Upload a local file/buffer directly to Vercel Blob Storage.
  * Returns the permanent public CDN URL.
  */
@@ -9,9 +21,9 @@ export async function uploadToBlob(
   filename: string,
   contentType?: string
 ): Promise<string | null> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
-  if (!token) {
-    console.warn("BLOB_READ_WRITE_TOKEN is not configured. Skipping Vercel Blob upload.");
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim() || undefined;
+  if (!token && !isBlobConfigured()) {
+    console.warn("Vercel Blob Storage is not configured. Skipping Vercel Blob upload.");
     return null;
   }
 
@@ -39,8 +51,8 @@ export async function persistImageToBlob(
   externalUrl: string,
   prefixName: string
 ): Promise<string> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
-  if (!token || !externalUrl || externalUrl.includes("vercel-storage.com")) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim() || undefined;
+  if ((!token && !isBlobConfigured()) || !externalUrl || externalUrl.includes("vercel-storage.com")) {
     return externalUrl;
   }
 
@@ -84,8 +96,8 @@ export async function persistImageToBlob(
  * Delete a file from Vercel Blob Storage.
  */
 export async function deleteFromBlob(url: string): Promise<void> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
-  if (!token || !url || !url.includes("vercel-storage.com")) return;
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim() || undefined;
+  if (!url || !url.includes("vercel-storage.com")) return;
 
   try {
     await del(url, { token });

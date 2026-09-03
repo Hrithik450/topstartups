@@ -204,9 +204,12 @@ export async function scrapeWebsiteMetadata(targetUrl: string): Promise<WebsiteM
     const tagline = rawDesc ? cleanDescription(rawDesc, 110) : `${companyName} — Official Skyscraper Floor`;
     const description = rawDesc ? cleanDescription(rawDesc, 260) : `Claimed top floor on GeTopFloor skyscraper.`;
 
-    // Extract Icons & Favicons
+    // Extract Icons & Favicons with multi-tier favicon crawler
     const appleTouchIconMatch = html.match(/<link[^>]+rel=["'](?:apple-touch-icon|apple-touch-icon-precomposed)["'][^>]+href=["']([^"']+)["']/i) ||
       html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:apple-touch-icon|apple-touch-icon-precomposed)["']/i);
+
+    const pngIconMatch = html.match(/<link[^>]+rel=["'](?:shortcut icon|icon)["'][^>]+type=["']image\/(?:png|svg\+xml)["'][^>]+href=["']([^"']+)["']/i) ||
+      html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:shortcut icon|icon)["'][^>]+type=["']image\/(?:png|svg\+xml)["']/i);
 
     const iconMatch = html.match(/<link[^>]+rel=["'](?:shortcut icon|icon)["'][^>]+href=["']([^"']+)["']/i) ||
       html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:shortcut icon|icon)["']/i);
@@ -214,11 +217,12 @@ export async function scrapeWebsiteMetadata(targetUrl: string): Promise<WebsiteM
     let logoUrl = fallbackFavicon;
     if (appleTouchIconMatch?.[1]) {
       logoUrl = resolveUrl(appleTouchIconMatch[1], cleanUrl);
+    } else if (pngIconMatch?.[1]) {
+      logoUrl = resolveUrl(pngIconMatch[1], cleanUrl);
     } else if (iconMatch?.[1]) {
-      const resolved = resolveUrl(iconMatch[1], cleanUrl);
-      if (!resolved.endsWith(".ico")) {
-        logoUrl = resolved;
-      }
+      logoUrl = resolveUrl(iconMatch[1], cleanUrl);
+    } else {
+      logoUrl = fallbackFavicon;
     }
 
     const category = guessCategory(`${companyName} ${tagline} ${description}`);

@@ -1764,17 +1764,30 @@ function createMoonTexture(): THREE.CanvasTexture {
 
   const logoImagesCache = new Map<string, HTMLImageElement>();
 
-  function getOrLoadLogo(urlOrDomain: string, onLoaded?: () => void): HTMLImageElement | null {
-    if (logoImagesCache.has(urlOrDomain)) return logoImagesCache.get(urlOrDomain)!;
+  function getOrLoadLogo(urlOrDomain: string, onLoaded?: () => void, customLogoUrl?: string | null): HTMLImageElement | null {
+    if (!urlOrDomain) return null;
     const clean = urlOrDomain.replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./, "");
-    if (!AVAILABLE_LOGOS.has(clean)) {
-      return null;
-    }
+    const cacheKey = customLogoUrl || clean;
+    if (logoImagesCache.has(cacheKey)) return logoImagesCache.get(cacheKey)!;
+
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => onLoaded?.();
-    img.src = `/company-logos/${clean}.jpg`;
-    logoImagesCache.set(urlOrDomain, img);
+    img.onerror = () => {
+      if (!img.src.includes("google.com/s2/favicons")) {
+        img.src = `https://www.google.com/s2/favicons?domain=${clean}&sz=128`;
+      }
+    };
+
+    if (AVAILABLE_LOGOS.has(clean)) {
+      img.src = `/company-logos/${clean}.jpg`;
+    } else if (customLogoUrl) {
+      img.src = customLogoUrl;
+    } else {
+      img.src = `https://www.google.com/s2/favicons?domain=${clean}&sz=128`;
+    }
+
+    logoImagesCache.set(cacheKey, img);
     return img;
   }
 
@@ -1821,7 +1834,7 @@ function createMoonTexture(): THREE.CanvasTexture {
       const logo = getOrLoadLogo(currentListing.url_or_handle, () => {
         paintFloorTexture(ctx, CANVAS_SCALE, currentListing, rank, fIdx, logo, currentTheme);
         texture.needsUpdate = true;
-      });
+      }, currentListing.logoUrl || currentListing.logo_url || currentListing.image_url);
       paintFloorTexture(ctx, CANVAS_SCALE, currentListing, rank, fIdx, logo, currentTheme);
       texture.needsUpdate = true;
     };
@@ -2332,7 +2345,10 @@ function createMoonTexture(): THREE.CanvasTexture {
     for (const slot of allFloors) {
       const ctx = slot.canvas.getContext("2d")!;
       const rank = floorCount - slot.floorIndex;
-      const logoImg = getOrLoadLogo(slot.listing.url_or_handle);
+      const logoImg = getOrLoadLogo(slot.listing.url_or_handle, () => {
+        paintFloorTexture(ctx, CANVAS_SCALE, slot.listing, rank, slot.floorIndex, logoImg, currentTheme);
+        slot.texture.needsUpdate = true;
+      }, slot.listing.logoUrl || slot.listing.logo_url || slot.listing.image_url);
       paintFloorTexture(ctx, CANVAS_SCALE, slot.listing, rank, slot.floorIndex, logoImg, currentTheme);
       slot.texture.needsUpdate = true;
     }

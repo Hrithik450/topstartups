@@ -2257,11 +2257,19 @@ button.chip:focus-visible {
 }
 
 /* ─── Light / Sunset Mode Overrides for Manage Floor Modal ─── */
-[data-theme="sunset"] .manage-modal-content {
+/* ─── Light / Sunset Mode Overrides for Manage Floor Modal ─── */
+[data-theme="sunset"] .manage-modal-overlay {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+[data-theme="sunset"] .manage-modal-content,
+[data-theme="sunset"] .manage-modal-container {
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid #e2e8f0;
   color: #0f172a;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 107, 26, 0.25);
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(255, 107, 26, 0.15);
 }
 
 [data-theme="sunset"] .manage-modal-title {
@@ -2275,12 +2283,13 @@ button.chip:focus-visible {
 [data-theme="sunset"] .manage-modal-close {
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
-  color: #475569;
+  color: #334155;
 }
 
 [data-theme="sunset"] .manage-modal-close:hover {
   background: #e2e8f0;
   color: #0f172a;
+  border-color: #94a3b8;
 }
 
 [data-theme="sunset"] .manage-input {
@@ -2295,8 +2304,8 @@ button.chip:focus-visible {
 
 [data-theme="sunset"] .manage-input:focus {
   background: #ffffff;
-  border-color: #ea580c;
-  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+  border-color: #ff6b1a;
+  box-shadow: 0 0 0 3px rgba(255, 107, 26, 0.15);
 }
 
 [data-theme="sunset"] .manage-select option {
@@ -2306,6 +2315,21 @@ button.chip:focus-visible {
 
 [data-theme="sunset"] .manage-label {
   color: #475569;
+}
+
+[data-theme="sunset"] .manage-loading-text {
+  color: #0f172a;
+}
+
+[data-theme="sunset"] .manage-loading-sub {
+  color: #64748b;
+}
+
+[data-theme="sunset"] .manage-spinner {
+  border: 3.5px solid rgba(255, 107, 26, 0.18);
+  border-top-color: #ff6b1a;
+  border-right-color: #ee5253;
+  box-shadow: 0 0 20px rgba(255, 107, 26, 0.25);
 }
 
 [data-theme="sunset"] .manage-floor-meta {
@@ -2327,6 +2351,85 @@ button.chip:focus-visible {
 
 [data-theme="sunset"] .manage-actions-row {
   border-top-color: #e2e8f0;
+}
+
+.manage-outbid-banner {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(255, 107, 26, 0.12), rgba(255, 170, 0, 0.08));
+  border: 1px solid rgba(255, 107, 26, 0.35);
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+[data-theme="sunset"] .manage-outbid-banner {
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  border-color: #fed7aa;
+}
+
+.manage-outbid-desc {
+  margin: 4px 0 0 0;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+[data-theme="sunset"] .manage-outbid-desc {
+  color: #475569;
+}
+
+.manage-logo-preview {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+[data-theme="sunset"] .manage-logo-preview {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.manage-file-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.manage-file-upload-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="sunset"] .manage-file-upload-btn {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+[data-theme="sunset"] .manage-file-upload-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
 }
 
 .manage-user-bar {

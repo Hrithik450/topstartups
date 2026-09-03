@@ -406,28 +406,15 @@ export default function ManageFloorModal({
                 const diff = Math.max(50, topFloorPrice - Number(current.pricePaid || 0));
                 const newTotal = Number(current.pricePaid || 0) + diff;
                 return (
-                  <div
-                    style={{
-                      marginTop: "16px",
-                      padding: "14px 16px",
-                      background: "linear-gradient(135deg, rgba(255, 107, 0, 0.12), rgba(255, 170, 0, 0.08))",
-                      border: "1px solid rgba(255, 120, 0, 0.35)",
-                      borderRadius: "10px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: "12px",
-                    }}
-                  >
+                  <div className="manage-outbid-banner">
                     <div>
-                      <div style={{ fontWeight: 600, color: "#ff8c00", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <div style={{ fontWeight: 700, color: "#ff6b1a", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
                         <span>⚡ Reclaim Penthouse Floor #1</span>
-                        <span style={{ fontSize: "12px", opacity: 0.9, color: "#fff", background: "rgba(255,255,255,0.15)", padding: "2px 8px", borderRadius: "4px" }}>
+                        <span style={{ fontSize: "12px", opacity: 0.9, color: "#fff", background: "#ff6b1a", padding: "2px 8px", borderRadius: "999px" }}>
                           Currently Floor #{current.rank}
                         </span>
                       </div>
-                      <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "rgba(255, 255, 255, 0.75)" }}>
+                      <p className="manage-outbid-desc">
                         You previously paid ₹{current.pricePaid}. Outbid for <strong>₹{diff}</strong> to reclaim <strong>Top Floor #1</strong> with a total floor value of <strong>₹{newTotal}</strong>!
                       </p>
                     </div>
@@ -435,17 +422,8 @@ export default function ManageFloorModal({
                       type="button"
                       onClick={handleOutbidUpgrade}
                       disabled={outbidding}
-                      style={{
-                        padding: "8px 16px",
-                        background: "#ff6b00",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        fontWeight: 600,
-                        fontSize: "13px",
-                        cursor: "pointer",
-                        boxShadow: "0 4px 12px rgba(255, 107, 0, 0.35)",
-                      }}
+                      className="manage-btn-primary"
+                      style={{ padding: "8px 16px", fontSize: "13px" }}
                     >
                       {outbidding ? "Connecting..." : `⚡ Outbid for ₹${diff} →`}
                     </button>
@@ -459,7 +437,7 @@ export default function ManageFloorModal({
                       padding: "10px 14px",
                       background: "rgba(16, 185, 129, 0.12)",
                       border: "1px solid rgba(16, 185, 129, 0.35)",
-                      borderRadius: "8px",
+                      borderRadius: "10px",
                       fontSize: "13px",
                       color: "#10b981",
                       fontWeight: 600,
@@ -479,21 +457,21 @@ export default function ManageFloorModal({
                   <span className="manage-label">Startup / Company Name</span>
                   <input
                     type="text"
+                    required
                     className="manage-input"
                     value={formData.companyName}
                     onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                    required
                   />
                 </label>
 
                 <label className="manage-field-group">
                   <span className="manage-label">Website URL</span>
                   <input
-                    type="text"
+                    type="url"
+                    required
                     className="manage-input"
                     value={formData.url}
                     onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                    required
                   />
                 </label>
               </div>
@@ -502,13 +480,13 @@ export default function ManageFloorModal({
                 <label className="manage-field-group">
                   <span className="manage-label">Industry Category</span>
                   <select
-                    className="manage-input"
+                    className="manage-input manage-select"
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   >
-                    {MAIN_CATEGORIES.map((c) => (
-                      <option key={c.name} value={c.name}>
-                        {c.name}
+                    {MAIN_CATEGORIES.map((cat) => (
+                      <option key={cat.name} value={cat.name}>
+                        {cat.icon} {cat.name}
                       </option>
                     ))}
                   </select>
@@ -521,7 +499,7 @@ export default function ManageFloorModal({
                   <input
                     type="text"
                     className="manage-input"
-                    placeholder="e.g. Next-Gen AI Platform"
+                    placeholder="e.g. World's fastest developer tool"
                     value={formData.tagline}
                     onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
                   />
@@ -532,9 +510,9 @@ export default function ManageFloorModal({
                 <label className="manage-field-group">
                   <span className="manage-label">About / Description</span>
                   <textarea
+                    rows={2}
                     className="manage-input"
-                    rows={3}
-                    placeholder="Brief description for hover overview card..."
+                    placeholder="Short description displayed on hover card..."
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
@@ -549,33 +527,13 @@ export default function ManageFloorModal({
                       <img
                         src={formData.logoUrl}
                         alt="Logo preview"
-                        style={{
-                          width: "42px",
-                          height: "42px",
-                          borderRadius: "8px",
-                          objectFit: "contain",
-                          background: "rgba(255,255,255,0.06)",
-                          border: "1px solid rgba(255,255,255,0.15)",
-                          padding: "2px",
-                        }}
+                        className="manage-logo-preview"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = `https://www.google.com/s2/favicons?domain=${formData.url || "getopfloor.com"}&sz=128`;
                         }}
                       />
                     ) : (
-                      <div
-                        style={{
-                          width: "42px",
-                          height: "42px",
-                          borderRadius: "8px",
-                          background: "rgba(255,255,255,0.06)",
-                          border: "1px dashed rgba(255,255,255,0.2)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "18px",
-                        }}
-                      >
+                      <div className="manage-logo-preview">
                         🏢
                       </div>
                     )}
@@ -587,22 +545,7 @@ export default function ManageFloorModal({
                         value={formData.logoUrl}
                         onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
                       />
-                      <label
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: "0 14px",
-                          background: "rgba(255, 255, 255, 0.08)",
-                          border: "1px solid rgba(255, 255, 255, 0.2)",
-                          borderRadius: "8px",
-                          color: "#fff",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          cursor: uploadingLogo ? "not-allowed" : "pointer",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
+                      <label className="manage-file-upload-btn">
                         {uploadingLogo ? "Uploading..." : "Upload File"}
                         <input
                           type="file"

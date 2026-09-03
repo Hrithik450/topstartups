@@ -191,11 +191,13 @@ export default function Experience() {
             window.dispatchEvent(
               new CustomEvent("floor-claimed-success", { detail: data })
             );
+            window.dispatchEvent(new CustomEvent("floors-refresh"));
           } catch {}
         });
 
         eventSource.addEventListener("lock-updated", () => {
           refreshFloors();
+          window.dispatchEvent(new CustomEvent("floors-refresh"));
         });
 
         eventSource.onerror = () => {

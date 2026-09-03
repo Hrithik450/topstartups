@@ -108,20 +108,18 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
       fetch("/api/floors", { cache: "no-store" })
         .then((res) => res.json())
         .then((data) => {
-          if (data.locks) {
-            setAllLocks(data.locks);
-          }
+          setAllLocks(data.locks || {});
           if (data.floors && data.floors.length > 0) {
             const top = data.floors[0];
             if (top.isClaimed) {
               setTopFloorClaimed(true);
               const requiredTopPrice = Number(top.pricePaid || 50) + 1;
               setTopFloorPrice(requiredTopPrice);
-              setPrice((prev) => (prev === 50 ? requiredTopPrice : prev));
+              setPrice((prev) => (prev <= 50 ? requiredTopPrice : prev));
             } else {
               setTopFloorClaimed(false);
               setTopFloorPrice(99);
-              setPrice((prev) => (prev === 50 ? 99 : prev));
+              setPrice((prev) => (prev <= 50 ? 99 : prev));
             }
           }
         })
@@ -131,8 +129,10 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
     fetchFloorsAndLocks();
 
     window.addEventListener("floors-refresh", fetchFloorsAndLocks);
+    window.addEventListener("floor-claimed-success", fetchFloorsAndLocks);
     return () => {
       window.removeEventListener("floors-refresh", fetchFloorsAndLocks);
+      window.removeEventListener("floor-claimed-success", fetchFloorsAndLocks);
     };
   }, []);
 

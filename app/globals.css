@@ -6,8 +6,38 @@
 }
 
 :root,
+[data-theme="sunset"] {
+  /* BharatHunt Gentle Evening Sunset Palette (Default Light Theme) */
+  --sky-top: #e89163;
+  --sky-mid: #f5bca0;
+  --sky-low: #fde0d0;
+  --sky-bottom: #fff7f2;
+
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  --ink-faint: #94a3b8;
+
+  --brand-orange: #ff6b1a;
+  --brand-orange-soft: rgba(255, 107, 26, 0.12);
+  --brand-orange-glow: rgba(255, 107, 26, 0.45);
+
+  --pill: #ffffff;
+  --pill-border: #e2e8f0;
+  --pill-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --pill-shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --card-shadow: 0 20px 48px rgba(15, 23, 42, 0.08), 0 0 0 1px #e2e8f0;
+
+  --green: #16a34a;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
 [data-theme="dark"] {
-  /* BharatHunt Midnight Luxury Theme (Default) */
+  /* BharatHunt Midnight Luxury Theme */
   --sky-top: #050811;
   --sky-mid: #0a101d;
   --sky-low: #0e1626;
@@ -31,34 +61,6 @@
   --card-shadow: 0 20px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px #1e293b;
 
   --green: #22c55e;
-
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-[data-theme="sunset"] {
-  /* BharatHunt Gentle Evening Sunset Palette */
-  --sky-top: #e89163;
-  --sky-mid: #f5bca0;
-  --sky-low: #fde0d0;
-  --sky-bottom: #fff7f2;
-
-  --ink: #0f172a;
-  --ink-soft: #475569;
-  --ink-faint: #94a3b8;
-
-  --brand-orange: #ff6b1a;
-  --brand-orange-soft: rgba(255, 107, 26, 0.12);
-  --brand-orange-glow: rgba(255, 107, 26, 0.45);
-
-  --pill: #ffffff;
-  --pill-border: #e2e8f0;
-  --pill-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
-  --pill-shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
-
-  --card-bg: #ffffff;
-  --card-border: #e2e8f0;
-  --card-shadow: 0 20px 48px rgba(15, 23, 42, 0.08), 0 0 0 1px #e2e8f0;
 }
 
 * {
@@ -1796,33 +1798,39 @@ button.chip:focus-visible {
 }
 
 .floor-hover-card-manage-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.85);
+  background: #ff6b1a !important;
+  border: 1px solid #ff6b1a !important;
+  color: #ffffff !important;
   font-size: 13px;
-  font-weight: 600;
-  padding: 10px 14px;
+  font-weight: 700;
+  padding: 10px 16px;
   border-radius: 12px;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 107, 26, 0.35);
   transition: all 0.15s;
 }
 
+.floor-hover-card-manage-btn * {
+  color: #ffffff !important;
+}
+
 .floor-hover-card-manage-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.3);
+  background: #e55a10 !important;
+  border-color: #e55a10 !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
 }
 
 [data-theme="sunset"] .floor-hover-card-manage-btn {
-  background: rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  color: #0f172a;
+  background: #ff6b1a !important;
+  border: 1px solid #ff6b1a !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(255, 107, 26, 0.35) !important;
 }
 
 [data-theme="sunset"] .floor-hover-card-manage-btn:hover {
-  background: rgba(0, 0, 0, 0.12);
-  color: #000000;
-  border-color: rgba(0, 0, 0, 0.28);
+  background: #e55a10 !important;
+  color: #ffffff !important;
 }
 
 @media (max-width: 900px) {
@@ -2664,37 +2672,80 @@ button.chip:focus-visible {
 
 .login-chip-bounce {
   animation: loginBounceHint 3s cubic-bezier(0.34, 1.56, 0.64, 1) infinite !important;
-  background: linear-gradient(135deg, rgba(255, 159, 67, 0.16), rgba(238, 82, 83, 0.16)) !important;
-  border-color: rgba(255, 159, 67, 0.45) !important;
-  color: #ff9f43 !important;
+  background: linear-gradient(135deg, #ff6b1a, #ee5253) !important;
+  border-color: #ff6b1a !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
   cursor: pointer !important;
+  box-shadow: 0 4px 14px rgba(255, 107, 26, 0.35) !important;
   transition: all 0.2s ease !important;
+}
+
+.login-chip-bounce * {
+  color: #ffffff !important;
 }
 
 .login-chip-bounce:hover {
   animation-play-state: paused !important;
-  background: linear-gradient(135deg, rgba(255, 159, 67, 0.28), rgba(238, 82, 83, 0.28)) !important;
-  border-color: rgba(255, 159, 67, 0.7) !important;
+  background: linear-gradient(135deg, #e55a10, #d63031) !important;
+  border-color: #e55a10 !important;
+  color: #ffffff !important;
   transform: translateY(-2px) scale(1.03) !important;
 }
 
 .mobile-login-bounce {
   animation: loginBounceHint 3s cubic-bezier(0.34, 1.56, 0.64, 1) infinite !important;
-  border-color: rgba(255, 159, 67, 0.6) !important;
-  background: rgba(255, 159, 67, 0.14) !important;
+  border-color: #ff6b1a !important;
+  background: linear-gradient(135deg, #ff6b1a, #ee5253) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(255, 107, 26, 0.35) !important;
+}
+
+.mobile-login-bounce svg {
+  color: #ffffff !important;
 }
 
 .user-profile-chip {
   cursor: pointer !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  background: linear-gradient(135deg, #ff6b1a, #ff8c42) !important;
+  border: 1px solid #ff6b1a !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 14px rgba(255, 107, 26, 0.3) !important;
   transition: all 0.2s ease !important;
 }
 
+.user-profile-chip * {
+  color: #ffffff !important;
+}
+
 .user-profile-chip:hover {
-  background: rgba(255, 255, 255, 0.14) !important;
-  border-color: rgba(255, 159, 67, 0.5) !important;
+  background: linear-gradient(135deg, #e55a10, #ff7a29) !important;
+  border-color: #e55a10 !important;
+  color: #ffffff !important;
   transform: translateY(-1px);
+}
+
+[data-theme="sunset"] .login-chip-bounce {
+  background: linear-gradient(135deg, #ff6b1a, #ee5253) !important;
+  border-color: #ff6b1a !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(255, 107, 26, 0.35) !important;
+}
+
+[data-theme="sunset"] .login-chip-bounce * {
+  color: #ffffff !important;
+}
+
+[data-theme="sunset"] .user-profile-chip {
+  background: linear-gradient(135deg, #ff6b1a, #ff8c42) !important;
+  border-color: #ff6b1a !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(255, 107, 26, 0.3) !important;
+}
+
+[data-theme="sunset"] .user-profile-chip * {
+  color: #ffffff !important;
 }
 
 /* Clean minimal policy links with white underline on hover */

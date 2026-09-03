@@ -8,7 +8,7 @@ import type { Listing } from "@/lib/three/listings";
 export default function TowerScene({
   handleRef,
   onFloorHover,
-  theme = "dark",
+  theme = "sunset",
   listings,
   onLoaded,
 }: {

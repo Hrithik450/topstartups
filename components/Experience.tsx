@@ -18,7 +18,7 @@ const TowerScene = dynamic(() => import("./TowerScene"), { ssr: false });
 export default function Experience() {
   const handleRef = useRef<TowerHandle | null>(null);
   const [hoveredData, setHoveredData] = useState<HoverData | null>(null);
-  const [theme, setTheme] = useState<"dark" | "sunset">("dark");
+  const [theme, setTheme] = useState<"dark" | "sunset">("sunset");
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [isBuildingLoading, setIsBuildingLoading] = useState(true);

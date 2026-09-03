@@ -1443,7 +1443,7 @@ export interface CreateTowerOptions {
 
 export function createTower(container: HTMLElement, options?: CreateTowerOptions): TowerHandle {
   const onFloorHover = options?.onFloorHover;
-  let currentTheme: "dark" | "sunset" = options?.theme || "dark";
+  let currentTheme: "dark" | "sunset" = options?.theme || "sunset";
   const disposables: (THREE.Material | THREE.BufferGeometry | THREE.Texture | { dispose: () => void })[] = [];
 
   const isMobileDevice = typeof window !== "undefined" && window.innerWidth < 768;

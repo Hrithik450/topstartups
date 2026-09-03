@@ -490,6 +490,7 @@ body.home-tower-scrolled .tower-top-fade {
   position: relative;
   z-index: 1;
   margin-top: 16px;
+  margin-bottom: 4px;
   color: var(--ink-soft);
   font-size: 14px;
   line-height: 1.5;
@@ -2744,7 +2745,7 @@ button.chip:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .policy-link {

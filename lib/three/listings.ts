@@ -28,41 +28,7 @@ export interface Listing {
  * and existing floors shift down seamlessly.
  */
 export function createDefaultPlaceholderListings(): Listing[] {
-  const TITLES = [
-    "Penthouse Floor #1",
-    "Skyline Suite #2",
-    "Summit Level #3",
-    "High Altitude Deck #4",
-    "Executive Floor #5",
-    "Venture Vista #6",
-    "Sky Lounge Level #7",
-    "Horizon Terrace #8",
-    "Cloudview Floor #9",
-    "Apex Studio #10",
-  ];
-
-  return Array.from({ length: 50 }, (_, i) => {
-    const rank = i + 1;
-    const price = 50 + (50 - rank); // Pricing ladder: Floor 50 = ₹50, Floor 1 = ₹99
-    const title = rank <= 10 ? TITLES[rank - 1] : `Tower Floor #${rank}`;
-
-    return {
-      id: `floor-slot-${rank}`,
-      url_or_handle: "https://getopfloor.com",
-      title,
-      description: "Spot reserved for your startup — Claim top floor",
-      category: "Available Floor",
-      total_paid: price,
-      clicks: 0,
-      created_at: new Date().toISOString(),
-      is_claimed: false,
-      rank,
-      country_code: "IN",
-      country_name: "India",
-      hiring: false,
-      views: 0,
-    };
-  });
+  return [];
 }
 
-export const INITIAL_LISTINGS: Listing[] = createDefaultPlaceholderListings();
+export const INITIAL_LISTINGS: Listing[] = [];

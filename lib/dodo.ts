@@ -75,9 +75,7 @@ export async function createDodoCheckout(
             quantity: 1,
           },
         ],
-        return_url: `${input.returnUrl}${
-          input.returnUrl.includes("?") ? "&" : "?"
-        }session_id={CHECKOUT_ID}`,
+        return_url: input.returnUrl,
         metadata: {
           url: input.url,
           category: input.category || "",

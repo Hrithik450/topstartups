@@ -11,12 +11,13 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const paymentIdParam = searchParams.get("payment_id")?.trim();
-    const sessionIdParam = (searchParams.get("session_id") || searchParams.get("checkout_id"))?.trim();
+    const paymentIdParam = searchParams.get("payment_id")?.trim() || null;
+    const rawSessionId = (searchParams.get("session_id") || searchParams.get("checkout_id"))?.trim() || null;
+    const sessionIdParam = rawSessionId && rawSessionId !== "{CHECKOUT_ID}" ? rawSessionId : null;
 
     const targetId = paymentIdParam || sessionIdParam;
 
-    if (!targetId || targetId === "{CHECKOUT_ID}") {
+    if (!targetId) {
       return NextResponse.json(
         { error: "payment_id or session_id parameter is required" },
         { status: 400 }

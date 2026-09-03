@@ -33,70 +33,28 @@ export interface UpdateFloorInput {
 }
 
 /**
- * Fetch the 50 skyscraper floors sorted by rank (Rank 1 = Top Penthouse Floor).
- * If the database has not been seeded yet, seeds default 50 premium placeholder floors.
+ * Fetch all active claimed skyscraper floors sorted by rank (Rank 1 = Top Penthouse Floor).
  */
 export async function getActiveFloors(): Promise<Floor[]> {
   try {
-    const list = await db
+    return await db
       .select()
       .from(floors)
+      .where(eq(floors.isClaimed, true))
       .orderBy(asc(floors.rank))
       .limit(50);
-
-    if (list.length > 0) return list;
   } catch (err: any) {
-    console.warn("Table floors might not exist or is empty, will auto-initialize:", err?.message);
+    console.warn("Error fetching active claimed floors:", err?.message);
+    return [];
   }
-
-  // Auto-initialize if empty or table needs creation
-  await initializeFloorsIfEmpty();
-  return await db.select().from(floors).orderBy(asc(floors.rank)).limit(50);
 }
 
 import { scrapeWebsiteMetadata } from "@/lib/crawler/metadata";
 import { verifyWebsiteLive } from "@/lib/validation/domain";
 import { releaseTopFloorLock } from "./locks";
 
-/**
- * Ensures 50 premium placeholder floors exist using pure Drizzle.
- * Minimum starting price is ₹50 for all open floors.
- */
 export async function initializeFloorsIfEmpty(): Promise<void> {
-  try {
-    const existing = await db.select().from(floors).limit(50);
-    const count = existing.length;
-
-    if (count < 50) {
-      const placeholders: NewFloor[] = [];
-      for (let rank = count + 1; rank <= 50; rank++) {
-        const price = 50 + (50 - rank); // Pricing ladder: Floor 50 = ₹50, Floor 1 = ₹99
-        const title =
-          rank === 1
-            ? "Penthouse Floor #1 — Open for Claim"
-            : rank === 2
-            ? "Skyline Suite #2 — Open for Claim"
-            : `Tower Floor #${rank} — Spot Reserved`;
-
-        placeholders.push({
-          rank,
-          isClaimed: false,
-          companyName: title,
-          url: "https://getopfloor.com",
-          category: "Available Floor",
-          tagline: "Spot reserved for your startup — Outbid & claim top floor",
-          description: "Claim this floor to put your company on the world stage.",
-          pricePaid: price,
-        });
-      }
-
-      if (placeholders.length > 0) {
-        await db.insert(floors).values(placeholders).onConflictDoNothing();
-      }
-    }
-  } catch (err) {
-    console.error("Failed to initialize floors:", err);
-  }
+  // Pure normal bidding mode — no dummy placeholders
 }
 
 export interface ClaimResult {
@@ -308,18 +266,8 @@ export async function claimTopFloorTransactional(
       updatedAt: new Date(),
     });
 
-    // 5. Prune floors beyond rank 50 to maintain exact 50 floors
-    await tx.delete(floors).where(and(gt(floors.rank, 50), eq(floors.isClaimed, false)));
+    // 5. Prune floors beyond rank 50 to maintain maximum 50 floors
     await tx.delete(floors).where(gt(floors.rank, 50));
-
-    // 6. Update unclaimed placeholder titles and prices so they always match their new rank
-    await tx
-      .update(floors)
-      .set({
-        companyName: sql`CASE WHEN ${floors.rank} = 1 THEN 'Penthouse Floor #1 — Open for Claim' WHEN ${floors.rank} = 2 THEN 'Skyline Suite #2 — Open for Claim' ELSE 'Tower Floor #' || ${floors.rank} || ' — Spot Reserved' END`,
-        pricePaid: sql`50 + (50 - ${floors.rank})`,
-      })
-      .where(eq(floors.isClaimed, false));
 
     // 7. Update claim ledger to succeeded using pure Drizzle
     await tx

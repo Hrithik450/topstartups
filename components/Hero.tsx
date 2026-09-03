@@ -130,40 +130,37 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
     }
   }, [existingFloorOnTower, differencePrice]);
 
-  // Dynamic target floor rank derived from current price
-  const targetRank = useMemo(() => {
-    if (existingFloorOnTower && existingFloorOnTower.rank > 1) return 1;
-    if (price >= topFloorPrice) return 1;
-    const offset = topFloorPrice - price;
-    return Math.min(50, Math.max(1, 1 + offset));
-  }, [price, topFloorPrice, existingFloorOnTower]);
+  // Normal bidding: all new bids and reclaims target Top Penthouse Floor #1
+  const targetRank = 1;
+  const minAllowedPrice = useMemo(() => {
+    if (existingFloorOnTower && existingFloorOnTower.rank > 1) return differencePrice;
+    return topFloorPrice;
+  }, [existingFloorOnTower, differencePrice, topFloorPrice]);
 
-  const targetLock = allLocks[targetRank] || { isLocked: false };
+  const targetLock = allLocks[1] || { isLocked: false };
   const userEmail = user?.email?.toLowerCase().trim();
   const lockHolderEmail = targetLock.lockedByEmail?.toLowerCase().trim();
   const isHeldByMe = Boolean(userEmail && lockHolderEmail && userEmail === lockHolderEmail);
   const isTargetLocked = Boolean(targetLock.isLocked);
   const isStrangerLocked = Boolean(isTargetLocked && !isHeldByMe);
 
-  // Sync current floors pricing ladder and concurrency locks across all 50 floors
+  // Sync current floors and concurrency locks
   const fetchFloorsAndLocks = () => {
     fetch("/api/floors", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         setAllLocks(data.locks || {});
-        if (data.floors && data.floors.length > 0) {
+        if (data.floors) {
           setActiveFloors(data.floors);
-          const top = data.floors[0];
-          if (top.isClaimed) {
-            setTopFloorClaimed(true);
-            const requiredTopPrice = Number(top.pricePaid || 50) + 1;
-            setTopFloorPrice(requiredTopPrice);
-            setPrice((prev) => (prev <= 50 ? requiredTopPrice : prev));
-          } else {
-            setTopFloorClaimed(false);
-            setTopFloorPrice(99);
-            setPrice((prev) => (prev <= 50 ? 99 : prev));
-          }
+          const maxClaimedPrice = data.floors.reduce(
+            (max: number, f: any) => Math.max(max, Number(f.pricePaid || 0)),
+            0
+          );
+          const hasClaimed = data.floors.length > 0;
+          const requiredTopPrice = hasClaimed ? maxClaimedPrice + 1 : 99;
+          setTopFloorClaimed(hasClaimed);
+          setTopFloorPrice(requiredTopPrice);
+          setPrice((prev) => Math.max(requiredTopPrice, prev));
         }
       })
       .catch(() => {});
@@ -245,10 +242,12 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
 
     const params = new URLSearchParams(window.location.search);
     const paymentId = params.get("payment_id");
-    const sessionId = params.get("session_id") || params.get("checkout_id") || paymentId;
+    const rawSessionId = params.get("session_id") || params.get("checkout_id");
+    const sessionId = rawSessionId && rawSessionId !== "{CHECKOUT_ID}" ? rawSessionId : null;
+    const targetId = paymentId || sessionId;
 
     // Check if returning from a real Dodo checkout session
-    if ((paymentId || sessionId) && !sessionId?.startsWith("mock_")) {
+    if (targetId && !targetId.startsWith("mock_")) {
       const targetQuery = paymentId
         ? `payment_id=${encodeURIComponent(paymentId)}`
         : `session_id=${encodeURIComponent(sessionId || "")}`;
@@ -553,19 +552,19 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
           "Outbid & reclaim top floor for"
         ) : existingFloorOnTower && existingFloorOnTower.rank === 1 ? (
           "Featured at Top Penthouse Floor #1"
-        ) : targetRank === 1 ? (
-          topFloorClaimed ? "Outbid top floor for" : "Claim top floor for"
+        ) : topFloorClaimed ? (
+          "Outbid top floor for"
         ) : (
-          `Claim Floor #${targetRank} for`
+          "Claim top floor for"
         )}
         {(!existingFloorOnTower || existingFloorOnTower.rank > 1) && (
           <span className="price-stepper">
             <button
               type="button"
               className="step-btn"
-              onClick={() => setPrice((p) => Math.max(existingFloorOnTower && existingFloorOnTower.rank > 1 ? differencePrice : 50, p - 1))}
+              onClick={() => setPrice((p) => Math.max(minAllowedPrice, p - 1))}
               aria-label="Lower bid"
-              disabled={price <= (existingFloorOnTower && existingFloorOnTower.rank > 1 ? differencePrice : 50)}
+              disabled={price <= minAllowedPrice}
             >
               <Minus />
             </button>
@@ -751,7 +750,7 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
             existingFloorOnTower && existingFloorOnTower.rank === 1
               ? "This startup is already at Top Penthouse Floor #1"
               : isStrangerLocked
-              ? `Someone is currently in checkout claiming Floor #${targetRank}`
+              ? "Someone is currently in checkout claiming Top Floor #1"
               : undefined
           }
         >
@@ -761,16 +760,16 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
             <>👑 Already Top Floor #1</>
           ) : isTargetLocked ? (
             isHeldByMe ? (
-              <>⚡ Resume Claim Floor #{targetRank} <Arrow /></>
+              <>⚡ Resume Claim Top Floor #1 <Arrow /></>
             ) : (
-              <>🔒 Someone is claiming Floor #{targetRank}...</>
+              <>🔒 Someone is claiming Top Floor #1...</>
             )
           ) : existingFloorOnTower && existingFloorOnTower.rank > 1 ? (
             <>⚡ Outbid & Reclaim Top Floor #1 for ₹{price} <Arrow /></>
-          ) : targetRank === 1 ? (
-            <>Claim top floor <Arrow /></>
+          ) : topFloorClaimed ? (
+            <>⚡ Outbid Top Floor #1 for ₹{price} <Arrow /></>
           ) : (
-            <>Claim Floor #{targetRank} <Arrow /></>
+            <>Claim top floor <Arrow /></>
           )}
         </button>
       </form>

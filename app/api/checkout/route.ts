@@ -68,6 +68,13 @@ export async function POST(req: NextRequest) {
     let effectiveTargetRank = targetRank;
     let amount = Math.max(50, Math.min(100000, Number(price) || 50));
 
+    // Outbid pricing: calculate required Top Floor price across all claimed floors
+    const maxClaimedPrice = allActiveFloors.reduce(
+      (max, f) => Math.max(max, Number(f.pricePaid || 0)),
+      0
+    );
+    const requiredTopPrice = Math.max(99, maxClaimedPrice > 0 ? maxClaimedPrice + 1 : 99);
+
     if (existingFloor) {
       if (existingFloor.rank === 1) {
         return NextResponse.json(
@@ -77,11 +84,18 @@ export async function POST(req: NextRequest) {
       }
 
       // Reclaiming Top Floor: compute required difference (gateway minimum ₹50)
-      const topFloor = allActiveFloors.find((f) => f.rank === 1);
-      const topPrice = topFloor?.isClaimed ? Number(topFloor.pricePaid) + 1 : 99;
-      const minDifference = Math.max(50, topPrice - Number(existingFloor.pricePaid || 0));
+      const minDifference = Math.max(50, requiredTopPrice - Number(existingFloor.pricePaid || 0));
       amount = Math.max(minDifference, Number(price) || minDifference);
       effectiveTargetRank = 1; // Outbid always targets Floor #1
+    } else {
+      // New startup claiming a floor
+      if (effectiveTargetRank === 1) {
+        amount = Math.max(requiredTopPrice, Number(price) || requiredTopPrice);
+      } else {
+        const rankOffset = effectiveTargetRank - 1;
+        const requiredRankPrice = Math.max(50, requiredTopPrice - rankOffset);
+        amount = Math.max(requiredRankPrice, Number(price) || requiredRankPrice);
+      }
     }
 
     // SECURITY: Validate and sanitize text inputs

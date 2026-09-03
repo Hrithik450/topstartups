@@ -107,12 +107,19 @@ export default function ManageFloorModal({
         if (!isMounted) return;
 
         if (floorsData.floors && floorsData.floors.length > 0) {
+          const maxClaimedPrice = floorsData.floors
+            .filter((f: any) => f.isClaimed)
+            .reduce((max: number, f: any) => Math.max(max, Number(f.pricePaid || 0)), 0);
           const top = floorsData.floors[0];
-          if (top.isClaimed) {
-            setTopFloorPrice(Number(top.pricePaid || 50) + 1);
-          } else {
-            setTopFloorPrice(99);
-          }
+          const requiredTopPrice = Math.max(
+            99,
+            maxClaimedPrice > 0
+              ? maxClaimedPrice + 1
+              : top?.pricePaid
+              ? Number(top.pricePaid) + 1
+              : 99
+          );
+          setTopFloorPrice(requiredTopPrice);
         }
 
         if (userData.authenticated && Array.isArray(userData.ownedFloors) && userData.ownedFloors.length > 0) {

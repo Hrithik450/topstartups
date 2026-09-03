@@ -4,14 +4,9 @@ import { claims } from "@/lib/db/config/schema";
 import { eq, or } from "drizzle-orm";
 import { claimTopFloorTransactional } from "@/lib/db/floors";
 import { releaseFloorLock } from "@/lib/db/locks";
+import { getDodoApiUrl } from "@/lib/dodo";
 
 export const dynamic = "force-dynamic";
-
-const DODO_ENV = process.env.DODO_PAYMENTS_ENVIRONMENT || "test";
-const DODO_API_URL =
-  DODO_ENV === "live"
-    ? "https://live.dodopayments.com"
-    : "https://test.dodopayments.com";
 
 export async function GET(req: NextRequest) {
   try {
@@ -46,7 +41,7 @@ export async function GET(req: NextRequest) {
 
     // 1. If targetId starts with "pay_", query the /payments endpoint
     if (targetId.startsWith("pay_")) {
-      const res = await fetch(`${DODO_API_URL}/payments/${targetId}`, {
+      const res = await fetch(`${getDodoApiUrl()}/payments/${targetId}`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
 
@@ -67,7 +62,7 @@ export async function GET(req: NextRequest) {
     // 2. If targetId starts with "cks_" or status is still unknown, query /checkouts endpoint
     if (paymentStatus === "unknown" && (targetId.startsWith("cks_") || !targetId.startsWith("pay_"))) {
       const checkId = checkoutSessionId || targetId;
-      const res = await fetch(`${DODO_API_URL}/checkouts/${checkId}`, {
+      const res = await fetch(`${getDodoApiUrl()}/checkouts/${checkId}`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
 
@@ -87,7 +82,7 @@ export async function GET(req: NextRequest) {
 
     // 3. Fallback: query /payments if we only had cks_ and Dodo returned payment_id
     if (paymentId && paymentStatus === "unknown") {
-      const res = await fetch(`${DODO_API_URL}/payments/${paymentId}`, {
+      const res = await fetch(`${getDodoApiUrl()}/payments/${paymentId}`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
       if (res.ok) {

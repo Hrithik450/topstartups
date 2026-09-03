@@ -17,11 +17,12 @@ export interface CheckoutResult {
   isMock?: boolean;
 }
 
-const DODO_ENV = process.env.DODO_PAYMENTS_ENVIRONMENT || "test";
-const DODO_API_URL =
-  DODO_ENV === "live"
+export function getDodoApiUrl(): string {
+  const env = (process.env.DODO_PAYMENTS_ENVIRONMENT || "test").trim().toLowerCase();
+  return env === "live"
     ? "https://live.dodopayments.com"
     : "https://test.dodopayments.com";
+}
 
 /**
  * Creates a Dodo Payments checkout session.
@@ -56,7 +57,7 @@ export async function createDodoCheckout(
 
   // Real Dodo Payments REST API call
   try {
-    const response = await fetch(`${DODO_API_URL}/checkouts`, {
+    const response = await fetch(`${getDodoApiUrl()}/checkouts`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -115,9 +115,11 @@ export async function GET(req: NextRequest) {
 
     const pendingClaim = matchingClaims[0];
 
+    const targetRankToRelease = pendingClaim?.targetRank || Number(metadata.target_rank || metadata.targetRank) || 1;
+
     // If payment failed, cancelled, or expired
     if (paymentStatus === "failed" || paymentStatus === "cancelled" || paymentStatus === "expired") {
-      await releaseFloorLock(1, paymentId, checkoutSessionId);
+      await releaseFloorLock(targetRankToRelease, paymentId, checkoutSessionId);
       if (pendingClaim && pendingClaim.status === "pending") {
         await db
           .update(claims)
@@ -156,7 +158,7 @@ export async function GET(req: NextRequest) {
 
       // If already claimed, return immediate confirmation
       if (pendingClaim && pendingClaim.status === "succeeded") {
-        await releaseFloorLock(1);
+        await releaseFloorLock(targetRankToRelease, paymentId, checkoutSessionId);
         return NextResponse.json({
           status: "succeeded",
           rank: 1,
@@ -177,7 +179,7 @@ export async function GET(req: NextRequest) {
         customerPhone: finalPhone || undefined,
       });
 
-      await releaseFloorLock(1);
+      await releaseFloorLock(targetRankToRelease, paymentId, checkoutSessionId);
 
       return NextResponse.json({
         status: "succeeded",

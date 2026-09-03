@@ -5,6 +5,7 @@ export interface CreateCheckoutInput {
   category?: string;
   companyName: string;
   customerName?: string;
+  targetRank?: number;
   price: number; // in INR
   customerEmail?: string;
   returnUrl: string;
@@ -80,6 +81,7 @@ export async function createDodoCheckout(
           url: input.url,
           category: input.category || "",
           company_name: input.companyName,
+          target_rank: (input.targetRank || 1).toString(),
           price: input.price.toString(),
         },
       }),

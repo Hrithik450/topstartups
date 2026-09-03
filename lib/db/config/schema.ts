@@ -141,3 +141,21 @@ export const activeSessions = pgTable("active_sessions", {
 export type ActiveSession = typeof activeSessions.$inferSelect;
 export type NewActiveSession = typeof activeSessions.$inferInsert;
 
+/**
+ * Floor Claim Locks:
+ * Concurrency control to prevent race conditions when multiple users attempt to claim
+ * the Top Floor (#1) simultaneously. Holds a reservation window while payment is processing.
+ */
+export const floorLocks = pgTable("floor_locks", {
+  targetRank: integer("target_rank").primaryKey().default(1),
+  lockedByEmail: varchar("locked_by_email", { length: 255 }),
+  lockedByPaymentId: varchar("locked_by_payment_id", { length: 255 }),
+  companyName: varchar("company_name", { length: 255 }),
+  lockedAt: timestamp("locked_at", { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
+export type FloorLock = typeof floorLocks.$inferSelect;
+export type NewFloorLock = typeof floorLocks.$inferInsert;
+
+

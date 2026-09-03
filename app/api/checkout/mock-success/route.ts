@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { claimTopFloorTransactional } from "@/lib/db/floors";
+import { verifyWebsiteLive } from "@/lib/validation/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +17,21 @@ export async function GET(req: NextRequest) {
   const companyName = searchParams.get("company_name") || "Mock Startup";
   const price = Math.max(50, Number(searchParams.get("price")) || 50);
 
+  // Live website reachability and security verification
+  const verification = await verifyWebsiteLive(url);
+  if (!verification.valid || !verification.cleanUrl) {
+    return NextResponse.json(
+      { error: verification.error || "Website is unreachable or insecure." },
+      { status: 400 }
+    );
+  }
+
   try {
     console.log(`Executing test mock payment for ${companyName} at ₹${price}...`);
     const result = await claimTopFloorTransactional({
       paymentId,
       companyName,
-      url,
+      url: verification.cleanUrl,
       category,
       price,
     });

@@ -751,22 +751,19 @@ function makeLowPolyTree(x: number, z: number, scale: number): THREE.Group {
   trunk.castShadow = true;
   group.add(trunk);
 
-  const foliage1 = new THREE.Mesh(new THREE.SphereGeometry(0.85, 20, 16), leafMat1);
+  const foliage1 = new THREE.Mesh(new THREE.SphereGeometry(0.85, 8, 6), leafMat1);
   foliage1.position.set(0, 1.5, 0);
   foliage1.scale.y = 0.82;
-  foliage1.castShadow = true;
   group.add(foliage1);
 
-  const foliage2 = new THREE.Mesh(new THREE.SphereGeometry(0.6, 20, 16), leafMat2);
+  const foliage2 = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 6), leafMat2);
   foliage2.position.set(0.5, 1.2, 0.15);
   foliage2.scale.y = 0.82;
-  foliage2.castShadow = true;
   group.add(foliage2);
 
-  const foliage3 = new THREE.Mesh(new THREE.SphereGeometry(0.55, 20, 16), leafMat2);
+  const foliage3 = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 6), leafMat2);
   foliage3.position.set(-0.45, 1.25, -0.1);
   foliage3.scale.y = 0.82;
-  foliage3.castShadow = true;
   group.add(foliage3);
 
   group.position.set(x, 0, z);
@@ -816,9 +813,7 @@ function makeAirplaneBanner(bannerTex: THREE.Texture): { plane: THREE.Group; ban
   line.position.z = 1.25;
   plane.add(line);
 
-  plane.traverse((o) => {
-    if (o instanceof THREE.Mesh) o.castShadow = true;
-  });
+  // Aerial vehicles are too far from ground to cast meaningful shadows
 
   return { plane, banner, prop };
 }
@@ -878,11 +873,10 @@ function makeRealisticHelicopter(): {
     roughness: 0.45,
     metalness: 0.85,
   });
-  const cockpitGlassMat = new THREE.MeshPhysicalMaterial({
+  const cockpitGlassMat = new THREE.MeshStandardMaterial({
     color: 0x050811,
     roughness: 0.08,
     metalness: 0.1,
-    transmission: 0.75,
     transparent: true,
     opacity: 0.85,
   });
@@ -903,10 +897,9 @@ function makeRealisticHelicopter(): {
   chopper.add(cockpit);
 
   // Left & Right Side Cabin Windows with Chrome Frames
-  const windowGlassMat = new THREE.MeshPhysicalMaterial({
+  const windowGlassMat = new THREE.MeshStandardMaterial({
     color: 0x050914,
     roughness: 0.1,
-    transmission: 0.8,
     transparent: true,
     opacity: 0.88,
   });
@@ -1310,8 +1303,7 @@ function makeLookingUpPerson(opts: {
   }
 
   person.scale.setScalar(0.95);
-  torso.castShadow = true;
-  head.castShadow = true;
+  // castShadow set externally based on device capability
 
   return { person, headGroup };
 }
@@ -1457,14 +1449,15 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   const isMobileDevice = typeof window !== "undefined" && window.innerWidth < 768;
 
   const renderer = new THREE.WebGLRenderer({
-    antialias: true,
+    antialias: !isMobileDevice,
     alpha: true,
     powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobileDevice ? 1.5 : 1.75));
+  // Mobile: cap at 1.0 DPR to halve pixel fill; desktop: cap at 1.5
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobileDevice ? 1.0 : 1.5));
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.shadowMap.enabled = !isMobileDevice;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   container.appendChild(renderer.domElement);
@@ -1497,8 +1490,8 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
 
   const sun = new THREE.DirectionalLight(0xd6e5ff, 1.35);
   sun.position.set(24, totalHeight + 20, 16);
-  sun.castShadow = true;
-  const shadowResolution = isMobileDevice ? 1024 : 1536;
+  sun.castShadow = !isMobileDevice;
+  const shadowResolution = isMobileDevice ? 512 : 1024;
   sun.shadow.mapSize.set(shadowResolution, shadowResolution);
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = totalHeight * 3 + 80;
@@ -1604,7 +1597,7 @@ function createMoonTexture(): THREE.CanvasTexture {
 
   // Realistic Glowing 3D Moon with Soft Lunar Atmosphere
   const moonGroup = new THREE.Group();
-  const moonGeo = new THREE.SphereGeometry(2.4, 32, 32);
+  const moonGeo = new THREE.SphereGeometry(2.4, 16, 16);
   const moonTex = createMoonTexture();
   disposables.push(moonTex);
   const moonMat = new THREE.MeshStandardMaterial({
@@ -1635,7 +1628,7 @@ function createMoonTexture(): THREE.CanvasTexture {
   disposables.push(moonGeo, moonMat);
 
   // 1. Ground & Plaza & Base Podium
-  const groundGeo = new THREE.CircleGeometry(30, 64);
+  const groundGeo = new THREE.CircleGeometry(30, 32);
   const groundMat = new THREE.MeshStandardMaterial({ color: 0x8cc472, roughness: 0.95 });
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.rotation.x = -Math.PI / 2;
@@ -1749,7 +1742,7 @@ function createMoonTexture(): THREE.CanvasTexture {
   disposables.push(slabGeo, slabMat);
 
   // 3. All 58 Skyscraper Floors (Persistent, Guaranteed Zero-Skip at Any Scroll Speed)
-  const CANVAS_SCALE = isMobileDevice ? 1.5 : 2;
+  const CANVAS_SCALE = isMobileDevice ? 1.0 : 1.5;
   const allFloors: {
     mesh: THREE.Mesh;
     canvas: HTMLCanvasElement;
@@ -1872,19 +1865,29 @@ function createMoonTexture(): THREE.CanvasTexture {
     });
   }
 
+  // Collect all floor meshes for fast raycasting (avoids traversing entire scene)
+  const floorMeshes = allFloors.map((f) => f.mesh);
+
   // 4. Floor #0 Penthouse (Claim Top Floor Glass Office)
   const penthouseGridTex = createGlassGridTexture();
   disposables.push(penthouseGridTex);
-  const penthouseGlassMat = new THREE.MeshPhysicalMaterial({
-    map: penthouseGridTex,
-    transparent: true,
-    roughness: 0.55,
-    metalness: 0.1,
-    transmission: 0.9,
-    thickness: 0.5,
-    ior: 1.5,
-    opacity: 0.42,
-  });
+  const penthouseGlassMat = isMobileDevice
+    ? new THREE.MeshStandardMaterial({
+        map: penthouseGridTex,
+        transparent: true,
+        opacity: 0.42,
+        roughness: 0.55,
+      })
+    : new THREE.MeshPhysicalMaterial({
+        map: penthouseGridTex,
+        transparent: true,
+        roughness: 0.55,
+        metalness: 0.1,
+        transmission: 0.9,
+        thickness: 0.5,
+        ior: 1.5,
+        opacity: 0.42,
+      });
   disposables.push(penthouseGlassMat);
 
   const penthouseMesh = new THREE.Mesh(floorBodyGeo, [
@@ -2000,7 +2003,7 @@ function createMoonTexture(): THREE.CanvasTexture {
   // 5. Rooftop Deck, Helipad & Billboards
   const helipadTex = createHelipadTexture();
   disposables.push(helipadTex);
-  const helipadGeo = new THREE.CylinderGeometry(2.6, 2.6, 0.1, 48);
+  const helipadGeo = new THREE.CylinderGeometry(2.6, 2.6, 0.1, 32);
   const helipadMat = new THREE.MeshStandardMaterial({ map: helipadTex, roughness: 0.9 });
   const helipad = new THREE.Mesh(helipadGeo, [
     new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 }),
@@ -2222,6 +2225,11 @@ function createMoonTexture(): THREE.CanvasTexture {
     crowdGroup.add(person);
     crowdHeads.push(headGroup);
   }
+  if (isMobileDevice) {
+    crowdGroup.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.castShadow = false;
+    });
+  }
   scene.add(crowdGroup);
 
   // 9. Camera & Controls Setup
@@ -2400,7 +2408,7 @@ function createMoonTexture(): THREE.CanvasTexture {
     mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(scene.children, true);
+    const intersects = raycaster.intersectObjects(floorMeshes, false);
 
     let found = null;
     for (const hit of intersects) {
@@ -2442,7 +2450,7 @@ function createMoonTexture(): THREE.CanvasTexture {
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(scene.children, true);
+      const intersects = raycaster.intersectObjects(floorMeshes, false);
 
       let found = null;
       for (const hit of intersects) {
@@ -2526,6 +2534,7 @@ function createMoonTexture(): THREE.CanvasTexture {
     document.addEventListener("visibilitychange", onVisibilityChange);
   }
 
+  let _frameCount = 0;
   function renderFrame(now: number) {
     raf = requestAnimationFrame(renderFrame);
     if (!isTabVisible) return;
@@ -2687,6 +2696,7 @@ function createMoonTexture(): THREE.CanvasTexture {
     }
 
     renderer.render(scene, camera);
+    _frameCount++;
   }
 
   renderFrame(performance.now());

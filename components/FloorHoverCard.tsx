@@ -140,8 +140,8 @@ export default function FloorHoverCard({
                 )}
               </div>
 
-              <div className="floor-hover-card-rank-badge">
-                #{rank}
+              <div className={`floor-hover-card-rank-badge ${listing.is_locked ? "locked" : ""}`}>
+                #{rank} {listing.is_locked ? "🔒" : ""}
               </div>
             </div>
 
@@ -152,7 +152,7 @@ export default function FloorHoverCard({
               <div
                 className="floor-hover-card-price"
                 style={{
-                  color: listing.is_claimed ? "#ff9f43" : "#22c55e",
+                  color: listing.is_locked ? "#fbbf24" : listing.is_claimed ? "#ff9f43" : "#22c55e",
                   fontWeight: 600,
                   fontSize: "13px",
                   display: "flex",
@@ -161,7 +161,12 @@ export default function FloorHoverCard({
                   marginTop: "3px",
                 }}
               >
-                {listing.is_claimed ? (
+                {listing.is_locked ? (
+                  <>
+                    <span className="locked-pulse-dot" style={{ width: 6, height: 6 }} />
+                    Claim in progress...
+                  </>
+                ) : listing.is_claimed ? (
                   <>✨ Claimed Floor · ₹{listing.total_paid}</>
                 ) : (
                   <>🟢 Open Floor · ₹50 to Claim</>
@@ -173,8 +178,12 @@ export default function FloorHoverCard({
               <div className="floor-hover-card-meta-item">
                 <span className="meta-icon">🏷️</span>
                 <span className="meta-label">Status:</span>
-                <span className="meta-value">
-                  {listing.is_claimed ? (listing.category || "Startup") : "Available for Claim"}
+                <span className="meta-value" style={listing.is_locked ? { color: "#fbbf24", fontWeight: 600 } : undefined}>
+                  {listing.is_locked
+                    ? "🔒 Claim in Progress"
+                    : listing.is_claimed
+                    ? (listing.category || "Startup")
+                    : "Available for Claim"}
                 </span>
               </div>
 
@@ -197,8 +206,10 @@ export default function FloorHoverCard({
               <div className="floor-hover-card-meta-item meta-about">
                 <span className="meta-icon">📄</span>
                 <span className="meta-label">About:</span>
-                <span className="meta-value">
-                  {listing.is_claimed
+                <span className="meta-value" style={listing.is_locked ? { color: "#fbbf24", fontWeight: 500 } : undefined}>
+                  {listing.is_locked
+                    ? "⚡ Someone is claiming this floor right now..."
+                    : listing.is_claimed
                     ? (listing.description || "Claimed floor on GeTopFloor skyscraper.")
                     : "This floor is waiting for an ambitious startup. Claim top floor now to showcase your product to global founders and investors."}
                 </span>
@@ -207,7 +218,23 @@ export default function FloorHoverCard({
 
             {/* Action Buttons: Visit Website / Claim Floor / Edit Floor (Owner Only) */}
             <div className="floor-hover-card-action">
-              {listing.is_claimed ? (
+              {listing.is_locked ? (
+                <button
+                  type="button"
+                  className="floor-hover-card-visit-btn"
+                  disabled
+                  style={{
+                    background: "rgba(245, 158, 11, 0.15)",
+                    border: "1px solid rgba(245, 158, 11, 0.4)",
+                    color: "#fbbf24",
+                    fontWeight: 600,
+                    cursor: "not-allowed",
+                    width: "100%",
+                  }}
+                >
+                  <span>🔒 Someone is claiming this floor...</span>
+                </button>
+              ) : listing.is_claimed ? (
                 <a
                   href={targetUrl}
                   target="_blank"
@@ -259,7 +286,7 @@ export default function FloorHoverCard({
                   }}
                   title="Update your claimed floor details"
                 >
-                  👑 Edit Floor
+                  Manage
                 </button>
               )}
             </div>

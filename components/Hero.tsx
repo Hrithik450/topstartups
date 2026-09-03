@@ -85,13 +85,21 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
 
   const [minPrice, setMinPrice] = useState(50);
   const [topFloorClaimed, setTopFloorClaimed] = useState(false);
+  const [topFloorLock, setTopFloorLock] = useState<{
+    isLocked: boolean;
+    companyName?: string | null;
+    secondsRemaining?: number;
+  }>({ isLocked: false });
 
-  // Sync current top floor outbid price
+  // Sync current top floor outbid price and concurrency lock status
   useEffect(() => {
     const fetchTopFloorPrice = () => {
       fetch("/api/floors", { cache: "no-store" })
         .then((res) => res.json())
         .then((data) => {
+          if (data.lock) {
+            setTopFloorLock(data.lock);
+          }
           if (data.floors && data.floors.length > 0) {
             const top = data.floors[0];
             if (top.isClaimed) {
@@ -110,8 +118,11 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
     };
 
     fetchTopFloorPrice();
+
     window.addEventListener("floors-refresh", fetchTopFloorPrice);
-    return () => window.removeEventListener("floors-refresh", fetchTopFloorPrice);
+    return () => {
+      window.removeEventListener("floors-refresh", fetchTopFloorPrice);
+    };
   }, []);
 
   useEffect(() => {
@@ -236,15 +247,25 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
               price: pending.price || 50,
             }),
           })
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.checkoutUrl) {
+            .then(async (res) => {
+              const data = await res.json();
+              if (res.ok && data.checkoutUrl) {
                 window.location.href = data.checkoutUrl;
               } else {
                 setIsSubmitting(false);
+                setPaymentNotice({
+                  type: "error",
+                  message: data.error || "Website verification failed. Please enter an active, secure HTTPS website.",
+                });
               }
             })
-            .catch(() => setIsSubmitting(false));
+            .catch(() => {
+              setIsSubmitting(false);
+              setPaymentNotice({
+                type: "error",
+                message: "Could not start checkout. Please try again.",
+              });
+            });
         }
       }
     } catch (e) {}
@@ -270,32 +291,51 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
       return;
     }
 
-    // Direct Google Auth Gate before checkout if not logged in
-    if (!user) {
-      try {
-        sessionStorage.setItem(
-          "pending_claim_intent",
-          JSON.stringify({
-            url: syntaxCheck.cleanUrl || url.trim(),
-            category: selectedCategory?.name || "Startup",
-            price: Math.max(50, price),
-          })
-        );
-      } catch (e) {}
-
-      login("/");
-      return;
-    }
-
     setIsSubmitting(true);
     setPaymentNotice(null);
 
     try {
+      // Live reachability & SSL security pre-verification
+      const valRes = await fetch("/api/validate-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: syntaxCheck.cleanUrl || url.trim() }),
+      });
+
+      const valData = await valRes.json();
+      if (!valRes.ok || !valData.valid) {
+        setPaymentNotice({
+          type: "error",
+          message: valData.error || "This website could not be reached or is not secure. Please enter an active HTTPS website.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const verifiedUrl = valData.cleanUrl || syntaxCheck.cleanUrl || url.trim();
+
+      // Direct Google Auth Gate before checkout if not logged in
+      if (!user) {
+        try {
+          sessionStorage.setItem(
+            "pending_claim_intent",
+            JSON.stringify({
+              url: verifiedUrl,
+              category: selectedCategory?.name || "Startup",
+              price: Math.max(50, price),
+            })
+          );
+        } catch (e) {}
+
+        login("/");
+        return;
+      }
+
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          url: syntaxCheck.cleanUrl || url.trim(),
+          url: verifiedUrl,
           category: selectedCategory?.name || "Startup",
           price: Math.max(50, price),
         }),
@@ -344,7 +384,7 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
             className="claimed-edit-btn"
             onClick={() => onOpenManage?.()}
           >
-            Edit Floor
+            Manage
           </button>
           <button
             type="button"
@@ -528,8 +568,17 @@ export default function Hero({ onOpenManage }: { onOpenManage?: () => void } = {
           </div>
         </div>
 
-        <button type="submit" className="claim-btn" disabled={isSubmitting}>
-          {isSubmitting ? "Redirecting..." : (
+        <button
+          type="submit"
+          className={`claim-btn ${topFloorLock.isLocked ? "claim-btn-locked" : ""}`}
+          disabled={isSubmitting || topFloorLock.isLocked}
+          title={topFloorLock.isLocked ? "Someone is currently in checkout claiming the Top Floor (#1)" : undefined}
+        >
+          {isSubmitting ? (
+            "Verifying..."
+          ) : topFloorLock.isLocked ? (
+            <>🔒 Claim in progress...</>
+          ) : (
             <>Claim top floor <Arrow /></>
           )}
         </button>

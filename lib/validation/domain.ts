@@ -1,33 +1,7 @@
 /**
  * Domain & Website Security Verification
- * Filters out spam, placeholder/test domains, insecure protocols, and unreachable websites.
+ * Verifies that candidate startup websites are live, reachable, and secured over HTTPS.
  */
-
-// Known placeholder and dummy test domains to block
-const BLOCKED_TEST_DOMAINS = new Set([
-  "test.com",
-  "test.org",
-  "test.net",
-  "test.io",
-  "test.dev",
-  "example.com",
-  "example.org",
-  "example.net",
-  "sample.com",
-  "dummy.com",
-  "temp.com",
-  "asdf.com",
-  "qwerty.com",
-  "foo.bar",
-  "domain.com",
-  "website.com",
-  "mycompany.com",
-  "yourcompany.com",
-  "sitename.com",
-  "placeholder.com",
-  "fake.com",
-  "demo.com",
-]);
 
 // Non-routable / private / test TLDs
 const BLOCKED_TLDS = new Set([
@@ -51,17 +25,17 @@ export interface ValidationResult {
 }
 
 /**
- * Validate syntax, security, and spam rules for a website URL.
+ * Validate syntax, secure protocol (HTTPS), and hostname structure for a website URL.
  * Works both on client and server.
  */
 export function validateWebsiteSyntax(inputUrl: string): ValidationResult {
   if (!inputUrl || typeof inputUrl !== "string") {
-    return { valid: false, error: "Please enter your startup website URL." };
+    return { valid: false, error: "Please enter your startup website URL (e.g. acme.com or yourstartup.ai)." };
   }
 
   let trimmed = inputUrl.trim();
 
-  // Reject dangerous protocols
+  // Reject dangerous or non-web protocols
   const lower = trimmed.toLowerCase();
   if (
     lower.startsWith("javascript:") ||
@@ -75,8 +49,7 @@ export function validateWebsiteSyntax(inputUrl: string): ValidationResult {
     return { valid: false, error: "Invalid protocol. Only secure web addresses (HTTPS) are permitted." };
   }
 
-  // Enforce HTTPS:
-  // If user entered plain HTTP (e.g. http://example.com), reject insecure HTTP
+  // Reject plain insecure HTTP
   if (lower.startsWith("http://")) {
     return {
       valid: false,
@@ -93,68 +66,43 @@ export function validateWebsiteSyntax(inputUrl: string): ValidationResult {
   try {
     parsed = new URL(trimmed);
   } catch {
-    return { valid: false, error: "This website is not valid, please enter a valid website." };
+    return { valid: false, error: "Invalid URL format. Please enter a valid website address." };
   }
 
   if (parsed.protocol !== "https:") {
-    return { valid: false, error: "This website is not valid, please enter a valid website." };
+    return { valid: false, error: "Only secure HTTPS websites (https://...) are accepted." };
   }
 
   const hostname = parsed.hostname.toLowerCase();
 
   // 1. Block Localhost
   if (hostname === "localhost" || hostname.endsWith(".localhost") || hostname === "127.0.0.1" || hostname === "[::1]") {
-    return { valid: false, error: "This website is not valid, please enter a valid website." };
+    return { valid: false, error: "Localhost addresses are not permitted. Please enter a publicly accessible website." };
   }
 
-  // 2. Block Raw IP Addresses (IPv4 or IPv6)
+  // 2. Block Raw IP Addresses
   const isIpv4 = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(hostname);
   if (isIpv4 || hostname.startsWith("[") || hostname.includes(":")) {
-    return { valid: false, error: "This website is not valid, please enter a valid website." };
+    return { valid: false, error: "Raw IP addresses are not permitted. Please enter a valid domain name." };
   }
 
-  // 3. Check for valid domain format (must have at least one dot)
+  // 3. Check for valid domain format
   const parts = hostname.split(".");
   if (parts.length < 2) {
-    return { valid: false, error: "This website is not valid, please enter a valid website." };
+    return { valid: false, error: "Please enter a complete domain name with an extension (e.g., startup.com)." };
   }
 
-  // Check each domain part
+  // Check each domain label
   for (const part of parts) {
     if (!part || part.length > 63 || !/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(part)) {
-      return { valid: false, error: "This website is not valid, please enter a valid website." };
+      return { valid: false, error: "The domain name contains invalid characters. Please check your URL." };
     }
   }
 
   // 4. Validate TLD
   const tld = parts[parts.length - 1];
   if (BLOCKED_TLDS.has(tld) || !/^[a-z]{2,24}$/.test(tld)) {
-    return { valid: false, error: "This website is not valid, please enter a valid website." };
-  }
-
-  // 5. Block dummy / test / placeholder domains
-  if (BLOCKED_TEST_DOMAINS.has(hostname)) {
-    return { valid: false, error: "This website is not valid, please enter a valid website." };
-  }
-
-  // Block obvious test prefixes and combinations (e.g. testsetup.com, demo-page.com, testapp.io)
-  const domainPrefix = hostname.split(".")[0];
-  if (
-    domainPrefix === "test" ||
-    domainPrefix === "demo" ||
-    domainPrefix === "dummy" ||
-    domainPrefix === "sample" ||
-    domainPrefix.startsWith("test-") ||
-    domainPrefix.startsWith("demo-") ||
-    domainPrefix.startsWith("dummy-") ||
-    domainPrefix.startsWith("sample-") ||
-    domainPrefix.startsWith("testsetup") ||
-    domainPrefix.startsWith("testapp") ||
-    domainPrefix.startsWith("testsite") ||
-    domainPrefix.endsWith("-test") ||
-    domainPrefix.endsWith("-demo")
-  ) {
-    return { valid: false, error: "This website is not valid, please enter a valid website." };
+    return { valid: false, error: `The .${tld} domain extension is not a valid public web extension.` };
   }
 
   // Clean canonical URL (root or path, normalized lowercase host)
@@ -188,8 +136,8 @@ const PARKED_DOMAIN_HOSTS = [
 ];
 
 /**
- * Server-side verification: Validates syntax and performs a live reachability & SSL health check.
- * Also verifies that the domain is a real active site and not a parked/for-sale placeholder.
+ * Server-side verification: Validates syntax, SSL certificates, live reachability, and active server status.
+ * Ensures the website is active and reachable before accepting payment or claiming a skyscraper floor.
  */
 export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationResult> {
   const syntaxCheck = validateWebsiteSyntax(inputUrl);
@@ -202,7 +150,7 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000); // 4-second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 4500); // 4.5-second timeout
 
     let response: Response;
     try {
@@ -219,10 +167,24 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
       clearTimeout(timeoutId);
     }
 
-    // If server responded, check if status is acceptable:
-    // 2xx, 3xx, 401 (Auth required), 403 (Cloudflare / Bot protection), 405, 429, 503 (Cloudflare challenge)
-    // All indicate an active, live web server hosting the domain.
-    const isLiveServer =
+    // Explicitly reject broken / dead statuses (404, 410, 500, 502, 504, 520-526)
+    if (response.status === 404 || response.status === 410) {
+      return {
+        valid: false,
+        error: `Website returned HTTP ${response.status} Not Found. Please ensure your website is published and active.`,
+      };
+    }
+
+    if (response.status >= 500 && response.status !== 503) {
+      return {
+        valid: false,
+        error: `Website server returned HTTP ${response.status} Error. Please ensure your website is online and functional.`,
+      };
+    }
+
+    // Check acceptable live server statuses:
+    // 2xx (Success), 3xx (Redirect), 401 (Auth required), 403 (Cloudflare/bot protected), 405, 429, 503 (Cloudflare challenge)
+    const isLive =
       response.ok ||
       response.status === 401 ||
       response.status === 403 ||
@@ -230,10 +192,10 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
       response.status === 429 ||
       response.status === 503;
 
-    if (!isLiveServer) {
+    if (!isLive) {
       return {
         valid: false,
-        error: "This website is not valid, please enter a valid website.",
+        error: `Website is unreachable (HTTP status ${response.status}). Please ensure your website is publicly accessible.`,
       };
     }
 
@@ -243,21 +205,20 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
       const finalParsed = new URL(finalUrl);
       const finalHost = finalParsed.hostname.toLowerCase();
 
-      // Check against known parking platforms
       if (PARKED_DOMAIN_HOSTS.some((p) => finalHost.includes(p))) {
         return {
           valid: false,
-          error: "This website is not valid, please enter a valid website.",
+          error: "This domain appears to be parked or listed for sale. Please enter an active startup website.",
         };
       }
 
-      // If redirected to completely different root domain
+      // Check if redirected to a completely different root domain
       const requestedRoot = requestedDomain.split(".").slice(-2).join(".");
       const finalRoot = finalHost.split(".").slice(-2).join(".");
       if (requestedRoot && finalRoot && requestedRoot !== finalRoot && !finalHost.includes(requestedRoot)) {
         return {
           valid: false,
-          error: "This website is not valid, please enter a valid website.",
+          error: "The website redirected to a different destination. Please enter your direct startup domain.",
         };
       }
     } catch {}
@@ -276,7 +237,7 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
       ) {
         return {
           valid: false,
-          error: "This website is not valid, please enter a valid website.",
+          error: "This domain appears to be parked or listed for sale. Please enter an active startup website.",
         };
       }
     } catch {}
@@ -287,10 +248,53 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
       domain: requestedDomain,
     };
   } catch (err: any) {
-    console.warn(`Live check unreachable for ${targetUrl}:`, err?.message || err);
+    const errMsg = String(err?.message || err?.cause?.message || err).toLowerCase();
+    console.warn(`Live reachability check failed for ${targetUrl}:`, errMsg);
+
+    // SSL Certificate / Security failures
+    if (
+      errMsg.includes("cert_") ||
+      errMsg.includes("certificate") ||
+      errMsg.includes("self-signed") ||
+      errMsg.includes("self signed") ||
+      errMsg.includes("unable_to_verify") ||
+      errMsg.includes("depth_zero") ||
+      errMsg.includes("ssl") ||
+      errMsg.includes("tls")
+    ) {
+      return {
+        valid: false,
+        error: "SSL Security Error: This website does not have a valid, trusted HTTPS certificate.",
+      };
+    }
+
+    // Timeout / Unresponsive
+    if (errMsg.includes("abort") || errMsg.includes("timeout") || errMsg.includes("timed out")) {
+      return {
+        valid: false,
+        error: "Website unreachable: The server timed out and did not respond. Please ensure your site is live and responsive.",
+      };
+    }
+
+    // DNS / Domain does not exist
+    if (errMsg.includes("enotfound") || errMsg.includes("eai_again") || errMsg.includes("dns")) {
+      return {
+        valid: false,
+        error: "Website unreachable: Domain does not exist or DNS lookup failed. Please check the website URL.",
+      };
+    }
+
+    // Connection refused / Connection reset
+    if (errMsg.includes("econnrefused") || errMsg.includes("econnreset")) {
+      return {
+        valid: false,
+        error: "Website unreachable: Connection was refused by the server. Please check if your web server is running.",
+      };
+    }
+
     return {
       valid: false,
-      error: "This website is not valid, please enter a valid website.",
+      error: "Website unreachable: Could not establish a secure HTTPS connection. Please ensure your website is live and publicly accessible.",
     };
   }
 }

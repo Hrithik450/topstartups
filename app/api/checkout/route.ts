@@ -4,6 +4,7 @@ import { db } from "@/lib/db/config/client";
 import { claims } from "@/lib/db/config/schema";
 import { verifyWebsiteLive } from "@/lib/validation/domain";
 import { getAuthenticatedUser } from "@/lib/auth/session";
+import { acquireFloorLock } from "@/lib/db/locks";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
     const session = getAuthenticatedUser(req);
     const body = await req.json();
     const { url, category, companyName, price } = body;
+    const targetRank = Math.max(1, Math.min(50, Number(body.targetRank || body.rank) || 1));
 
     // Input validation & Live Security Verification
     if (!url || typeof url !== "string") {
@@ -56,6 +58,27 @@ export async function POST(req: NextRequest) {
 
     const amount = Math.max(50, Math.min(100000, Number(price) || 50));
 
+    // CONCURRENCY LOCK: Reserve floor rank for 5 minutes during checkout
+    const lockResult = await acquireFloorLock({
+      targetRank,
+      email: finalEmail,
+      companyName: name,
+      durationSeconds: 300,
+    });
+
+    if (!lockResult.success) {
+      return NextResponse.json(
+        {
+          error:
+            lockResult.message ||
+            `Floor #${targetRank} is currently being claimed. Please wait a moment until the transaction finishes or expires.`,
+          isLocked: true,
+          secondsRemaining: lockResult.secondsRemaining,
+        },
+        { status: 409 }
+      );
+    }
+
     // SECURITY: Determine return origin from whitelisted origins, not from headers
     const hostHeader = req.headers.get("host") || "localhost:3000";
     const protoHeader = req.headers.get("x-forwarded-proto") || (hostHeader.startsWith("localhost") ? "http" : "https");
@@ -71,6 +94,17 @@ export async function POST(req: NextRequest) {
       customerEmail: finalEmail || undefined,
       returnUrl: origin,
     });
+
+    // Update lock with exact payment session ID
+    if (checkout.paymentId) {
+      await acquireFloorLock({
+        targetRank,
+        email: finalEmail,
+        paymentId: checkout.paymentId,
+        companyName: name,
+        durationSeconds: 300,
+      });
+    }
 
     // Record pending claim in database
     try {

@@ -76,7 +76,14 @@ export async function seedFloors() {
       completed_at TIMESTAMP WITH TIME ZONE
     );
     CREATE INDEX IF NOT EXISTS claims_payment_id_idx ON claims (payment_id);
-    CREATE INDEX IF NOT EXISTS claims_status_idx ON claims (status);
+    CREATE TABLE IF NOT EXISTS floor_locks (
+      target_rank INTEGER PRIMARY KEY DEFAULT 1,
+      locked_by_email VARCHAR(255),
+      locked_by_payment_id VARCHAR(255),
+      company_name VARCHAR(255),
+      locked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+    );
   `);
 
   const countRes = await pool.query(`SELECT COUNT(*)::int as cnt FROM floors`);

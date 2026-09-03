@@ -106,6 +106,8 @@ export default function Experience() {
             total_paid: f.pricePaid,
             created_at: f.createdAt || new Date().toISOString(),
             is_claimed: f.isClaimed,
+            is_locked: Boolean(f.isLocked),
+            lock_info: f.lockInfo,
             rank: f.rank,
             clicks: 0,
             views: 0,

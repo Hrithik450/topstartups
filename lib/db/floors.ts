@@ -52,6 +52,8 @@ export async function getActiveFloors(): Promise<Floor[]> {
 }
 
 import { scrapeWebsiteMetadata } from "@/lib/crawler/metadata";
+import { verifyWebsiteLive } from "@/lib/validation/domain";
+import { releaseTopFloorLock } from "./locks";
 
 /**
  * Ensures 50 premium placeholder floors exist using pure Drizzle.
@@ -120,6 +122,13 @@ export interface ClaimResult {
 export async function claimTopFloorTransactional(
   input: ClaimFloorInput
 ): Promise<ClaimResult> {
+  // 0. Live security & reachability check: Ensure the website is active and secure before claiming
+  const verification = await verifyWebsiteLive(input.url);
+  if (!verification.valid || !verification.cleanUrl) {
+    throw new Error(verification.error || "Website is unreachable or insecure. Floor claim rejected.");
+  }
+  input.url = verification.cleanUrl;
+
   await initializeFloorsIfEmpty();
   const token = input.manageToken || crypto.randomUUID().replace(/-/g, "");
 
@@ -149,7 +158,7 @@ export async function claimTopFloorTransactional(
   if (!finalTagline) finalTagline = `${finalCompanyName} — Official Skyscraper Floor`;
   if (!finalDescription) finalDescription = `Claimed top floor on GeTopFloor skyscraper.`;
 
-  return await db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     // 1. Idempotency Check: if this payment was already processed, don't double shift
     const existingClaim = await tx
       .select()
@@ -279,6 +288,11 @@ export async function claimTopFloorTransactional(
       message: `Successfully claimed Top Floor (Rank 1) for ${finalCompanyName}!`,
     };
   });
+
+  // Release lock after transaction completes
+  await releaseTopFloorLock(1, input.paymentId);
+
+  return result;
 }
 
 /**

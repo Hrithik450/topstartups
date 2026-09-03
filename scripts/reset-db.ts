@@ -35,8 +35,19 @@ async function resetDb() {
   });
 
   try {
-    console.log("1. Dropping legacy tables and resetting floors, claims, users, active sessions, and countries...");
+    console.log("1. Dropping legacy tables and resetting floors, claims, users, active sessions, countries, and claim locks...");
     await pool.query(`DROP TABLE IF EXISTS email_otps CASCADE;`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS floor_locks (
+        target_rank INTEGER PRIMARY KEY DEFAULT 1,
+        locked_by_email VARCHAR(255),
+        locked_by_payment_id VARCHAR(255),
+        company_name VARCHAR(255),
+        locked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+        expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+      );
+    `);
+    await pool.query(`DELETE FROM floor_locks;`);
     await pool.query(`DELETE FROM floors;`);
     await pool.query(`DELETE FROM claims;`);
     await pool.query(`DELETE FROM users;`);

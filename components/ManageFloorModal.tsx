@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { MAIN_CATEGORIES } from "@/lib/categories";
 import { validateWebsiteSyntax } from "@/lib/validation/domain";
 import { useUserAuth } from "@/lib/auth/use-user-auth";
+import { Close } from "./icons";
 
 interface ManageFloorModalProps {
   isOpen: boolean;
@@ -222,8 +223,8 @@ export default function ManageFloorModal({
                 : "Sign in with Google to manage your claimed skyscraper startups."}
             </p>
           </div>
-          <button type="button" className="manage-modal-close" onClick={onClose} aria-label="Close">
-            ✕
+          <button type="button" className="manage-modal-close" onClick={onClose} aria-label="Close" title="Close">
+            <Close />
           </button>
         </div>
 

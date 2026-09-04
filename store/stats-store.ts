@@ -39,7 +39,7 @@ export const useStatsStore = create<StatsStore>()(
         const floorCount = merged.claimedFloors || merged.totalFloors || 0;
         if (newStats.heightFt !== undefined) {
           merged.heightFt = newStats.heightFt;
-        } else if (floorCount > 0) {
+        } else {
           merged.heightFt = calculateTowerHeightFt(floorCount);
         }
         return {

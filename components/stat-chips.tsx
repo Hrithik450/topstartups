@@ -94,7 +94,9 @@ export function useLiveStats(customHeightFt?: number | string) {
       ? customHeightFt
       : activeFloorCount > 0
       ? calculateTowerHeightFt(activeFloorCount)
-      : stats.heightFt || calculateTowerHeightFt(0);
+      : typeof stats.heightFt === "number"
+      ? stats.heightFt
+      : calculateTowerHeightFt(0);
 
   return {
     ...stats,

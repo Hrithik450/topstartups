@@ -1,8 +1,7 @@
 /**
  * Dynamic virtual skyscraper height calculation based on number of stories/floors:
- * - Base lobby / entrance foundation: 35 ft
- * - Story / floor pitch: 14 ft per floor
- * - Penthouse roof crown & helipad: 16 ft
+ * - Starts from 0 ft
+ * - Each floor is 12 ft
  */
 export interface LiveStatsData {
   online: number;
@@ -15,6 +14,6 @@ export interface LiveStatsData {
 
 export function calculateTowerHeightFt(floorCount: number): number {
   const count = Number(floorCount) || 0;
-  if (count <= 0) return 35;
-  return 35 + count * 14 + 16;
+  if (count <= 0) return 0;
+  return count * 12;
 }

@@ -2381,9 +2381,19 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   rulerGroup.add(rulerStrip);
 
   const rulerFlagGeo = new THREE.BoxGeometry(0.75, 0.34, 0.05);
+
+  // Ground level 0 FT marker
+  const baseFlagTex = createRulerLabelTexture("0 FT");
+  disposables.push(baseFlagTex);
+  const baseFlagMat = new THREE.MeshStandardMaterial({ map: baseFlagTex, roughness: 0.5 });
+  const baseFlag = new THREE.Mesh(rulerFlagGeo, baseFlagMat);
+  baseFlag.position.set(-8.45, 0.2, 0);
+  baseFlag.castShadow = true;
+  rulerGroup.add(baseFlag);
+
   for (let i = 0; i < floorCount; i++) {
     const ry = BASE_HEIGHT + FLOOR_PITCH * i;
-    const ft = 35 + (i + 1) * 14;
+    const ft = (i + 1) * 12;
     const flagTex = createRulerLabelTexture(`${ft} FT`);
     disposables.push(flagTex);
     const flagMat = new THREE.MeshStandardMaterial({ map: flagTex, roughness: 0.5 });
@@ -2391,16 +2401,6 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     flag.position.set(-8.45, ry + 1.0, 0);
     flag.castShadow = true;
     rulerGroup.add(flag);
-  }
-  if (floorCount > 0) {
-    const topFt = 35 + floorCount * 14 + 16;
-    const topFlagTex = createRulerLabelTexture(`${topFt} FT`);
-    disposables.push(topFlagTex);
-    const topFlagMat = new THREE.MeshStandardMaterial({ map: topFlagTex, roughness: 0.5 });
-    const topFlag = new THREE.Mesh(rulerFlagGeo, topFlagMat);
-    topFlag.position.set(-8.45, totalHeight, 0);
-    topFlag.castShadow = true;
-    rulerGroup.add(topFlag);
   }
   scene.add(rulerGroup);
 

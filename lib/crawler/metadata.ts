@@ -1,13 +1,13 @@
 /**
  * Simple & Reliable Website Metadata Crawler
- * 
+ *
  * Uses Firecrawl (if FIRECRAWL_API_KEY is configured) to extract:
  * 1. Company Name
  * 2. Tagline (One-Liner)
  * 3. Description
  * 4. High-Resolution Favicon / Logo
  * 5. Industry Category
- * 
+ *
  * Falls back to a fast direct HTML parser if Firecrawl is not configured.
  */
 
@@ -28,18 +28,8 @@ export interface WebsiteMetadata {
  * e.g. "Linear – A better way to build software" -> "Linear"
  */
 function cleanTitle(title: string, hostname: string): string {
-  if (!title) {
-    const raw = hostname.replace(/^www\./, "").split(".")[0];
-    return raw.charAt(0).toUpperCase() + raw.slice(1);
-  }
-
-  // Split on common separators: " | ", " - ", " – ", " : "
-  const parts = title.split(/\s+[-|–—:•]\s+/);
-  if (parts.length > 1 && parts[0].trim().length > 1 && parts[0].trim().length < 40) {
-    return parts[0].trim();
-  }
-
-  return title.length <= 40 ? title.trim() : hostname.replace(/^www\./, "").split(".")[0];
+  const cleanHost = hostname.replace(/^www\./, "").toLowerCase();
+  return cleanHost;
 }
 
 /**
@@ -56,25 +46,60 @@ function truncate(text: string, maxLength: number): string {
  */
 function guessCategory(text: string): string {
   const t = text.toLowerCase();
-  if (t.includes("ai") || t.includes("gpt") || t.includes("agent") || t.includes("llm") || t.includes("machine learning")) {
+  if (
+    t.includes("ai") ||
+    t.includes("gpt") ||
+    t.includes("agent") ||
+    t.includes("llm") ||
+    t.includes("machine learning")
+  ) {
     return "AI & Machine Learning";
   }
-  if (t.includes("developer") || t.includes("api") || t.includes("code") || t.includes("github") || t.includes("sdk")) {
+  if (
+    t.includes("developer") ||
+    t.includes("api") ||
+    t.includes("code") ||
+    t.includes("github") ||
+    t.includes("sdk")
+  ) {
     return "Developer Tools";
   }
-  if (t.includes("crypto") || t.includes("web3") || t.includes("blockchain") || t.includes("token")) {
+  if (
+    t.includes("crypto") ||
+    t.includes("web3") ||
+    t.includes("blockchain") ||
+    t.includes("token")
+  ) {
     return "Web3 & Crypto";
   }
-  if (t.includes("pay") || t.includes("finance") || t.includes("bank") || t.includes("invoice") || t.includes("billing")) {
+  if (
+    t.includes("pay") ||
+    t.includes("finance") ||
+    t.includes("bank") ||
+    t.includes("invoice") ||
+    t.includes("billing")
+  ) {
     return "Fintech";
   }
-  if (t.includes("shop") || t.includes("store") || t.includes("ecommerce") || t.includes("cart") || t.includes("d2c")) {
+  if (
+    t.includes("shop") ||
+    t.includes("store") ||
+    t.includes("ecommerce") ||
+    t.includes("cart") ||
+    t.includes("d2c")
+  ) {
     return "E-Commerce";
   }
   if (t.includes("design") || t.includes("figma") || t.includes("ui") || t.includes("creative")) {
     return "Design & Creative";
   }
-  if (t.includes("saas") || t.includes("software") || t.includes("crm") || t.includes("analytics") || t.includes("dashboard")) {
+  if (
+    t.includes("saas") ||
+    t.includes("software") ||
+    t.includes("crm") ||
+    t.includes("analytics") ||
+    t.includes("dashboard")
+  ) {
     return "B2B SaaS";
   }
   return "Startup";
@@ -123,7 +148,9 @@ async function crawlWithFirecrawl(url: string, apiKey: string): Promise<WebsiteM
   const companyName = cleanTitle(title, hostname);
   const tagline = truncate(desc, 110) || `${companyName} — Official Skyscraper Floor`;
   const description = truncate(desc, 240) || `Claimed top floor on GeTopFloor skyscraper.`;
-  const logoUrl = icon ? resolveUrl(icon, url) : `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
+  const logoUrl = icon
+    ? resolveUrl(icon, url)
+    : `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
   const category = guessCategory(`${companyName} ${desc}`);
 
   return {
@@ -147,7 +174,8 @@ async function crawlDirectHtml(url: string): Promise<WebsiteMetadata> {
   try {
     const res = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 GeTopFloorBot/1.0",
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 GeTopFloorBot/1.0",
         Accept: "text/html,application/xhtml+xml",
       },
       signal: AbortSignal.timeout(4000),
@@ -158,20 +186,30 @@ async function crawlDirectHtml(url: string): Promise<WebsiteMetadata> {
     const html = await res.text();
 
     // 1. Extract Title
-    const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)?.[1];
+    const ogTitle = html.match(
+      /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i
+    )?.[1];
     const htmlTitle = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1];
     const companyName = cleanTitle(ogTitle || htmlTitle || "", hostname);
 
     // 2. Extract Description
-    const ogDesc = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)?.[1];
-    const metaDesc = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)?.[1];
+    const ogDesc = html.match(
+      /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i
+    )?.[1];
+    const metaDesc = html.match(
+      /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i
+    )?.[1];
     const rawDesc = ogDesc || metaDesc || "";
     const tagline = truncate(rawDesc, 110) || `${companyName} — Official Skyscraper Floor`;
     const description = truncate(rawDesc, 240) || `Claimed top floor on GeTopFloor skyscraper.`;
 
     // 3. Extract Favicon
-    const appleIcon = html.match(/<link[^>]+rel=["'][^"']*apple-touch-icon[^"']*["'][^>]+href=["']([^"']+)["']/i)?.[1];
-    const stdIcon = html.match(/<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+href=["']([^"']+)["']/i)?.[1];
+    const appleIcon = html.match(
+      /<link[^>]+rel=["'][^"']*apple-touch-icon[^"']*["'][^>]+href=["']([^"']+)["']/i
+    )?.[1];
+    const stdIcon = html.match(
+      /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+href=["']([^"']+)["']/i
+    )?.[1];
     const rawIcon = appleIcon || stdIcon;
     const logoUrl = rawIcon ? resolveUrl(rawIcon, url) : fallbackFavicon;
 
@@ -185,8 +223,8 @@ async function crawlDirectHtml(url: string): Promise<WebsiteMetadata> {
       category,
     };
   } catch {
-    const cleanHost = hostname.replace(/^www\./, "").split(".")[0];
-    const companyName = cleanHost.charAt(0).toUpperCase() + cleanHost.slice(1);
+    const cleanHost = hostname.replace(/^www\./, "").toLowerCase();
+    const companyName = cleanHost;
     return {
       companyName,
       tagline: `${companyName} — Official Skyscraper Floor`,

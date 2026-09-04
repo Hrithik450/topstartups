@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { INITIAL_LISTINGS, type Listing } from "./listings";
+import type { Floor } from "@/lib/db/config/schema";
 
 export type TowerHandle = {
   zoom: (dir: 1 | -1) => void;
@@ -16,7 +16,7 @@ export type TowerHandle = {
   toggleSound?: () => boolean;
   toggleTheme: () => "dark" | "sunset";
   setTheme: (theme: "dark" | "sunset") => void;
-  updateListings?: (listings: Listing[]) => void;
+  updateListings?: (listings: Floor[]) => void;
   dispose: () => void;
 };
 
@@ -25,22 +25,17 @@ const DEFAULT_GLASS_TINT = { h: 26, s: 68, l: 54 };
 const HELIPAD_DECK_HEX = "#ffaa00";
 const HELIPAD_MARK_HEX = "#000000";
 
-const AVAILABLE_LOGOS = new Set([
-  "befailproof.ai",
-  "japanpr.me",
-  "pushup.quest",
-  "nextdoor.company",
-  "apps.apple.com",
-  "jbair.com",
-  "patentfig.ai",
-  "faxer.me",
-  "jointracky.com",
-  "nextdoorcompany",
-]);
-
 const AVATAR_COLORS = [
-  "#ff6b1a", "#f97316", "#ea580c", "#d97706", "#b45309",
-  "#ef4444", "#e11d48", "#f59e0b", "#f43f5e", "#c2410c"
+  "#ff6b1a",
+  "#f97316",
+  "#ea580c",
+  "#d97706",
+  "#b45309",
+  "#ef4444",
+  "#e11d48",
+  "#f59e0b",
+  "#f43f5e",
+  "#c2410c",
 ];
 
 function getAvatarColor(str: string): string {
@@ -58,7 +53,14 @@ function truncateText(ctx: CanvasRenderingContext2D, text: string, maxWidth: num
   return s.trimEnd() + "…";
 }
 
-function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+function roundRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -68,7 +70,11 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
   ctx.closePath();
 }
 
-function drawGlassBackground(ctx: CanvasRenderingContext2D, floorIndex: number, theme: "dark" | "sunset" = "dark") {
+function drawGlassBackground(
+  ctx: CanvasRenderingContext2D,
+  floorIndex: number,
+  theme: "dark" | "sunset" = "dark"
+) {
   if (theme === "dark") {
     // 1. Deep luxury midnight office room background
     const roomGrad = ctx.createLinearGradient(0, 0, 0, 256);
@@ -174,12 +180,33 @@ function drawGlassBackground(ctx: CanvasRenderingContext2D, floorIndex: number, 
   }
 }
 
+function getFloorCompanyUrl(f: any): string {
+  if (!f) return "";
+  return f.companyUrl || "";
+}
+
+function getFloorDisplayName(f: any): string {
+  if (!f) return "";
+  if (f.companyName && typeof f.companyName === "string" && f.companyName.trim()) {
+    return f.companyName.trim().toLowerCase();
+  }
+  const url = getFloorCompanyUrl(f);
+  if (url) {
+    return url
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .split("/")[0]
+      .toLowerCase();
+  }
+  return "startup";
+}
+
 function drawAvatar(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement | null,
   title: string,
-  id: string,
-  listing?: Listing
+  id?: string | number,
+  listing?: Floor
 ) {
   ctx.save();
   ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
@@ -197,42 +224,23 @@ function drawAvatar(
     ctx.drawImage(img, 80, 72, 112, 112);
     ctx.restore();
   } else {
-    const isClaimed = listing?.is_claimed ?? true;
-    if (!isClaimed) {
-      // Premium placeholder avatar
-      const grad = ctx.createLinearGradient(72, 64, 200, 192);
-      grad.addColorStop(0, "rgba(255, 122, 41, 0.95)");
-      grad.addColorStop(1, "rgba(255, 75, 0, 0.85)");
-      roundRectPath(ctx, 72, 64, 128, 128, 22);
-      ctx.fillStyle = grad;
-      ctx.fill();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "800 64px 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("🏢", 136, 134);
-    } else {
-      const bg = getAvatarColor(id || title);
-      roundRectPath(ctx, 72, 64, 128, 128, 20);
-      ctx.fillStyle = bg;
-      ctx.fill();
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "700 76px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText((title.trim().charAt(0) || "?").toUpperCase(), 136, 134);
-    }
+    const bg = getAvatarColor(String(id || title));
+    roundRectPath(ctx, 72, 64, 128, 128, 20);
+    ctx.fillStyle = bg;
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font =
+      "700 76px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText((title.trim().charAt(0) || "?").toUpperCase(), 136, 134);
   }
 }
 
 function paintFloorTexture(
   ctx: CanvasRenderingContext2D,
   scale: number,
-  listing: Listing,
+  listing: Floor,
   rank: number,
   floorIndex: number,
   logoImg: HTMLImageElement | null,
@@ -242,31 +250,28 @@ function paintFloorTexture(
   ctx.globalAlpha = 1;
   ctx.clearRect(0, 0, 1280, 256);
 
-  const isClaimed = listing?.is_claimed ?? true;
+  const displayName = getFloorDisplayName(listing);
 
   drawGlassBackground(ctx, floorIndex, theme);
-  drawAvatar(ctx, logoImg, listing.title, listing.id, listing);
+  drawAvatar(ctx, logoImg, displayName, listing.id, listing);
 
-  // Domain Name or Placeholder Title (Primary Heading)
+  // Company Name (Primary Heading)
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
   ctx.save();
   ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
   ctx.shadowBlur = 12;
   ctx.shadowOffsetY = 4;
-  ctx.fillStyle = isClaimed ? "#ffffff" : "#ffedd5";
+  ctx.fillStyle = "#ffffff";
   ctx.font = "700 64px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
 
-  const domain = isClaimed
-    ? listing.url_or_handle.replace(/^https?:\/\//i, "").replace(/\/$/, "")
-    : listing.title;
-  const titleText = truncateText(ctx, domain, 700);
+  const titleText = truncateText(ctx, displayName, 700);
   ctx.fillText(titleText, 260, 128);
 
   // Subtitle / Description
-  ctx.fillStyle = isClaimed ? "rgba(255, 255, 255, 0.88)" : "rgba(255, 175, 120, 0.95)";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
   ctx.font = "500 36px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
-  const subText = listing.description || (isClaimed ? listing.title : "Spot reserved for your startup — Claim top floor");
+  const subText = listing.description || listing.tagline || displayName;
   ctx.fillText(truncateText(ctx, subText, 700), 260, 186);
   ctx.restore();
 
@@ -279,13 +284,7 @@ function paintFloorTexture(
   ctx.fillStyle = "#ffffff";
   ctx.font = "800 84px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
   ctx.fillText(`#${rank}`, 1232, 108);
-  if (isClaimed) {
-    ctx.fillText(`₹${listing.total_paid}`, 1232, 204);
-  } else {
-    ctx.fillStyle = "rgba(255, 235, 200, 0.65)";
-    ctx.font = "700 48px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
-    ctx.fillText("OPEN", 1232, 196);
-  }
+  ctx.fillText(`₹${listing.pricePaid ?? 0}`, 1232, 204);
   ctx.restore();
 }
 
@@ -494,7 +493,6 @@ function createBillboardTexture(): THREE.CanvasTexture {
   return makeCanvasTexture(canvas);
 }
 
-
 function createBrandingPlaceholderTexture(panelNumber: number): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 2560;
@@ -614,7 +612,11 @@ function createBrandingPlaceholderTexture(panelNumber: number): THREE.CanvasText
   // Subtitle / Prompt
   ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
   ctx.font = "600 32px 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, sans-serif";
-  ctx.fillText("Showcase your brand logo, corporate campaign, or sponsor creative across the main building plaza", 2560 / 2, 280);
+  ctx.fillText(
+    "Showcase your brand logo, corporate campaign, or sponsor creative across the main building plaza",
+    2560 / 2,
+    280
+  );
 
   // Bottom CTA Bar
   ctx.fillStyle = "rgba(255, 107, 26, 0.12)";
@@ -744,7 +746,6 @@ function fitModelHeight(scene: THREE.Object3D, targetHeight: number): THREE.Grou
   return wrapper;
 }
 
-
 // Procedural Tree Helper
 function makeLowPolyTree(x: number, z: number, scale: number): THREE.Group {
   const group = new THREE.Group();
@@ -778,7 +779,11 @@ function makeLowPolyTree(x: number, z: number, scale: number): THREE.Group {
 }
 
 // Procedural Airplane with Tow Banner
-function makeAirplaneBanner(bannerTex: THREE.Texture): { plane: THREE.Group; banner: THREE.Mesh; prop: THREE.Mesh } {
+function makeAirplaneBanner(bannerTex: THREE.Texture): {
+  plane: THREE.Group;
+  banner: THREE.Mesh;
+  prop: THREE.Mesh;
+} {
   const plane = new THREE.Group();
   const redMat = new THREE.MeshStandardMaterial({ color: 0xd92b2b, roughness: 0.5 });
   const darkMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
@@ -814,7 +819,10 @@ function makeAirplaneBanner(bannerTex: THREE.Texture): { plane: THREE.Group; ban
   banner.position.set(0.01, 0, 4.6);
   plane.add(banner);
 
-  const line = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.7, 6), new THREE.MeshBasicMaterial({ color: 0x555555 }));
+  const line = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.015, 0.015, 0.7, 6),
+    new THREE.MeshBasicMaterial({ color: 0x555555 })
+  );
   line.rotation.x = Math.PI / 2;
   line.position.z = 1.25;
   plane.add(line);
@@ -909,7 +917,11 @@ function makeRealisticHelicopter(): {
     transparent: true,
     opacity: 0.88,
   });
-  const windowFrameMat = new THREE.MeshStandardMaterial({ color: 0x22262e, roughness: 0.3, metalness: 0.8 });
+  const windowFrameMat = new THREE.MeshStandardMaterial({
+    color: 0x22262e,
+    roughness: 0.3,
+    metalness: 0.8,
+  });
 
   for (const sx of [-0.52, 0.52]) {
     // Side window pane
@@ -927,7 +939,11 @@ function makeRealisticHelicopter(): {
   const cockpitControlsGroup = new THREE.Group();
 
   // Avionics Dashboard Console
-  const dashMat = new THREE.MeshStandardMaterial({ color: 0x141820, roughness: 0.4, metalness: 0.3 });
+  const dashMat = new THREE.MeshStandardMaterial({
+    color: 0x141820,
+    roughness: 0.4,
+    metalness: 0.3,
+  });
   const dashboard = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.22, 0.28), dashMat);
   dashboard.position.set(0, -0.06, -0.52);
   dashboard.rotation.x = 0.22;
@@ -969,7 +985,11 @@ function makeRealisticHelicopter(): {
   cockpitControlsGroup.add(engScreen);
 
   // Dual Flight Cyclic Control Sticks (Left & Right Pilot Controls)
-  const stickMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3, metalness: 0.85 });
+  const stickMat = new THREE.MeshStandardMaterial({
+    color: 0x111111,
+    roughness: 0.3,
+    metalness: 0.85,
+  });
   for (const sx of [-0.2, 0.2]) {
     // Control stick shaft
     const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.22, 8), stickMat);
@@ -1061,7 +1081,11 @@ function makeRealisticHelicopter(): {
   chopper.add(tailRotor);
 
   // Landing Skids
-  const skidMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.85 });
+  const skidMat = new THREE.MeshStandardMaterial({
+    color: 0x111111,
+    roughness: 0.4,
+    metalness: 0.85,
+  });
   for (const sx of [-0.44, 0.44]) {
     const skidTube = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.1, 8), skidMat);
     skidTube.rotation.x = Math.PI / 2;
@@ -1086,8 +1110,16 @@ function makeRealisticHelicopter(): {
   // Suspended Boarding Ladder firmly attached to helicopter side cabin door
   const ladder = new THREE.Group();
   const ropeMat = new THREE.MeshStandardMaterial({ color: 0x8a7356, roughness: 0.85 });
-  const rungMat = new THREE.MeshStandardMaterial({ color: 0xd4d8de, roughness: 0.3, metalness: 0.7 });
-  const bracketMat = new THREE.MeshStandardMaterial({ color: 0x181a20, roughness: 0.3, metalness: 0.85 });
+  const rungMat = new THREE.MeshStandardMaterial({
+    color: 0xd4d8de,
+    roughness: 0.3,
+    metalness: 0.7,
+  });
+  const bracketMat = new THREE.MeshStandardMaterial({
+    color: 0x181a20,
+    roughness: 0.3,
+    metalness: 0.85,
+  });
 
   const ladderHeight = 3.6;
   const numRungs = 12;
@@ -1165,7 +1197,10 @@ function makeJuiceDrinkerCharacter(): {
   head.position.set(0, 0.84, 0);
   group.add(head);
 
-  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.115, 14, 12, 0, Math.PI * 2, 0, Math.PI / 2), hairMat);
+  const hair = new THREE.Mesh(
+    new THREE.SphereGeometry(0.115, 14, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+    hairMat
+  );
   hair.position.set(0, 0.86, 0);
   group.add(hair);
 
@@ -1176,7 +1211,10 @@ function makeJuiceDrinkerCharacter(): {
     leg.castShadow = true;
     group.add(leg);
 
-    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.06, 0.18), new THREE.MeshStandardMaterial({ color: 0x050505 }));
+    const shoe = new THREE.Mesh(
+      new THREE.BoxGeometry(0.11, 0.06, 0.18),
+      new THREE.MeshStandardMaterial({ color: 0x050505 })
+    );
     shoe.position.set(lx, 0.03, 0.03);
     group.add(shoe);
   }
@@ -1204,7 +1242,10 @@ function makeJuiceDrinkerCharacter(): {
   armGroup.add(glassMesh);
 
   // Straw
-  const straw = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.16, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  const straw = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.005, 0.005, 0.16, 6),
+    new THREE.MeshBasicMaterial({ color: 0xffffff })
+  );
   straw.position.set(0.01, -0.24, 0.14);
   straw.rotation.z = 0.2;
   armGroup.add(straw);
@@ -1257,7 +1298,7 @@ function makeLookingUpPerson(opts: {
   headGroup.position.set(0, 0.94, 0);
 
   // Head tilted BACK / UPWARDS (watching the startups at the top!)
-  const tilt = opts.tiltAngle ?? (0.75 + Math.random() * 0.25);
+  const tilt = opts.tiltAngle ?? 0.75 + Math.random() * 0.25;
   headGroup.rotation.x = -tilt;
 
   const head = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), skinMat);
@@ -1384,7 +1425,11 @@ function createPitchDeckTexture(): THREE.CanvasTexture {
 function makeExecutiveChair(): THREE.Group {
   const chair = new THREE.Group();
   const leatherMat = new THREE.MeshStandardMaterial({ color: 0x181a20, roughness: 0.45 });
-  const chromeMat = new THREE.MeshStandardMaterial({ color: 0xd4d8de, roughness: 0.2, metalness: 0.85 });
+  const chromeMat = new THREE.MeshStandardMaterial({
+    color: 0xd4d8de,
+    roughness: 0.2,
+    metalness: 0.85,
+  });
 
   // Seat cushion
   const seat = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.06, 0.38), leatherMat);
@@ -1426,8 +1471,16 @@ function makeExecutiveChair(): THREE.Group {
 
 function makeLaptop(): THREE.Group {
   const laptop = new THREE.Group();
-  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2b303c, roughness: 0.3, metalness: 0.8 });
-  const screenMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x38bdf8, emissiveIntensity: 0.4 });
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: 0x2b303c,
+    roughness: 0.3,
+    metalness: 0.8,
+  });
+  const screenMat = new THREE.MeshStandardMaterial({
+    color: 0x0f172a,
+    emissive: 0x38bdf8,
+    emissiveIntensity: 0.4,
+  });
 
   const base = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.015, 0.18), bodyMat);
   laptop.add(base);
@@ -1466,15 +1519,21 @@ function createSkyAndBirdsAudio() {
     const noiseBuffer = audio.createBuffer(2, bufferSize, sampleRate);
     for (let ch = 0; ch < 2; ch++) {
       const output = noiseBuffer.getChannelData(ch);
-      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      let b0 = 0,
+        b1 = 0,
+        b2 = 0,
+        b3 = 0,
+        b4 = 0,
+        b5 = 0,
+        b6 = 0;
       for (let i = 0; i < bufferSize; i++) {
         const white = Math.random() * 2 - 1;
         b0 = 0.99886 * b0 + white * 0.0555179;
         b1 = 0.99332 * b1 + white * 0.0750759;
-        b2 = 0.96900 * b2 + white * 0.1538520;
-        b3 = 0.86650 * b3 + white * 0.3104856;
-        b4 = 0.55000 * b4 + white * 0.5329522;
-        b5 = -0.7616 * b5 - white * 0.0168980;
+        b2 = 0.969 * b2 + white * 0.153852;
+        b3 = 0.8665 * b3 + white * 0.3104856;
+        b4 = 0.55 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.016898;
         output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.035;
         b6 = white * 0.115926;
       }
@@ -1608,8 +1667,8 @@ function createSkyAndBirdsAudio() {
 }
 
 export interface CreateTowerOptions {
-  listings?: Listing[];
-  onFloorHover?: (data: { listing: Listing; rank: number; pinned?: boolean } | null) => void;
+  listings?: Floor[];
+  onFloorHover?: (data: { listing: Floor; rank: number; pinned?: boolean } | null) => void;
   theme?: "dark" | "sunset";
   onLoaded?: () => void;
 }
@@ -1617,14 +1676,19 @@ export interface CreateTowerOptions {
 export function createTower(container: HTMLElement, options?: CreateTowerOptions): TowerHandle {
   const onFloorHover = options?.onFloorHover;
   let currentTheme: "dark" | "sunset" = options?.theme || "sunset";
-  const disposables: (THREE.Material | THREE.BufferGeometry | THREE.Texture | { dispose: () => void })[] = [];
+  const disposables: (
+    | THREE.Material
+    | THREE.BufferGeometry
+    | THREE.Texture
+    | { dispose: () => void }
+  )[] = [];
 
   const skyAndBirdsAudio = createSkyAndBirdsAudio();
 
   const isMobileDevice = typeof window !== "undefined" && window.innerWidth < 768;
 
   const renderer = new THREE.WebGLRenderer({
-    antialias: true,   // always on — topfloor.company uses this too
+    antialias: true, // always on — topfloor.company uses this too
     alpha: true,
     powerPreference: "high-performance",
   });
@@ -1647,8 +1711,8 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   disposables.push(pmremGenerator, roomTex);
 
   // Tower Geometry Parameters (100% Dynamic to any listings count)
-  const rawListings = options?.listings ?? INITIAL_LISTINGS;
-  let listings: Listing[] = [...rawListings].reverse();
+  const rawListings = options?.listings ?? [];
+  let listings: Floor[] = [...rawListings].reverse();
   const floorCount = listings.length;
   const BASE_HEIGHT = 2.4;
   const FLOOR_PITCH = 2.45;
@@ -1682,49 +1746,53 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   const roofLight = new THREE.DirectionalLight(0xffe2b8, 1.5);
   const re = (55 * Math.PI) / 180;
   const rt = (45 * Math.PI) / 180;
-  roofLight.position.set(Math.cos(re) * Math.cos(rt) * 40, roofY + 40 * Math.sin(rt), Math.sin(re) * Math.cos(rt) * 40);
+  roofLight.position.set(
+    Math.cos(re) * Math.cos(rt) * 40,
+    roofY + 40 * Math.sin(rt),
+    Math.sin(re) * Math.cos(rt) * 40
+  );
   roofLight.target.position.set(0, roofY, 0);
   scene.add(roofLight, roofLight.target);
 
-function createStarTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = 32;
-  canvas.height = 32;
-  const ctx = canvas.getContext("2d")!;
-  const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-  grad.addColorStop(0, "rgba(255, 255, 255, 1)");
-  grad.addColorStop(0.35, "rgba(225, 240, 255, 0.85)");
-  grad.addColorStop(0.7, "rgba(180, 215, 255, 0.25)");
-  grad.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 32, 32);
-  return makeCanvasTexture(canvas);
-}
-
-function createMoonTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 256;
-  const ctx = canvas.getContext("2d")!;
-  const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
-  grad.addColorStop(0, "#ffffff");
-  grad.addColorStop(0.5, "#fffbee");
-  grad.addColorStop(0.85, "#faeac4");
-  grad.addColorStop(1, "#eed496");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 256, 256);
-
-  ctx.fillStyle = "rgba(180, 155, 110, 0.14)";
-  for (let i = 0; i < 20; i++) {
-    const cx = 40 + Math.random() * 176;
-    const cy = 40 + Math.random() * 176;
-    const cr = 8 + Math.random() * 20;
-    ctx.beginPath();
-    ctx.arc(cx, cy, cr, 0, Math.PI * 2);
-    ctx.fill();
+  function createStarTexture(): THREE.CanvasTexture {
+    const canvas = document.createElement("canvas");
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext("2d")!;
+    const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    grad.addColorStop(0, "rgba(255, 255, 255, 1)");
+    grad.addColorStop(0.35, "rgba(225, 240, 255, 0.85)");
+    grad.addColorStop(0.7, "rgba(180, 215, 255, 0.25)");
+    grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 32, 32);
+    return makeCanvasTexture(canvas);
   }
-  return makeCanvasTexture(canvas);
-}
+
+  function createMoonTexture(): THREE.CanvasTexture {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d")!;
+    const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    grad.addColorStop(0, "#ffffff");
+    grad.addColorStop(0.5, "#fffbee");
+    grad.addColorStop(0.85, "#faeac4");
+    grad.addColorStop(1, "#eed496");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+
+    ctx.fillStyle = "rgba(180, 155, 110, 0.14)";
+    for (let i = 0; i < 20; i++) {
+      const cx = 40 + Math.random() * 176;
+      const cy = 40 + Math.random() * 176;
+      const cr = 8 + Math.random() * 20;
+      ctx.beginPath();
+      ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    return makeCanvasTexture(canvas);
+  }
 
   // Penthouse Interior Warm Glow Light
   const penthouseInteriorLight = new THREE.PointLight(0xffb84d, 3.5, 30);
@@ -1878,8 +1946,6 @@ function createMoonTexture(): THREE.CanvasTexture {
   }
   scene.add(brandingGroup);
 
-
-
   // Plaza Trees
   const treeCoords = [
     [-13, 6, 1.5],
@@ -1895,7 +1961,11 @@ function createMoonTexture(): THREE.CanvasTexture {
 
   // 2. Tower Slabs (Instanced Meshes)
   const slabGeo = new THREE.BoxGeometry(TOWER_WIDTH + 0.3, SLAB_HEIGHT, TOWER_WIDTH + 0.3);
-  const slabMat = new THREE.MeshStandardMaterial({ color: 0xdfe3e8, roughness: 0.45, metalness: 0.55 });
+  const slabMat = new THREE.MeshStandardMaterial({
+    color: 0xdfe3e8,
+    roughness: 0.45,
+    metalness: 0.55,
+  });
   const slabInstMesh = new THREE.InstancedMesh(slabGeo, slabMat, floorCount + 2);
   slabInstMesh.castShadow = true;
   slabInstMesh.receiveShadow = true;
@@ -1924,12 +1994,16 @@ function createMoonTexture(): THREE.CanvasTexture {
     texture: THREE.CanvasTexture;
     hiringBadge: THREE.Group | null;
     floorIndex: number;
-    listing: Listing;
+    listing: Floor;
   }[] = [];
 
   const topBottomMat = new THREE.MeshStandardMaterial({ color: 0xc8cdd3, roughness: 0.7 });
   const hiringTex = createHiringTexture();
-  const hiringMat = new THREE.MeshStandardMaterial({ map: hiringTex, roughness: 0.35, metalness: 0.15 });
+  const hiringMat = new THREE.MeshStandardMaterial({
+    map: hiringTex,
+    roughness: 0.35,
+    metalness: 0.15,
+  });
   const hiringBackMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
   const hiringCordMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
   disposables.push(topBottomMat, hiringTex, hiringMat, hiringBackMat, hiringCordMat);
@@ -1939,9 +2013,16 @@ function createMoonTexture(): THREE.CanvasTexture {
 
   const logoImagesCache = new Map<string, HTMLImageElement>();
 
-  function getOrLoadLogo(urlOrDomain: string, onLoaded?: () => void, customLogoUrl?: string | null): HTMLImageElement | null {
+  function getOrLoadLogo(
+    urlOrDomain: string,
+    onLoaded?: () => void,
+    customLogoUrl?: string | null
+  ): HTMLImageElement | null {
     if (!urlOrDomain) return null;
-    const clean = urlOrDomain.replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./, "");
+    const clean = urlOrDomain
+      .replace(/^https?:\/\//i, "")
+      .split("/")[0]
+      .replace(/^www\./, "");
     const cacheKey = customLogoUrl || clean;
     if (logoImagesCache.has(cacheKey)) return logoImagesCache.get(cacheKey)!;
 
@@ -1956,8 +2037,6 @@ function createMoonTexture(): THREE.CanvasTexture {
 
     if (customLogoUrl) {
       img.src = customLogoUrl;
-    } else if (AVAILABLE_LOGOS.has(clean)) {
-      img.src = `/company-logos/${clean}.jpg`;
     } else {
       img.src = `https://www.google.com/s2/favicons?domain=${clean}&sz=128`;
     }
@@ -2006,10 +2085,16 @@ function createMoonTexture(): THREE.CanvasTexture {
     const ctx = canvas.getContext("2d")!;
     const repaintFloor = () => {
       const currentListing = listings[fIdx] || listing;
-      const logo = getOrLoadLogo(currentListing.url_or_handle, () => {
-        paintFloorTexture(ctx, CANVAS_SCALE, currentListing, rank, fIdx, logo, currentTheme);
-        texture.needsUpdate = true;
-      }, currentListing.logoUrl || currentListing.logo_url || currentListing.image_url);
+      const floorUrl = getFloorCompanyUrl(currentListing);
+      const floorLogo = currentListing?.logoUrl || (currentListing as any)?.logo_url || null;
+      const logo = getOrLoadLogo(
+        floorUrl,
+        () => {
+          paintFloorTexture(ctx, CANVAS_SCALE, currentListing, rank, fIdx, logo, currentTheme);
+          texture.needsUpdate = true;
+        },
+        floorLogo
+      );
       paintFloorTexture(ctx, CANVAS_SCALE, currentListing, rank, fIdx, logo, currentTheme);
       texture.needsUpdate = true;
     };
@@ -2045,15 +2130,22 @@ function createMoonTexture(): THREE.CanvasTexture {
     scene.add(floorMesh);
 
     let hiringBadge: THREE.Group | null = null;
-    if (listing.hiring) {
+    if ((listing as any).hiring) {
       hiringBadge = new THREE.Group();
-      const sign = new THREE.Mesh(
-        new THREE.BoxGeometry(1.6, 0.7, 0.04),
-        [hiringBackMat, hiringBackMat, hiringBackMat, hiringBackMat, hiringMat, hiringMat]
-      );
+      const sign = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 0.04), [
+        hiringBackMat,
+        hiringBackMat,
+        hiringBackMat,
+        hiringBackMat,
+        hiringMat,
+        hiringMat,
+      ]);
       sign.castShadow = true;
       for (const side of [-1, 1]) {
-        const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.94, 5), hiringCordMat);
+        const cord = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.012, 0.012, 0.94, 5),
+          hiringCordMat
+        );
         cord.position.set(0.36 * side, 0.65, 0);
         cord.rotation.z = side * Math.atan2(0.72, 0.6);
         hiringBadge.add(cord);
@@ -2110,8 +2202,16 @@ function createMoonTexture(): THREE.CanvasTexture {
   const floorMeshes = [...allFloors.map((f) => f.mesh), penthouseMesh];
 
   // Executive CEO Boardroom Conference Table
-  const tableMat = new THREE.MeshStandardMaterial({ color: 0x181a22, roughness: 0.25, metalness: 0.25 });
-  const tableLegMat = new THREE.MeshStandardMaterial({ color: 0xd4d8de, roughness: 0.2, metalness: 0.85 });
+  const tableMat = new THREE.MeshStandardMaterial({
+    color: 0x181a22,
+    roughness: 0.25,
+    metalness: 0.25,
+  });
+  const tableLegMat = new THREE.MeshStandardMaterial({
+    color: 0xd4d8de,
+    roughness: 0.2,
+    metalness: 0.85,
+  });
   const tableTop = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.08, 1.8), tableMat);
   tableTop.position.set(0, penthouseY + SLAB_HEIGHT + 0.68, 0);
   tableTop.castShadow = true;
@@ -2184,7 +2284,11 @@ function createMoonTexture(): THREE.CanvasTexture {
   disposables.push(videoTex);
   const videoBoardMat = new THREE.MeshStandardMaterial({ map: videoTex, roughness: 0.35 });
   disposables.push(videoBoardMat);
-  const videoFrameMat = new THREE.MeshStandardMaterial({ color: 0x111622, roughness: 0.4, metalness: 0.8 });
+  const videoFrameMat = new THREE.MeshStandardMaterial({
+    color: 0x111622,
+    roughness: 0.4,
+    metalness: 0.8,
+  });
   disposables.push(videoFrameMat);
 
   // 16:9 Aspect Ratio Display: Width 4.0, Height 2.25, centered vertically (leaving 0.475m breathing space top and bottom)
@@ -2243,7 +2347,11 @@ function createMoonTexture(): THREE.CanvasTexture {
   disposables.push(billboardGeo, billboardMat);
 
   // Heavy Structural Steel Billboard Support Posts & Bracing (Firmly attached to billboard frame)
-  const legMat = new THREE.MeshStandardMaterial({ color: 0x181a20, roughness: 0.35, metalness: 0.8 });
+  const legMat = new THREE.MeshStandardMaterial({
+    color: 0x181a20,
+    roughness: 0.35,
+    metalness: 0.8,
+  });
   for (const lx of [-2.8, 2.8]) {
     // Vertical structural steel column extending from roof deck directly into billboard bottom frame
     const leg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.4, 0.2), legMat);
@@ -2382,43 +2490,203 @@ function createMoonTexture(): THREE.CanvasTexture {
 
   const crowdSpecs = [
     // --- 1. Front Plaza Gathering (Watching #1 and Top Startups) ---
-    { x: -3.6, z: 8.8, suit: 0x1f2937, pant: 0x111827, skin: 0xdfa37a, hair: 0x1e1610, hasPhone: true },
-    { x: -2.4, z: 9.4, suit: 0xff6b1a, pant: 0x374151, skin: 0xfcd34d, hair: 0x451a03, isPointing: true },
+    {
+      x: -3.6,
+      z: 8.8,
+      suit: 0x1f2937,
+      pant: 0x111827,
+      skin: 0xdfa37a,
+      hair: 0x1e1610,
+      hasPhone: true,
+    },
+    {
+      x: -2.4,
+      z: 9.4,
+      suit: 0xff6b1a,
+      pant: 0x374151,
+      skin: 0xfcd34d,
+      hair: 0x451a03,
+      isPointing: true,
+    },
     { x: -1.2, z: 8.6, suit: 0x1e3a8a, pant: 0x1f2937, skin: 0xd97706, hair: 0x18181b },
-    { x: 0.2, z: 9.2, suit: 0x047857, pant: 0x111827, skin: 0xfde047, hair: 0x78350f, hasPhone: true },
-    { x: 1.4, z: 8.5, suit: 0x7f1d1d, pant: 0x374151, skin: 0xb45309, hair: 0x09090b, isPointing: true },
+    {
+      x: 0.2,
+      z: 9.2,
+      suit: 0x047857,
+      pant: 0x111827,
+      skin: 0xfde047,
+      hair: 0x78350f,
+      hasPhone: true,
+    },
+    {
+      x: 1.4,
+      z: 8.5,
+      suit: 0x7f1d1d,
+      pant: 0x374151,
+      skin: 0xb45309,
+      hair: 0x09090b,
+      isPointing: true,
+    },
     { x: 2.6, z: 9.4, suit: 0x475569, pant: 0x1e293b, skin: 0xdfa37a, hair: 0x292524 },
-    { x: 3.8, z: 8.8, suit: 0xff8c42, pant: 0x111827, skin: 0xfcd34d, hair: 0x1e1610, hasPhone: true },
+    {
+      x: 3.8,
+      z: 8.8,
+      suit: 0xff8c42,
+      pant: 0x111827,
+      skin: 0xfcd34d,
+      hair: 0x1e1610,
+      hasPhone: true,
+    },
     { x: -2.0, z: 7.8, suit: 0x2563eb, pant: 0x1f2937, skin: 0xd97706, hair: 0x3f3f46 },
-    { x: -0.6, z: 7.6, suit: 0xe2e8f0, pant: 0x111827, skin: 0xdfa37a, hair: 0x1c1917, isPointing: true },
+    {
+      x: -0.6,
+      z: 7.6,
+      suit: 0xe2e8f0,
+      pant: 0x111827,
+      skin: 0xdfa37a,
+      hair: 0x1c1917,
+      isPointing: true,
+    },
     { x: 0.8, z: 7.6, suit: 0x5b21b6, pant: 0x374151, skin: 0xfde047, hair: 0x451a03 },
-    { x: 2.2, z: 7.8, suit: 0x059669, pant: 0x111827, skin: 0xb45309, hair: 0x18181b, hasPhone: true },
+    {
+      x: 2.2,
+      z: 7.8,
+      suit: 0x059669,
+      pant: 0x111827,
+      skin: 0xb45309,
+      hair: 0x18181b,
+      hasPhone: true,
+    },
 
     // --- 2. Left Plaza Walkway (Founders & Spectators Gazing Up) ---
-    { x: -8.8, z: 3.6, suit: 0x1e3a8a, pant: 0x111827, skin: 0xfcd34d, hair: 0x1e1610, hasPhone: true },
-    { x: -8.4, z: 2.0, suit: 0xff6b1a, pant: 0x374151, skin: 0xdfa37a, hair: 0x451a03, isPointing: true },
+    {
+      x: -8.8,
+      z: 3.6,
+      suit: 0x1e3a8a,
+      pant: 0x111827,
+      skin: 0xfcd34d,
+      hair: 0x1e1610,
+      hasPhone: true,
+    },
+    {
+      x: -8.4,
+      z: 2.0,
+      suit: 0xff6b1a,
+      pant: 0x374151,
+      skin: 0xdfa37a,
+      hair: 0x451a03,
+      isPointing: true,
+    },
     { x: -8.8, z: 0.2, suit: 0x047857, pant: 0x1f2937, skin: 0xd97706, hair: 0x18181b },
-    { x: -8.4, z: -1.6, suit: 0x7f1d1d, pant: 0x111827, skin: 0xfde047, hair: 0x78350f, hasPhone: true },
+    {
+      x: -8.4,
+      z: -1.6,
+      suit: 0x7f1d1d,
+      pant: 0x111827,
+      skin: 0xfde047,
+      hair: 0x78350f,
+      hasPhone: true,
+    },
     { x: -8.8, z: -3.4, suit: 0x475569, pant: 0x374151, skin: 0xb45309, hair: 0x09090b },
-    { x: -7.5, z: 2.8, suit: 0x2563eb, pant: 0x1e293b, skin: 0xdfa37a, hair: 0x292524, isPointing: true },
+    {
+      x: -7.5,
+      z: 2.8,
+      suit: 0x2563eb,
+      pant: 0x1e293b,
+      skin: 0xdfa37a,
+      hair: 0x292524,
+      isPointing: true,
+    },
     { x: -7.5, z: -0.6, suit: 0xe2e8f0, pant: 0x111827, skin: 0xfcd34d, hair: 0x1e1610 },
-    { x: -7.5, z: -2.4, suit: 0x5b21b6, pant: 0x374151, skin: 0xd97706, hair: 0x3f3f46, hasPhone: true },
+    {
+      x: -7.5,
+      z: -2.4,
+      suit: 0x5b21b6,
+      pant: 0x374151,
+      skin: 0xd97706,
+      hair: 0x3f3f46,
+      hasPhone: true,
+    },
 
     // --- 3. Right Plaza Walkway (Audience & Visitors Looking Up) ---
-    { x: 8.8, z: 3.6, suit: 0xff8c42, pant: 0x111827, skin: 0xdfa37a, hair: 0x1c1917, isPointing: true },
-    { x: 8.4, z: 2.0, suit: 0x1f2937, pant: 0x374151, skin: 0xfde047, hair: 0x451a03, hasPhone: true },
+    {
+      x: 8.8,
+      z: 3.6,
+      suit: 0xff8c42,
+      pant: 0x111827,
+      skin: 0xdfa37a,
+      hair: 0x1c1917,
+      isPointing: true,
+    },
+    {
+      x: 8.4,
+      z: 2.0,
+      suit: 0x1f2937,
+      pant: 0x374151,
+      skin: 0xfde047,
+      hair: 0x451a03,
+      hasPhone: true,
+    },
     { x: 8.8, z: 0.2, suit: 0x1e3a8a, pant: 0x1f2937, skin: 0xb45309, hair: 0x18181b },
-    { x: 8.4, z: -1.6, suit: 0x047857, pant: 0x111827, skin: 0xfcd34d, hair: 0x78350f, isPointing: true },
+    {
+      x: 8.4,
+      z: -1.6,
+      suit: 0x047857,
+      pant: 0x111827,
+      skin: 0xfcd34d,
+      hair: 0x78350f,
+      isPointing: true,
+    },
     { x: 8.8, z: -3.4, suit: 0x7f1d1d, pant: 0x374151, skin: 0xd97706, hair: 0x09090b },
-    { x: 7.5, z: 2.8, suit: 0x059669, pant: 0x1e293b, skin: 0xdfa37a, hair: 0x292524, hasPhone: true },
+    {
+      x: 7.5,
+      z: 2.8,
+      suit: 0x059669,
+      pant: 0x1e293b,
+      skin: 0xdfa37a,
+      hair: 0x292524,
+      hasPhone: true,
+    },
     { x: 7.5, z: -0.6, suit: 0x2563eb, pant: 0x111827, skin: 0xfde047, hair: 0x1e1610 },
-    { x: 7.5, z: -2.4, suit: 0xff6b1a, pant: 0x374151, skin: 0xb45309, hair: 0x3f3f46, isPointing: true },
+    {
+      x: 7.5,
+      z: -2.4,
+      suit: 0xff6b1a,
+      pant: 0x374151,
+      skin: 0xb45309,
+      hair: 0x3f3f46,
+      isPointing: true,
+    },
 
     // --- 4. Plaza Corner Clusters ---
-    { x: -5.8, z: 7.8, suit: 0x475569, pant: 0x111827, skin: 0xdfa37a, hair: 0x1c1917, hasPhone: true },
+    {
+      x: -5.8,
+      z: 7.8,
+      suit: 0x475569,
+      pant: 0x111827,
+      skin: 0xdfa37a,
+      hair: 0x1c1917,
+      hasPhone: true,
+    },
     { x: 5.8, z: 7.8, suit: 0x5b21b6, pant: 0x1f2937, skin: 0xfcd34d, hair: 0x451a03 },
-    { x: -5.8, z: -6.8, suit: 0x1e3a8a, pant: 0x374151, skin: 0xd97706, hair: 0x18181b, isPointing: true },
-    { x: 5.8, z: -6.8, suit: 0x047857, pant: 0x111827, skin: 0xb45309, hair: 0x78350f, hasPhone: true },
+    {
+      x: -5.8,
+      z: -6.8,
+      suit: 0x1e3a8a,
+      pant: 0x374151,
+      skin: 0xd97706,
+      hair: 0x18181b,
+      isPointing: true,
+    },
+    {
+      x: 5.8,
+      z: -6.8,
+      suit: 0x047857,
+      pant: 0x111827,
+      skin: 0xb45309,
+      hair: 0x78350f,
+      hasPhone: true,
+    },
   ];
 
   for (const spec of crowdSpecs) {
@@ -2449,7 +2717,12 @@ function createMoonTexture(): THREE.CanvasTexture {
   scene.add(crowdGroup);
 
   // 9. Camera & Controls Setup
-  const camera = new THREE.PerspectiveCamera(38, container.clientWidth / container.clientHeight, 0.1, 500);
+  const camera = new THREE.PerspectiveCamera(
+    38,
+    container.clientWidth / container.clientHeight,
+    0.1,
+    500
+  );
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = false;
   controls.enablePan = false;
@@ -2474,7 +2747,7 @@ function createMoonTexture(): THREE.CanvasTexture {
     const policyLinksBottomPx = isMobile ? 312 : 318;
     const topFraction = (policyLinksBottomPx + 8) / h;
     // Helicopter top rotor is at totalHeight + 4.52
-    return (totalHeight + 4.52) - (0.5 - topFraction) * fovY;
+    return totalHeight + 4.52 - (0.5 - topFraction) * fovY;
   }
 
   const restingTargetY = calculateRestingTargetY();
@@ -2505,7 +2778,9 @@ function createMoonTexture(): THREE.CanvasTexture {
   // Position camera at start
   const targetVec = new THREE.Vector3(0, travelY, 0);
   controls.target.copy(targetVec);
-  camera.position.setFromSphericalCoords(zoomDist, 0.5 * Math.PI - restingTilt, initialAzimuth).add(targetVec);
+  camera.position
+    .setFromSphericalCoords(zoomDist, 0.5 * Math.PI - restingTilt, initialAzimuth)
+    .add(targetVec);
   controls.update();
 
   const applyTheme = (newTheme: "dark" | "sunset") => {
@@ -2541,11 +2816,33 @@ function createMoonTexture(): THREE.CanvasTexture {
     for (const slot of allFloors) {
       const ctx = slot.canvas.getContext("2d")!;
       const rank = floorCount - slot.floorIndex;
-      const logoImg = getOrLoadLogo(slot.listing.url_or_handle, () => {
-        paintFloorTexture(ctx, CANVAS_SCALE, slot.listing, rank, slot.floorIndex, logoImg, currentTheme);
-        slot.texture.needsUpdate = true;
-      }, slot.listing.logoUrl || slot.listing.logo_url || slot.listing.image_url);
-      paintFloorTexture(ctx, CANVAS_SCALE, slot.listing, rank, slot.floorIndex, logoImg, currentTheme);
+      const slotUrl = getFloorCompanyUrl(slot.listing);
+      const slotLogo = slot.listing?.logoUrl || (slot.listing as any)?.logo_url || null;
+      const logoImg = getOrLoadLogo(
+        slotUrl,
+        () => {
+          paintFloorTexture(
+            ctx,
+            CANVAS_SCALE,
+            slot.listing,
+            rank,
+            slot.floorIndex,
+            logoImg,
+            currentTheme
+          );
+          slot.texture.needsUpdate = true;
+        },
+        slotLogo
+      );
+      paintFloorTexture(
+        ctx,
+        CANVAS_SCALE,
+        slot.listing,
+        rank,
+        slot.floorIndex,
+        logoImg,
+        currentTheme
+      );
       slot.texture.needsUpdate = true;
     }
   };
@@ -2561,13 +2858,19 @@ function createMoonTexture(): THREE.CanvasTexture {
     if (e.metaKey || e.ctrlKey) {
       zoomDistTarget = THREE.MathUtils.clamp(zoomDistTarget + e.deltaY * 0.05, 14, 52);
     } else {
-      travelYTarget = THREE.MathUtils.clamp(travelYTarget - e.deltaY * 0.008, MIN_TRAVEL_Y, MAX_TRAVEL_Y);
+      travelYTarget = THREE.MathUtils.clamp(
+        travelYTarget - e.deltaY * 0.008,
+        MIN_TRAVEL_Y,
+        MAX_TRAVEL_Y
+      );
     }
   };
   renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
 
   // Helper: check if a raycast intersection hits a tower floor
-  function getFloorHit(hit: THREE.Intersection): { floorIndex: number; listing: Listing; rank: number } | null {
+  function getFloorHit(
+    hit: THREE.Intersection
+  ): { floorIndex: number; listing: Floor; rank: number } | null {
     if (hit.point.y < BASE_HEIGHT) return null;
 
     // Top penthouse boardroom / roof structure
@@ -2628,7 +2931,11 @@ function createMoonTexture(): THREE.CanvasTexture {
         cameraAzimuth -= deltaX * 0.0055;
 
         // Vertical drag: subtle, controlled range (~30px headroom and footroom)
-        travelYTarget = THREE.MathUtils.clamp(travelYTarget + deltaY * 0.022, MIN_TRAVEL_Y, MAX_TRAVEL_Y);
+        travelYTarget = THREE.MathUtils.clamp(
+          travelYTarget + deltaY * 0.022,
+          MIN_TRAVEL_Y,
+          MAX_TRAVEL_Y
+        );
 
         // Record recent move samples for release velocity
         moveHistory.push({ x: e.clientX, y: e.clientY, time: now });
@@ -2707,7 +3014,11 @@ function createMoonTexture(): THREE.CanvasTexture {
         // Vertical flick -> subtle, controlled glide
         if (Math.abs(vy) > 60) {
           const verticalGlide = vy * 0.006;
-          travelYTarget = THREE.MathUtils.clamp(travelYTarget + verticalGlide, MIN_TRAVEL_Y, MAX_TRAVEL_Y);
+          travelYTarget = THREE.MathUtils.clamp(
+            travelYTarget + verticalGlide,
+            MIN_TRAVEL_Y,
+            MAX_TRAVEL_Y
+          );
         }
       }
     } else if (dist < 10 && duration < 500) {
@@ -2816,17 +3127,29 @@ function createMoonTexture(): THREE.CanvasTexture {
     // Orbiting Aircraft & Birds
     const t = now * 0.001;
     const a1 = t * 0.18;
-    airplane1.plane.position.set(Math.cos(a1) * 22, roofY - 8 + Math.sin(t * 0.8) * 0.5, Math.sin(a1) * 22);
+    airplane1.plane.position.set(
+      Math.cos(a1) * 22,
+      roofY - 8 + Math.sin(t * 0.8) * 0.5,
+      Math.sin(a1) * 22
+    );
     airplane1.plane.rotation.y = -a1 + Math.PI;
     airplane1.prop.rotation.z += 30 * dt;
 
     const a2 = -t * 0.12;
-    airplane2.plane.position.set(Math.cos(a2) * 28, roofY - 24 + Math.sin(t * 0.6) * 0.8, Math.sin(a2) * 28);
+    airplane2.plane.position.set(
+      Math.cos(a2) * 28,
+      roofY - 24 + Math.sin(t * 0.6) * 0.8,
+      Math.sin(a2) * 28
+    );
     airplane2.plane.rotation.y = -a2;
     airplane2.prop.rotation.z += 30 * dt;
 
     const aBirds = t * 0.22;
-    birdsFlock.group.position.set(Math.cos(aBirds) * 34, roofY - 14 + Math.sin(t * 0.5) * 2.0, Math.sin(aBirds) * 34);
+    birdsFlock.group.position.set(
+      Math.cos(aBirds) * 34,
+      roofY - 14 + Math.sin(t * 0.5) * 2.0,
+      Math.sin(aBirds) * 34
+    );
     birdsFlock.group.rotation.y = -aBirds;
     for (let b = 0; b < birdsFlock.wings.length; b++) {
       const w = birdsFlock.wings[b];
@@ -2861,7 +3184,11 @@ function createMoonTexture(): THREE.CanvasTexture {
     if (loopT < 4.5) {
       // Phase 1: Climbing down the ladder from the helicopter door to helipad deck
       const p = loopT / 4.5;
-      juiceDrinker.group.position.set(ladderX, helipadLadderTopY - p * (helipadLadderTopY - helipadDeckY), ladderZ);
+      juiceDrinker.group.position.set(
+        ladderX,
+        helipadLadderTopY - p * (helipadLadderTopY - helipadDeckY),
+        ladderZ
+      );
       juiceDrinker.group.rotation.y = -Math.PI / 2;
       juiceDrinker.armGroup.rotation.x = Math.sin(loopT * 10) * 0.45 - 0.3;
       juiceDrinker.armGroup.rotation.y = 0;
@@ -2914,7 +3241,11 @@ function createMoonTexture(): THREE.CanvasTexture {
     } else {
       // Phase 5: Climbing back up the ladder into the helicopter
       const p = (loopT - 20.5) / 3.5;
-      juiceDrinker.group.position.set(ladderX, helipadDeckY + p * (helipadLadderTopY - helipadDeckY), ladderZ);
+      juiceDrinker.group.position.set(
+        ladderX,
+        helipadDeckY + p * (helipadLadderTopY - helipadDeckY),
+        ladderZ
+      );
       juiceDrinker.group.rotation.y = -Math.PI / 2;
       juiceDrinker.armGroup.rotation.x = Math.sin(loopT * 10) * 0.45 - 0.3;
       juiceDrinker.armGroup.rotation.y = 0;
@@ -2925,7 +3256,10 @@ function createMoonTexture(): THREE.CanvasTexture {
       const elapsed = now - introStartTime;
       const progress = Math.min(1, elapsed / INTRO_DURATION);
       // Smooth cubic bezier easing
-      const eased = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+      const eased =
+        progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
       travelY = 1.32 + (restingTargetY - 1.32) * eased;
       travelYTarget = travelY;
@@ -2980,7 +3314,10 @@ function createMoonTexture(): THREE.CanvasTexture {
 
     // Update home-tower-scrolled state for natural cloud fade
     const isScrolled = travelY < restingTargetY - 0.5;
-    if (typeof document !== "undefined" && document.body.classList.contains("home-tower-scrolled") !== isScrolled) {
+    if (
+      typeof document !== "undefined" &&
+      document.body.classList.contains("home-tower-scrolled") !== isScrolled
+    ) {
       document.body.classList.toggle("home-tower-scrolled", isScrolled);
     }
 
@@ -3039,7 +3376,11 @@ function createMoonTexture(): THREE.CanvasTexture {
     },
     moveFloors(dir) {
       inIntro = false;
-      travelYTarget = THREE.MathUtils.clamp(travelYTarget + dir * FLOOR_PITCH * 2, MIN_TRAVEL_Y, MAX_TRAVEL_Y);
+      travelYTarget = THREE.MathUtils.clamp(
+        travelYTarget + dir * FLOOR_PITCH * 2,
+        MIN_TRAVEL_Y,
+        MAX_TRAVEL_Y
+      );
       idleTime = 0;
     },
     toggleRotate() {
@@ -3061,7 +3402,7 @@ function createMoonTexture(): THREE.CanvasTexture {
     setTheme(theme) {
       applyTheme(theme);
     },
-    updateListings(newListings: Listing[]) {
+    updateListings(newListings: Floor[]) {
       if (Array.isArray(newListings) && newListings.length > 0) {
         listings = [...newListings].reverse();
         for (let i = 0; i < allFloors.length; i++) {

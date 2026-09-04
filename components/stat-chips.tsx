@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { RulerTall, Stack, Eye, Globe, Close, BarChart, ManageIcon } from "./icons";
-import { useUserAuth } from "@/lib/auth/use-user-auth";
+import { useUserStore } from "@/store/user-store";
+import { useFloorsStore } from "@/store/floors-store";
 
 interface LiveStatsState {
   online: number;
@@ -17,10 +18,19 @@ interface LiveStatsState {
 function getClientCountryGuess(): { code: string; name: string } | null {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-    if (tz.includes("Kolkata") || tz.includes("Calcutta") || tz.includes("India")) return { code: "IN", name: "India" };
-    if (tz.includes("New_York") || tz.includes("Los_Angeles") || tz.includes("Chicago") || tz.includes("America")) return { code: "US", name: "United States" };
-    if (tz.includes("London") || tz.includes("Europe/London")) return { code: "GB", name: "United Kingdom" };
-    if (tz.includes("Berlin") || tz.includes("Europe/Berlin")) return { code: "DE", name: "Germany" };
+    if (tz.includes("Kolkata") || tz.includes("Calcutta") || tz.includes("India"))
+      return { code: "IN", name: "India" };
+    if (
+      tz.includes("New_York") ||
+      tz.includes("Los_Angeles") ||
+      tz.includes("Chicago") ||
+      tz.includes("America")
+    )
+      return { code: "US", name: "United States" };
+    if (tz.includes("London") || tz.includes("Europe/London"))
+      return { code: "GB", name: "United Kingdom" };
+    if (tz.includes("Berlin") || tz.includes("Europe/Berlin"))
+      return { code: "DE", name: "Germany" };
     if (tz.includes("Paris") || tz.includes("Europe/Paris")) return { code: "FR", name: "France" };
     if (tz.includes("Tokyo") || tz.includes("Asia/Tokyo")) return { code: "JP", name: "Japan" };
     if (tz.includes("Singapore")) return { code: "SG", name: "Singapore" };
@@ -73,19 +83,17 @@ export function useLiveStats(initialHeightFt = 731) {
           }),
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.stats) {
-            setStats({
-              online: data.stats.online,
-              heightFt: data.stats.heightFt || initialHeightFt,
-              claimedFloors: data.stats.claimedFloors,
-              totalFloors: data.stats.totalFloors || 50,
-              totalViews: data.stats.totalViews,
-              countriesCount: data.stats.countriesCount,
-              mounted: true,
-            });
-          }
+        const data = await res.json();
+        if (data.success && data.stats) {
+          setStats({
+            online: data.stats.online,
+            heightFt: data.stats.heightFt || initialHeightFt,
+            claimedFloors: data.stats.claimedFloors,
+            totalFloors: data.stats.totalFloors || 50,
+            totalViews: data.stats.totalViews,
+            countriesCount: data.stats.countriesCount,
+            mounted: true,
+          });
         }
       } catch (err) {
         console.warn("Could not sync live stats:", err);
@@ -114,7 +122,7 @@ export function useLiveStats(initialHeightFt = 731) {
   return stats;
 }
 
-export default function StatChips({
+export function StatChips({
   heightFt = 731,
   onOpenManage,
 }: {
@@ -122,7 +130,8 @@ export default function StatChips({
   onOpenManage?: () => void;
 }) {
   const stats = useLiveStats(typeof heightFt === "number" ? heightFt : 731);
-  const { user, ownedFloors, login } = useUserAuth();
+  const { user, login } = useUserStore();
+  const { ownedFloors } = useFloorsStore();
 
   const chips = [
     ...(user
@@ -132,40 +141,56 @@ export default function StatChips({
             className: "user-profile-chip",
             onClick: onOpenManage,
             title: "Manage your claimed startup floors",
-            render: () => (
-              <>
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt={user.name || "Founder"}
-                    style={{ width: "16px", height: "16px", borderRadius: "50%" }}
-                  />
-                ) : (
-                  <span
-                    style={{
-                      width: "16px",
-                      height: "16px",
-                      borderRadius: "50%",
-                      background: "#ff9f43",
-                      color: "#000",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "9px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {(user.name || user.email).charAt(0).toUpperCase()}
-                  </span>
-                )}
-                <span>Manage</span>
-                {ownedFloors.length > 0 && (
-                  <span style={{ fontSize: "10.5px", opacity: 0.85, background: "rgba(255,159,67,0.25)", padding: "1px 6px", borderRadius: "999px" }}>
-                    {ownedFloors.length}
-                  </span>
-                )}
-              </>
-            ),
+            render: () => {
+              const userPhoto = user.image || user.avatarUrl;
+              return (
+                <>
+                  {userPhoto ? (
+                    <img
+                      src={userPhoto}
+                      alt={user.name || user.email || "Founder"}
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <span
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        borderRadius: "50%",
+                        background: "#ff9f43",
+                        color: "#000",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "9px",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {(user.name || user.email).charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <span>Manage</span>
+                  {ownedFloors.length > 0 && (
+                    <span
+                      style={{
+                        fontSize: "10.5px",
+                        opacity: 0.85,
+                        background: "rgba(255,159,67,0.25)",
+                        padding: "1px 6px",
+                        borderRadius: "999px",
+                      }}
+                    >
+                      {ownedFloors.length}
+                    </span>
+                  )}
+                </>
+              );
+            },
           },
         ]
       : [
@@ -187,7 +212,8 @@ export default function StatChips({
       className: "online",
       render: () => (
         <>
-          <span className="dot" /> <span className="num">{stats.mounted ? stats.online : 1}</span> online
+          <span className="dot" /> <span className="num">{stats.mounted ? stats.online : 1}</span>{" "}
+          online
         </>
       ),
     },
@@ -203,7 +229,8 @@ export default function StatChips({
       key: "claimed",
       render: () => (
         <>
-          <Stack /> <span className="num">{stats.mounted ? stats.claimedFloors : 0}</span> floors claimed
+          <Stack /> <span className="num">{stats.mounted ? stats.claimedFloors : 0}</span> floors
+          claimed
         </>
       ),
     },
@@ -211,7 +238,11 @@ export default function StatChips({
       key: "viewed",
       render: () => (
         <>
-          <Eye /> <span className="num" suppressHydrationWarning>{(stats.mounted ? stats.totalViews : 0).toLocaleString()}</span> visitors since launch
+          <Eye />{" "}
+          <span className="num" suppressHydrationWarning>
+            {(stats.mounted ? stats.totalViews : 0).toLocaleString()}
+          </span>{" "}
+          visitors since launch
         </>
       ),
     },
@@ -219,7 +250,8 @@ export default function StatChips({
       key: "countries",
       render: () => (
         <>
-          <Globe /> <span className="num">{stats.mounted ? stats.countriesCount : 1}</span> {stats.countriesCount === 1 ? "country" : "countries"} visited from
+          <Globe /> <span className="num">{stats.mounted ? stats.countriesCount : 1}</span>{" "}
+          {stats.countriesCount === 1 ? "country" : "countries"} visited from
         </>
       ),
     },
@@ -230,9 +262,19 @@ export default function StatChips({
           href="https://bharathunt.org"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center", gap: "6px" }}
+          style={{
+            textDecoration: "none",
+            color: "inherit",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+          }}
         >
-          <span className="avatar" style={{ background: "linear-gradient(135deg,#ffd27c,#ff9f43)" }} /> Backed by BharatHunt
+          <span
+            className="avatar"
+            style={{ background: "linear-gradient(135deg,#ffd27c,#ff9f43)" }}
+          />{" "}
+          Backed by BharatHunt
         </a>
       ),
     },
@@ -257,7 +299,11 @@ export default function StatChips({
         }
 
         return (
-          <span key={c.key} className={`chip ${c.className ?? ""}`} style={{ ["--i" as string]: i }}>
+          <span
+            key={c.key}
+            className={`chip ${c.className ?? ""}`}
+            style={{ ["--i" as string]: i }}
+          >
             {c.render()}
           </span>
         );
@@ -283,7 +329,7 @@ export function MobileStatsSheet({
     <div className="mobile-sheet-overlay" onClick={onClose}>
       <div className="mobile-sheet-content" onClick={(e) => e.stopPropagation()}>
         <div className="mobile-sheet-handle" />
-        
+
         <div className="mobile-sheet-header">
           <div className="mobile-sheet-title-row">
             <div className="mobile-sheet-icon">
@@ -323,7 +369,7 @@ export function MobileStatsSheet({
               <Stack />
               <span className="stat-card-badge">FLOORS</span>
             </div>
-            <div className="stat-card-value">{stats.mounted ? stats.claimedFloors : 0} / 50</div>
+            <div className="stat-card-value">{stats.mounted ? stats.claimedFloors : 0}</div>
             <div className="stat-card-label">Real claimed skyscraper floors</div>
           </div>
 
@@ -344,9 +390,12 @@ export function MobileStatsSheet({
               <span className="stat-card-badge">GLOBAL REACH</span>
             </div>
             <div className="stat-card-value">
-              {stats.mounted ? stats.countriesCount : 1} {stats.countriesCount === 1 ? "Country" : "Countries"}
+              {stats.mounted ? stats.countriesCount : 1}{" "}
+              {stats.countriesCount === 1 ? "Country" : "Countries"}
             </div>
-            <div className="stat-card-label">Countries visited from to explore startups on GeTopFloor</div>
+            <div className="stat-card-label">
+              Countries visited from to explore startups on GeTopFloor
+            </div>
           </div>
         </div>
 
@@ -356,9 +405,19 @@ export function MobileStatsSheet({
             target="_blank"
             rel="noopener noreferrer"
             className="badge-pill"
-            style={{ textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center", gap: "6px" }}
+            style={{
+              textDecoration: "none",
+              color: "inherit",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
           >
-            <span className="avatar" style={{ background: "linear-gradient(135deg,#ffd27c,#ff9f43)" }} /> Backed by BharatHunt
+            <span
+              className="avatar"
+              style={{ background: "linear-gradient(135deg,#ffd27c,#ff9f43)" }}
+            />{" "}
+            Backed by BharatHunt
           </a>
         </div>
       </div>

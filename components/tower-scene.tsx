@@ -2,20 +2,20 @@
 
 import { useEffect, useRef } from "react";
 import type { TowerHandle } from "@/lib/three/app";
-import type { HoverData } from "@/components/FloorHoverCard";
-import type { Listing } from "@/lib/three/listings";
+import type { HoverData } from "@/components/floor-hover-card";
+import type { Floor } from "@/lib/db/config/schema";
 
 export default function TowerScene({
   handleRef,
   onFloorHover,
   theme = "sunset",
-  listings,
+  floors,
   onLoaded,
 }: {
   handleRef: React.MutableRefObject<TowerHandle | null>;
   onFloorHover?: (data: HoverData | null) => void;
   theme?: "dark" | "sunset";
-  listings?: Listing[];
+  floors?: Floor[];
   onLoaded?: () => void;
 }) {
   const mount = useRef<HTMLDivElement>(null);
@@ -25,19 +25,19 @@ export default function TowerScene({
   const onFloorHoverRef = useRef(onFloorHover);
   onFloorHoverRef.current = onFloorHover;
 
-  const listingsRef = useRef(listings);
-  listingsRef.current = listings;
+  const floorsRef = useRef(floors);
+  floorsRef.current = floors;
 
   const prevFloorCountRef = useRef<number | null>(null);
 
-  // 1. Mount or rebuild Three.js Tower when listings are available or floor count changes
+  // 1. Mount or rebuild Three.js Tower when floors are available or floor count changes
   useEffect(() => {
-    if (!listings) return;
+    if (!floors) return;
     if (!mount.current) return;
 
     // If already mounted with the exact same floor count, just update textures
-    if (handleRef.current && prevFloorCountRef.current === listings.length) {
-      handleRef.current.updateListings?.(listings);
+    if (handleRef.current && prevFloorCountRef.current === floors.length) {
+      handleRef.current.updateListings?.(floors);
       return;
     }
 
@@ -47,7 +47,7 @@ export default function TowerScene({
       handleRef.current = null;
     }
 
-    prevFloorCountRef.current = listings.length;
+    prevFloorCountRef.current = floors.length;
     let disposed = false;
 
     import("@/lib/three/app").then(({ createTower }) => {
@@ -55,7 +55,7 @@ export default function TowerScene({
       const handle = createTower(mount.current, {
         onFloorHover: (data) => onFloorHoverRef.current?.(data),
         theme,
-        listings,
+        listings: floors,
         onLoaded: () => onLoadedRef.current?.(),
       });
       handleRef.current = handle;
@@ -64,14 +64,18 @@ export default function TowerScene({
     return () => {
       disposed = true;
     };
-  }, [listings?.length]);
+  }, [floors?.length]);
 
-  // 2. Reactively update listings when loaded without recreating the scene
+  // 2. Reactively update floors when loaded without recreating the scene
   useEffect(() => {
-    if (listings && handleRef.current?.updateListings && prevFloorCountRef.current === listings.length) {
-      handleRef.current.updateListings(listings);
+    if (
+      floors &&
+      handleRef.current?.updateListings &&
+      prevFloorCountRef.current === floors.length
+    ) {
+      handleRef.current.updateListings(floors);
     }
-  }, [listings]);
+  }, [floors]);
 
   // 3. Reactively update theme without recreating the scene
   useEffect(() => {

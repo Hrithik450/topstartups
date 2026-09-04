@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RulerTall, Stack, Eye, Globe, Close, BarChart, ManageIcon } from "./icons";
+import { RulerTall, Stack, Eye, Globe, Close, BarChart, ManageIcon, Rupee } from "./icons";
 import { useUserStore } from "@/store/user-store";
 import { useFloorsStore } from "@/store/floors-store";
 import { useStatsStore } from "@/store/stats-store";
@@ -98,9 +98,13 @@ export function useLiveStats(customHeightFt?: number | string) {
       ? stats.heightFt
       : calculateTowerHeightFt(0);
 
+  const activeFloorsSales = floors.reduce((sum, f) => sum + Number(f.pricePaid || 0), 0);
+  const dynamicSales = Math.max(stats.totalSales || 0, activeFloorsSales);
+
   return {
     ...stats,
     heightFt: dynamicHeight,
+    totalSales: dynamicSales,
     mounted: mounted || isStatsReady,
   };
 }
@@ -218,6 +222,18 @@ export function StatChips({
       ),
     },
     {
+      key: "sales",
+      render: () => (
+        <>
+          <Rupee />{" "}
+          <span className="num" suppressHydrationWarning>
+            ₹{(stats.mounted ? stats.totalSales : 0).toLocaleString("en-IN")}
+          </span>{" "}
+          sales made
+        </>
+      ),
+    },
+    {
       key: "viewed",
       render: () => (
         <>
@@ -328,14 +344,25 @@ export function MobileStatsSheet({
           </button>
         </div>
 
-        <div className="mobile-sheet-body">
-          <div className="mobile-stat-card">
+        <div className="mobile-stats-grid">
+          <div className="mobile-stat-card highlight">
             <div className="stat-card-top">
               <span className="dot" />
               <span className="stat-card-badge">LIVE TRAFFIC</span>
             </div>
             <div className="stat-card-value">{stats.mounted ? stats.online : 1}</div>
             <div className="stat-card-label">Active founders &amp; users online now</div>
+          </div>
+
+          <div className="mobile-stat-card">
+            <div className="stat-card-top">
+              <Rupee />
+              <span className="stat-card-badge">SALES MADE</span>
+            </div>
+            <div className="stat-card-value" suppressHydrationWarning>
+              ₹{(stats.mounted ? stats.totalSales : 0).toLocaleString("en-IN")}
+            </div>
+            <div className="stat-card-label">Total platform sales made in INR</div>
           </div>
 
           <div className="mobile-stat-card">
@@ -367,7 +394,7 @@ export function MobileStatsSheet({
             <div className="stat-card-label">Visitors since launch across tower</div>
           </div>
 
-          <div className="mobile-stat-card full-span">
+          <div className="mobile-stat-card">
             <div className="stat-card-top">
               <Globe />
               <span className="stat-card-badge">GLOBAL REACH</span>

@@ -202,5 +202,11 @@ export const ChevronDown = () => (
   </svg>
 );
 
+export const Rupee = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 3h12M6 8h12M6 13l8.5 8M6 13h3a4.5 4.5 0 0 0 0-9" />
+  </svg>
+);
+
 
 

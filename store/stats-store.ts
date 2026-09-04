@@ -25,6 +25,7 @@ export const DEFAULT_STATS: LiveStatsData = {
   totalFloors: 0,
   totalViews: 0,
   countriesCount: 1,
+  totalSales: 0,
 };
 
 export const useStatsStore = create<StatsStore>()(

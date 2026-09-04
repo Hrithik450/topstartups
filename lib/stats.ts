@@ -10,6 +10,7 @@ export interface LiveStatsData {
   totalFloors: number;
   totalViews: number;
   countriesCount: number;
+  totalSales: number;
 }
 
 export function calculateTowerHeightFt(floorCount: number): number {

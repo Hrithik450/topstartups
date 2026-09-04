@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/config/client";
-import { siteStats, visitorCountries, sessions, floors } from "@/lib/db/config/schema";
+import { siteStats, visitorCountries, sessions, floors, claims } from "@/lib/db/config/schema";
 import { eq, sql, gt, count, isNotNull, and, isNull } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 
@@ -30,11 +30,25 @@ export class StatsModel {
 
           const onlineCount = Math.max(1, Number(activeRes[0]?.count || 0));
 
+          const claimsRes = await db
+            .select({
+              total: sql<number>`COALESCE(SUM(${claims.amount}), 0)::int`,
+            })
+            .from(claims)
+            .where(eq(claims.status, "succeeded"));
+
+          const claimsSales = Number(claimsRes[0]?.total || 0);
+
           const claimedRes = await db
-            .select({ count: count() })
+            .select({
+              count: count(),
+              total: sql<number>`COALESCE(SUM(${floors.pricePaid}), 0)::int`,
+            })
             .from(floors);
 
           const claimedCount = Number(claimedRes[0]?.count || 0);
+          const floorsSales = Number(claimedRes[0]?.total || 0);
+          const totalSales = Math.max(claimsSales, floorsSales);
 
           const statsRes = await db
             .select()
@@ -58,6 +72,7 @@ export class StatsModel {
             totalFloors: claimedCount,
             totalViews,
             countriesCount,
+            totalSales,
           };
         } catch (err) {
           console.error("Error fetching live stats:", err);
@@ -68,6 +83,7 @@ export class StatsModel {
             totalFloors: 0,
             totalViews: 0,
             countriesCount: 1,
+            totalSales: 0,
           };
         }
       },

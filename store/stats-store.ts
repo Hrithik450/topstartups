@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { LiveStatsData } from "@/actions/stats/stats.service";
+import type { LiveStatsData } from "@/lib/stats";
+import { calculateTowerHeightFt } from "@/lib/stats";
 
 export type { LiveStatsData };
 
@@ -19,9 +20,9 @@ export interface StatsStore {
 
 export const DEFAULT_STATS: LiveStatsData = {
   online: 1,
-  heightFt: 731,
+  heightFt: calculateTowerHeightFt(0),
   claimedFloors: 0,
-  totalFloors: 50,
+  totalFloors: 0,
   totalViews: 0,
   countriesCount: 1,
 };
@@ -33,10 +34,19 @@ export const useStatsStore = create<StatsStore>()(
 
     setStats: (newStats) => {
       if (!newStats) return;
-      set((state) => ({
-        stats: { ...state.stats, ...newStats },
-        isStatsReady: true,
-      }));
+      set((state) => {
+        const merged = { ...state.stats, ...newStats };
+        const floorCount = merged.claimedFloors || merged.totalFloors || 0;
+        if (newStats.heightFt !== undefined) {
+          merged.heightFt = newStats.heightFt;
+        } else if (floorCount > 0) {
+          merged.heightFt = calculateTowerHeightFt(floorCount);
+        }
+        return {
+          stats: merged,
+          isStatsReady: true,
+        };
+      });
     },
 
     pingAndSync: async ({ sessionId, countryCode, countryName, isNewSession = false }) => {

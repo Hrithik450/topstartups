@@ -3,14 +3,9 @@ import { siteStats, visitorCountries, sessions, floors } from "@/lib/db/config/s
 import { eq, sql, gt, count, isNotNull, and, isNull } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 
-export interface LiveStatsData {
-  online: number;
-  heightFt: number;
-  claimedFloors: number;
-  totalFloors: number;
-  totalViews: number;
-  countriesCount: number;
-}
+import { calculateTowerHeightFt, type LiveStatsData } from "@/lib/stats";
+
+export type { LiveStatsData };
 
 export interface RecordVisitAndPingData {
   sessionId: string;
@@ -58,7 +53,7 @@ export class StatsModel {
 
           return {
             online: onlineCount,
-            heightFt: Math.max(731, claimedCount * 15),
+            heightFt: calculateTowerHeightFt(claimedCount),
             claimedFloors: claimedCount,
             totalFloors: claimedCount,
             totalViews,
@@ -68,7 +63,7 @@ export class StatsModel {
           console.error("Error fetching live stats:", err);
           return {
             online: 1,
-            heightFt: 731,
+            heightFt: calculateTowerHeightFt(0),
             claimedFloors: 0,
             totalFloors: 0,
             totalViews: 0,

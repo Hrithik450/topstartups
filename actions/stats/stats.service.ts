@@ -1,14 +1,9 @@
 import { z } from "zod";
 import { StatsModel, type RecordVisitAndPingData } from "./stats.model";
+import { calculateTowerHeightFt, type LiveStatsData } from "@/lib/stats";
 
-export interface LiveStatsData {
-  online: number;
-  heightFt: number;
-  claimedFloors: number;
-  totalFloors: number;
-  totalViews: number;
-  countriesCount: number;
-}
+export { calculateTowerHeightFt };
+export type { LiveStatsData };
 
 export interface StatsResponse {
   success: boolean;

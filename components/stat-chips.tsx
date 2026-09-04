@@ -5,6 +5,7 @@ import { RulerTall, Stack, Eye, Globe, Close, BarChart, ManageIcon } from "./ico
 import { useUserStore } from "@/store/user-store";
 import { useFloorsStore } from "@/store/floors-store";
 import { useStatsStore } from "@/store/stats-store";
+import { calculateTowerHeightFt } from "@/lib/stats";
 
 function getClientCountryGuess(): { code: string; name: string } | null {
   try {
@@ -34,8 +35,9 @@ function getClientCountryGuess(): { code: string; name: string } | null {
   }
 }
 
-export function useLiveStats(initialHeightFt = 731) {
+export function useLiveStats(customHeightFt?: number | string) {
   const { stats, isStatsReady, pingAndSync } = useStatsStore();
+  const { floors } = useFloorsStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -86,21 +88,29 @@ export function useLiveStats(initialHeightFt = 731) {
     return () => clearInterval(interval);
   }, [pingAndSync]);
 
+  const activeFloorCount = floors.length > 0 ? floors.length : stats.claimedFloors;
+  const dynamicHeight =
+    typeof customHeightFt === "number"
+      ? customHeightFt
+      : activeFloorCount > 0
+      ? calculateTowerHeightFt(activeFloorCount)
+      : stats.heightFt || calculateTowerHeightFt(0);
+
   return {
     ...stats,
-    heightFt: stats.heightFt || initialHeightFt,
+    heightFt: dynamicHeight,
     mounted: mounted || isStatsReady,
   };
 }
 
 export function StatChips({
-  heightFt = 731,
+  heightFt,
   onOpenManage,
 }: {
   heightFt?: number | string;
   onOpenManage?: () => void;
-}) {
-  const stats = useLiveStats(typeof heightFt === "number" ? heightFt : 731);
+} = {}) {
+  const stats = useLiveStats(heightFt);
   const { user, login } = useUserStore();
   const { ownedFloors } = useFloorsStore();
 
@@ -286,13 +296,13 @@ export function StatChips({
 export function MobileStatsSheet({
   open,
   onClose,
-  heightFt = 731,
+  heightFt,
 }: {
   open: boolean;
   onClose: () => void;
   heightFt?: number | string;
 }) {
-  const stats = useLiveStats(typeof heightFt === "number" ? heightFt : 731);
+  const stats = useLiveStats(heightFt);
 
   if (!open) return null;
 
@@ -331,7 +341,7 @@ export function MobileStatsSheet({
               <RulerTall />
               <span className="stat-card-badge">HEIGHT</span>
             </div>
-            <div className="stat-card-value">{heightFt} ft</div>
+            <div className="stat-card-value">{stats.heightFt.toLocaleString()} ft</div>
             <div className="stat-card-label">Current virtual skyscraper altitude</div>
           </div>
 

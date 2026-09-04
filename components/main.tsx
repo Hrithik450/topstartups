@@ -28,6 +28,7 @@ export function Main({
 
   const { user, login } = useUserStore();
   const { floors, isFloorsReady, setFloors, setIsFloorsReady } = useFloorsStore();
+  const { initializeStats } = useStatsStore();
 
   const handleRef = useRef<TowerHandle | null>(null);
   const [hoveredData, setHoveredData] = useState<HoverData | null>(null);
@@ -49,10 +50,10 @@ export function Main({
         setFloors(initialFloors);
       }
       if (initialStats) {
-        useStatsStore.getState().initializeStats(initialStats);
+        initializeStats(initialStats);
       }
     }
-  }, [initialFloors, initialStats, setFloors]);
+  }, [initialFloors, initialStats, setFloors, initializeStats]);
 
   const toggleSound = useCallback(() => {
     const next = handleRef.current?.toggleSound?.() ?? false;
@@ -182,7 +183,12 @@ export function Main({
                   <img
                     src={user.image || user.avatarUrl || ""}
                     alt={user.name || user.email || "Founder"}
-                    style={{ width: "22px", height: "22px", borderRadius: "50%", objectFit: "cover" }}
+                    style={{
+                      width: "22px",
+                      height: "22px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                    }}
                   />
                 ) : (
                   <span

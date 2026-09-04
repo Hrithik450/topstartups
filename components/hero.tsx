@@ -22,10 +22,8 @@ async function safeFetchJson(res: Response): Promise<any> {
 
 export function Hero({
   initialFloors = [],
-  initialLocks = {},
 }: {
   initialFloors?: any[];
-  initialLocks?: Record<number, any>;
 } = {}) {
 
   const maxInitialPrice = initialFloors.reduce(
@@ -113,13 +111,6 @@ export function Hero({
   const [minPrice, setMinPrice] = useState(50);
   const [topFloorPrice, setTopFloorPrice] = useState(initialTopPrice);
   const [topFloorClaimed, setTopFloorClaimed] = useState(initialFloors.length > 0);
-  const [allLocks, setAllLocks] = useState<Record<number, {
-    isLocked: boolean;
-    lockedByEmail?: string | null;
-    companyName?: string | null;
-    secondsRemaining?: number;
-  }>>(initialLocks as any);
-
   const [activeFloors, setActiveFloors] = useState<any[]>(initialFloors);
 
   // Check if current URL input already exists on the skyscraper
@@ -161,16 +152,11 @@ export function Hero({
   const targetRank = 1;
   const minAllowedPrice = 50;
 
-  const targetLock = allLocks[1] || { isLocked: false };
-  const isTargetLocked = Boolean(targetLock.isLocked);
-  const isStrangerLocked = isTargetLocked;
-
-  // Sync current floors and concurrency locks
-  const fetchFloorsAndLocks = () => {
+  // Sync current floors
+  const fetchFloors = () => {
     fetch("/api/floors", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        setAllLocks(data.locks || {});
         if (data.floors) {
           setActiveFloors(data.floors);
           const maxClaimedPrice = data.floors.reduce(
@@ -188,35 +174,13 @@ export function Hero({
   };
 
   useEffect(() => {
-    fetchFloorsAndLocks();
+    fetchFloors();
 
-    const handleLocksUpdated = (e: any) => {
-      const raw = e.detail;
-      if (!raw) return;
-      if (Array.isArray(raw)) {
-        const lockMap: Record<number, any> = {};
-        for (const l of raw) {
-          lockMap[l.targetRank] = {
-            isLocked: true,
-            targetRank: l.targetRank,
-            lockedByEmail: l.lockedByEmail,
-            companyName: l.companyName,
-            secondsRemaining: 360,
-          };
-        }
-        setAllLocks(lockMap);
-      } else if (typeof raw === "object") {
-        setAllLocks(raw);
-      }
-    };
-
-    window.addEventListener("floors-refresh", fetchFloorsAndLocks);
-    window.addEventListener("floor-claimed-success", fetchFloorsAndLocks);
-    window.addEventListener("locks-updated", handleLocksUpdated);
+    window.addEventListener("floors-refresh", fetchFloors);
+    window.addEventListener("floor-claimed-success", fetchFloors);
     return () => {
-      window.removeEventListener("floors-refresh", fetchFloorsAndLocks);
-      window.removeEventListener("floor-claimed-success", fetchFloorsAndLocks);
-      window.removeEventListener("locks-updated", handleLocksUpdated);
+      window.removeEventListener("floors-refresh", fetchFloors);
+      window.removeEventListener("floor-claimed-success", fetchFloors);
     };
   }, []);
 
@@ -239,7 +203,7 @@ export function Hero({
   useEffect(() => {
     const handlePageShow = () => {
       setIsSubmitting(false);
-      fetchFloorsAndLocks();
+      fetchFloors();
     };
 
     window.addEventListener("pageshow", handlePageShow);
@@ -740,13 +704,11 @@ export function Hero({
 
         <button
           type="submit"
-          className={`claim-btn ${isStrangerLocked || (existingFloorOnTower && existingFloorOnTower.rank === 1) ? "claim-btn-locked" : ""}`}
-          disabled={isSubmitting || isStrangerLocked || Boolean(existingFloorOnTower && existingFloorOnTower.rank === 1)}
+          className={`claim-btn ${existingFloorOnTower && existingFloorOnTower.rank === 1 ? "claim-btn-locked" : ""}`}
+          disabled={isSubmitting || Boolean(existingFloorOnTower && existingFloorOnTower.rank === 1)}
           title={
             existingFloorOnTower && existingFloorOnTower.rank === 1
               ? "This startup is already at Top Penthouse Floor #1"
-              : isStrangerLocked
-              ? "Someone is currently in checkout claiming Top Floor #1"
               : undefined
           }
         >
@@ -754,8 +716,6 @@ export function Hero({
             "Verifying..."
           ) : existingFloorOnTower && existingFloorOnTower.rank === 1 ? (
             <>👑 Already Top Floor #1</>
-          ) : isTargetLocked && price >= topFloorPrice ? (
-            <>🔒 Someone is claiming Top Floor #1...</>
           ) : existingFloorOnTower && existingFloorOnTower.rank > 1 ? (
             price >= differencePrice ? (
               <>⚡ Outbid & Reclaim Top Floor #1 for ₹{price} <Arrow /></>

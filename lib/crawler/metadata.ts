@@ -116,6 +116,25 @@ function resolveUrl(url: string, baseUrl: string): string {
   }
 }
 
+function isWideOgBanner(url?: string | null): boolean {
+  if (!url || typeof url !== "string") return false;
+  const l = url.toLowerCase();
+  return (
+    l.includes("og-image") ||
+    l.includes("og_image") ||
+    l.includes("opengraph") ||
+    l.includes("/og.") ||
+    l.endsWith("/og") ||
+    l.includes("twitter:image") ||
+    l.includes("twitter_image") ||
+    l.includes("social-preview") ||
+    l.includes("social-card") ||
+    l.includes("banner") ||
+    l.includes("cover") ||
+    l.includes("1200x630")
+  );
+}
+
 // ─────────────────────────────────────────────────────────────
 // 2. FIRECRAWL SCRAPER
 // ─────────────────────────────────────────────────────────────
@@ -143,19 +162,17 @@ async function crawlWithFirecrawl(url: string, apiKey: string): Promise<WebsiteM
 
   const title = meta.title || meta.ogTitle || "";
   const desc = meta.description || meta.ogDescription || "";
-  // Prioritize square brand logo, Apple touch icon, or favicon (never use wide ogImage social banners)
-  let icon = meta.logo || meta.appleTouchIcon || meta.icon || meta.favicon;
 
-  // Safeguard: Reject wide Open Graph / social share banners if present
-  if (
-    icon &&
-    (icon.includes("og-image") ||
-      icon.includes("opengraph") ||
-      icon.includes("twitter:image") ||
-      icon.includes("social-preview") ||
-      icon.includes("social-card"))
-  ) {
-    icon = meta.appleTouchIcon || meta.icon || meta.favicon || null;
+  // Prioritize square brand logo, Apple touch icon, or favicon (never use wide ogImage social banners)
+  let icon = meta.logo;
+  if (isWideOgBanner(icon)) {
+    icon = null;
+  }
+  if (!icon) {
+    icon = meta.appleTouchIcon || meta.icon || meta.favicon;
+  }
+  if (isWideOgBanner(icon)) {
+    icon = meta.appleTouchIcon || meta.favicon || null;
   }
 
   const companyName = cleanTitle(title, hostname);
@@ -216,20 +233,51 @@ async function crawlDirectHtml(url: string): Promise<WebsiteMetadata> {
     const tagline = truncate(rawDesc, 110) || `${companyName} — Official Skyscraper Floor`;
     const description = truncate(rawDesc, 240) || `Claimed top floor on GeTopFloor skyscraper.`;
 
-    // 3. Extract High-Res Icon (Apple touch icon 180px, SVG icon, or standard icon)
-    const appleIcon = html.match(
-      /<link[^>]+rel=["'][^"']*apple-touch-icon[^"']*["'][^>]+href=["']([^"']+)["']/i
-    )?.[1];
-    const svgIcon = html.match(
-      /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+type=["']image\/svg\+xml["'][^>]+href=["']([^"']+)["']/i
-    )?.[1];
-    const stdIcon = html.match(
-      /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+href=["']([^"']+)["']/i
-    )?.[1];
-    const rawIcon = appleIcon || svgIcon || stdIcon;
-    const logoUrl = rawIcon
-      ? resolveUrl(rawIcon, url)
-      : `https://www.google.com/s2/favicons?domain=${hostname}&sz=256`;
+    // 3. Extract High-Res Icon or Brand Logo
+    let detectedLogo: string | null = null;
+
+    // A. Check JSON-LD Schema.org for official brand logo (e.g. GrowEasy, Stripe, etc.)
+    const jsonLdMatches = html.matchAll(
+      /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+    );
+    for (const match of jsonLdMatches) {
+      try {
+        const parsedJson = JSON.parse(match[1]);
+        const candidate =
+          parsedJson.logo?.url ||
+          parsedJson.logo ||
+          parsedJson.publisher?.logo?.url ||
+          parsedJson.publisher?.logo;
+        if (candidate && typeof candidate === "string" && !isWideOgBanner(candidate)) {
+          detectedLogo = resolveUrl(candidate, url);
+          break;
+        }
+      } catch {}
+    }
+
+    if (!detectedLogo) {
+      // B. Look for largest icon, SVG icon, or Apple Touch icon
+      const appleIcon = html.match(
+        /<link[^>]+rel=["'][^"']*apple-touch-icon[^"']*["'][^>]+href=["']([^"']+)["']/i
+      )?.[1];
+      const svgIcon = html.match(
+        /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+type=["']image\/svg\+xml["'][^>]+href=["']([^"']+)["']/i
+      )?.[1];
+      const icon512 = html.match(
+        /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+sizes=["'](?:512x512|192x192)["'][^>]+href=["']([^"']+)["']/i
+      )?.[1];
+      const stdIcon = html.match(
+        /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+href=["']([^"']+)["']/i
+      )?.[1];
+
+      const rawIcon = appleIcon || svgIcon || icon512 || stdIcon;
+      if (rawIcon && !isWideOgBanner(rawIcon)) {
+        detectedLogo = resolveUrl(rawIcon, url);
+      }
+    }
+
+    const logoUrl =
+      detectedLogo || `https://www.google.com/s2/favicons?domain=${hostname}&sz=256`;
 
     const category = guessCategory(`${companyName} ${rawDesc}`);
 

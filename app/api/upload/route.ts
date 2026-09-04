@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth/session";
+import { auth } from "@/lib/auth/auth";
 import { uploadToBlob } from "@/lib/storage/blob";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getAuthenticatedUser();
-    if (!user) {
+    const session = await auth();
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
     }
 

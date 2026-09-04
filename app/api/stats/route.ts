@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLiveStats, recordVisitAndPing } from "@/lib/db/stats";
+import { StatsService } from "@/actions/stats/stats.service";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const stats = await getLiveStats();
-  return NextResponse.json({ success: true, stats });
+  const res = await StatsService.getLiveStats();
+  return NextResponse.json({ success: res.success, stats: res.data, error: res.error });
 }
 
 export async function POST(req: NextRequest) {
@@ -13,7 +13,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const sessionId = body.sessionId || req.headers.get("x-session-id") || "anonymous";
 
-    // Extract country code from cloud edge headers or client payload
     const countryCode =
       req.headers.get("x-vercel-ip-country") ||
       req.headers.get("cf-ipcountry") ||
@@ -24,13 +23,17 @@ export async function POST(req: NextRequest) {
     const countryName = body.countryName || null;
     const isNewSession = Boolean(body.isNewSession ?? body.isInitialView);
 
-    await recordVisitAndPing(sessionId, countryCode, countryName, isNewSession);
-    const stats = await getLiveStats();
+    await StatsService.recordPing({
+      sessionId,
+      countryCode,
+      countryName,
+      isNewSession,
+    });
 
-    return NextResponse.json({ success: true, stats });
+    const res = await StatsService.getLiveStats();
+    return NextResponse.json({ success: res.success, stats: res.data, error: res.error });
   } catch (err: any) {
-    console.error("Error in stats ping:", err);
-    const stats = await getLiveStats();
-    return NextResponse.json({ success: true, stats });
+    const res = await StatsService.getLiveStats();
+    return NextResponse.json({ success: res.success, stats: res.data });
   }
 }

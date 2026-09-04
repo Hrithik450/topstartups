@@ -38,18 +38,16 @@ export function Main({
   const [isSceneReady, setIsSceneReady] = useState(false);
   const isBuildingLoading = !(isSceneReady && isFloorsReady);
 
-  // Initialize store with SSR initialFloors and initialStats once on mount
-  useEffect(() => {
-    if (!initializedRef.current) {
-      initializedRef.current = true;
-      if (initialFloors.length > 0) {
-        setFloors(initialFloors);
-      }
-      if (initialStats) {
-        setStats(initialStats);
-      }
+  // Synchronously seed stores with SSR props before first render to eliminate hydration flash
+  if (!initializedRef.current) {
+    initializedRef.current = true;
+    if (initialFloors.length > 0) {
+      useFloorsStore.getState().setFloors(initialFloors);
     }
-  }, [initialFloors, initialStats, setFloors, setStats]);
+    if (initialStats) {
+      useStatsStore.getState().setStats(initialStats);
+    }
+  }
 
   const toggleSound = useCallback(() => {
     const next = handleRef.current?.toggleSound?.() ?? false;

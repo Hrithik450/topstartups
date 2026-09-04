@@ -4,35 +4,7 @@ import { useEffect, useState } from "react";
 import { RulerTall, Stack, Eye, Globe, Close, BarChart, Money } from "./icons";
 import { useFloorsStore } from "@/store/floors-store";
 import { useStatsStore } from "@/store/stats-store";
-import { calculateTowerHeightFt } from "@/lib/stats";
-
-function getClientCountryGuess(): { code: string; name: string } | null {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-    if (tz.includes("Kolkata") || tz.includes("Calcutta") || tz.includes("India"))
-      return { code: "IN", name: "India" };
-    if (
-      tz.includes("New_York") ||
-      tz.includes("Los_Angeles") ||
-      tz.includes("Chicago") ||
-      tz.includes("America")
-    )
-      return { code: "US", name: "United States" };
-    if (tz.includes("London") || tz.includes("Europe/London"))
-      return { code: "GB", name: "United Kingdom" };
-    if (tz.includes("Berlin") || tz.includes("Europe/Berlin"))
-      return { code: "DE", name: "Germany" };
-    if (tz.includes("Paris") || tz.includes("Europe/Paris")) return { code: "FR", name: "France" };
-    if (tz.includes("Tokyo") || tz.includes("Asia/Tokyo")) return { code: "JP", name: "Japan" };
-    if (tz.includes("Singapore")) return { code: "SG", name: "Singapore" };
-    if (tz.includes("Dubai")) return { code: "AE", name: "United Arab Emirates" };
-    if (tz.includes("Sydney") || tz.includes("Melbourne")) return { code: "AU", name: "Australia" };
-    if (tz.includes("Toronto") || tz.includes("Vancouver")) return { code: "CA", name: "Canada" };
-    return null;
-  } catch {
-    return null;
-  }
-}
+import { calculateTowerHeightFt, getClientCountryGuess } from "@/lib/stats";
 
 export function useLiveStats(customHeightFt?: number | string) {
   const { stats, isStatsReady, pingAndSync } = useStatsStore();
@@ -46,11 +18,15 @@ export function useLiveStats(customHeightFt?: number | string) {
     try {
       sessionId = sessionStorage.getItem("gtf_visitor_session") || "";
       if (!sessionId) {
-        sessionId = "sess_" + Math.random().toString(36).substring(2) + Date.now().toString(36);
+        sessionId =
+          "sess_" +
+          (typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID().replace(/-/g, "")
+            : Math.random().toString(36).substring(2) + Date.now().toString(36));
         sessionStorage.setItem("gtf_visitor_session", sessionId);
       }
     } catch {
-      sessionId = "sess_fallback_" + Date.now();
+      sessionId = "sess_fallback_" + Date.now().toString(36);
     }
 
     const countryGuess = getClientCountryGuess();
@@ -74,7 +50,7 @@ export function useLiveStats(customHeightFt?: number | string) {
       isNewSession,
     });
 
-    // 2. Re-ping every 35 seconds to maintain real online presence
+    // 2. Re-ping every 25 seconds to maintain real online presence
     const interval = setInterval(() => {
       pingAndSync({
         sessionId,
@@ -82,9 +58,37 @@ export function useLiveStats(customHeightFt?: number | string) {
         countryName: countryGuess?.name,
         isNewSession: false,
       });
-    }, 35000);
+    }, 25000);
 
-    return () => clearInterval(interval);
+    // 3. Immediately ping on tab refocus if window was inactive
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        pingAndSync({
+          sessionId,
+          countryCode: countryGuess?.code,
+          countryName: countryGuess?.name,
+          isNewSession: false,
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    // 4. Send leave beacon when user closes tab or navigates away
+    const handleLeave = () => {
+      if (typeof navigator !== "undefined" && navigator.sendBeacon && sessionId) {
+        const blob = new Blob([JSON.stringify({ sessionId, action: "leave" })], {
+          type: "application/json",
+        });
+        navigator.sendBeacon("/api/stats", blob);
+      }
+    };
+    window.addEventListener("pagehide", handleLeave);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", handleLeave);
+    };
   }, [pingAndSync]);
 
   const activeFloorCount = floors.length > 0 ? floors.length : stats.claimedFloors;

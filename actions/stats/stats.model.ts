@@ -1,9 +1,11 @@
 import { db } from "@/lib/db/config/client";
-import { siteStats, visitorCountries, sessions, floors, claims } from "@/lib/db/config/schema";
-import { eq, sql, gt, count, isNotNull, and, isNull } from "drizzle-orm";
-import { unstable_cache } from "next/cache";
-
-import { calculateTowerHeightFt, type LiveStatsData } from "@/lib/stats";
+import { siteStats, visitorCountries, sessions } from "@/lib/db/config/schema";
+import { eq, sql } from "drizzle-orm";
+import {
+  calculateTowerHeightFt,
+  getCanonicalCountry,
+  type LiveStatsData,
+} from "@/lib/stats";
 
 export type { LiveStatsData };
 
@@ -15,76 +17,68 @@ export interface RecordVisitAndPingData {
 }
 
 export class StatsModel {
+  // Ultra-fast in-memory cache to absorb high-traffic read bursts (3s TTL)
+  private static memoryCache: { data: LiveStatsData; expiresAt: number } | null = null;
+
+  static invalidateCache(): void {
+    StatsModel.memoryCache = null;
+  }
+
   /**
-   * Fetch live skyscraper statistics directly from the database.
+   * Fetch live skyscraper statistics using a single unified atomic query.
    */
-  static async getLiveStats(): Promise<LiveStatsData> {
-    const cachedStats = unstable_cache(
-      async () => {
-        try {
-          const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
-          const activeRes = await db
-            .select({ count: count() })
-            .from(sessions)
-            .where(gt(sessions.lastSeenAt, twoMinutesAgo));
+  static async getLiveStats(options?: { fresh?: boolean }): Promise<LiveStatsData> {
+    const now = Date.now();
+    if (!options?.fresh && StatsModel.memoryCache && now < StatsModel.memoryCache.expiresAt) {
+      return StatsModel.memoryCache.data;
+    }
 
-          const onlineCount = Math.max(1, Number(activeRes[0]?.count || 0));
+    try {
+      const twoMinutesAgo = new Date(now - 2 * 60 * 1000);
 
-          const claimedRes = await db
-            .select({
-              count: count(),
-              totalSales: sql<number>`COALESCE(SUM(${floors.pricePaid}), 0)::int`,
-            })
-            .from(floors);
+      // Single roundtrip to PostgreSQL aggregating all platform metrics atomically
+      const result = await db.execute(sql`
+        SELECT
+          (SELECT COUNT(*)::int FROM sessions WHERE last_seen_at > ${twoMinutesAgo}) AS online_count,
+          (SELECT COUNT(*)::int FROM floors) AS claimed_count,
+          (SELECT COALESCE(SUM(price_paid), 0)::int FROM floors) AS total_sales,
+          (SELECT COALESCE(total_views, 0)::int FROM site_stats WHERE key = 'global') AS total_views,
+          (SELECT COUNT(DISTINCT country_code)::int FROM visitor_countries WHERE country_code IS NOT NULL) AS countries_count
+      `);
 
-          const claimedCount = Number(claimedRes[0]?.count || 0);
-          const totalSales = Number(claimedRes[0]?.totalSales || 0);
+      const row = result.rows[0] as any;
+      const claimedCount = Number(row?.claimed_count || 0);
 
-          const statsRes = await db
-            .select()
-            .from(siteStats)
-            .where(eq(siteStats.key, "global"))
-            .limit(1);
+      const stats: LiveStatsData = {
+        online: Math.max(1, Number(row?.online_count || 0)),
+        heightFt: calculateTowerHeightFt(claimedCount),
+        claimedFloors: claimedCount,
+        totalFloors: claimedCount,
+        totalViews: Math.max(0, Number(row?.total_views || 0)),
+        countriesCount: Math.max(1, Number(row?.countries_count || 0)),
+        totalSales: Math.max(0, Number(row?.total_sales || 0)),
+      };
 
-          const totalViews = Number(statsRes[0]?.totalViews || 0);
+      StatsModel.memoryCache = {
+        data: stats,
+        expiresAt: now + 3000,
+      };
 
-          const countriesRes = await db
-            .select({ count: count(sql`DISTINCT ${visitorCountries.countryCode}`) })
-            .from(visitorCountries)
-            .where(isNotNull(visitorCountries.countryCode));
-
-          const countriesCount = Math.max(1, Number(countriesRes[0]?.count || 0));
-
-          return {
-            online: onlineCount,
-            heightFt: calculateTowerHeightFt(claimedCount),
-            claimedFloors: claimedCount,
-            totalFloors: claimedCount,
-            totalViews,
-            countriesCount,
-            totalSales,
-          };
-        } catch (err) {
-          console.error("Error fetching live stats:", err);
-          return {
-            online: 1,
-            heightFt: calculateTowerHeightFt(0),
-            claimedFloors: 0,
-            totalFloors: 0,
-            totalViews: 0,
-            countriesCount: 1,
-            totalSales: 0,
-          };
+      return stats;
+    } catch (err) {
+      console.error("Error fetching live stats:", err);
+      return (
+        StatsModel.memoryCache?.data || {
+          online: 1,
+          heightFt: calculateTowerHeightFt(0),
+          claimedFloors: 0,
+          totalFloors: 0,
+          totalViews: 0,
+          countriesCount: 1,
+          totalSales: 0,
         }
-      },
-      ["live-stats"],
-      {
-        tags: ["stats"],
-        revalidate: 5,
-      }
-    );
-
-    return await cachedStats();
+      );
+    }
   }
 
   /**
@@ -92,66 +86,114 @@ export class StatsModel {
    */
   static async recordVisitAndPing(data: RecordVisitAndPingData): Promise<void> {
     try {
+      const now = new Date();
+
+      // 1. Increment totalViews ONLY when a new visitor session is detected
       if (data.isNewSession) {
         await db
           .insert(siteStats)
           .values({
             key: "global",
             totalViews: 1,
-            updatedAt: new Date(),
+            updatedAt: now,
           })
           .onConflictDoUpdate({
             target: siteStats.key,
             set: {
               totalViews: sql`COALESCE(${siteStats.totalViews}, 0) + 1`,
-              updatedAt: new Date(),
+              updatedAt: now,
             },
           });
+
+        StatsModel.invalidateCache();
       }
 
-      if (data.countryCode && data.countryCode.length <= 10) {
+      // 2. Canonicalize country code & name via Intl.DisplayNames
+      const canonical = getCanonicalCountry(data.countryCode);
+      if (canonical) {
+        if (data.isNewSession) {
+          // Increment visitCount strictly for new session visits
+          await db
+            .insert(visitorCountries)
+            .values({
+              countryCode: canonical.code,
+              countryName: canonical.name,
+              visitCount: 1,
+              lastVisitedAt: now,
+            })
+            .onConflictDoUpdate({
+              target: visitorCountries.countryCode,
+              set: {
+                countryName: canonical.name,
+                visitCount: sql`${visitorCountries.visitCount} + 1`,
+                lastVisitedAt: now,
+              },
+            });
+
+          StatsModel.invalidateCache();
+        } else {
+          // Heartbeat only: refresh lastVisitedAt and guarantee canonical name without bumping visitCount
+          await db
+            .insert(visitorCountries)
+            .values({
+              countryCode: canonical.code,
+              countryName: canonical.name,
+              visitCount: 1,
+              lastVisitedAt: now,
+            })
+            .onConflictDoUpdate({
+              target: visitorCountries.countryCode,
+              set: {
+                countryName: canonical.name,
+                lastVisitedAt: now,
+              },
+            });
+        }
+      }
+
+      // 3. Update session heartbeat
+      if (data.sessionId && data.sessionId !== "anonymous") {
         await db
-          .insert(visitorCountries)
+          .insert(sessions)
           .values({
-            countryCode: data.countryCode,
-            countryName: data.countryName || data.countryCode,
-            visitCount: 1,
-            lastVisitedAt: new Date(),
+            sessionToken: data.sessionId,
+            countryCode: canonical?.code || null,
+            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            lastSeenAt: now,
+            createdAt: now,
           })
           .onConflictDoUpdate({
-            target: visitorCountries.countryCode,
+            target: sessions.sessionToken,
             set: {
-              visitCount: sql`${visitorCountries.visitCount} + 1`,
-              lastVisitedAt: new Date(),
+              lastSeenAt: now,
+              countryCode: canonical?.code || sessions.countryCode,
+              expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             },
           });
       }
 
-      await db
-        .insert(sessions)
-        .values({
-          sessionToken: data.sessionId,
-          countryCode: data.countryCode,
-          expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          lastSeenAt: new Date(),
-          createdAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: sessions.sessionToken,
-          set: {
-            lastSeenAt: new Date(),
-            countryCode: data.countryCode || sessions.countryCode,
-            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          },
-        });
-
-      // Prune visitor heartbeats older than 1 hour
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-      await db
-        .delete(sessions)
-        .where(sql`${sessions.lastSeenAt} < ${oneHourAgo}`);
+      // 4. Background non-blocking session cleanup (~1 in 50 heartbeats)
+      if (Math.random() < 0.02) {
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        db.delete(sessions)
+          .where(sql`${sessions.lastSeenAt} < ${oneHourAgo}`)
+          .catch((err) => console.warn("Background sessions prune error:", err));
+      }
     } catch (err) {
       console.error("Failed to record visit/ping:", err);
+    }
+  }
+
+  /**
+   * Immediately remove session on visitor tab close (pagehide / unload beacon)
+   */
+  static async recordLeave(sessionId: string): Promise<void> {
+    try {
+      if (!sessionId || sessionId === "anonymous") return;
+      await db.delete(sessions).where(eq(sessions.sessionToken, sessionId));
+      StatsModel.invalidateCache();
+    } catch (err) {
+      console.warn("Failed to record visitor leave:", err);
     }
   }
 }

@@ -24,9 +24,9 @@ export class StatsService {
   /**
    * Fetch live skyscraper stats (online, views, countries, claimed floors).
    */
-  static async getLiveStats(): Promise<StatsResponse> {
+  static async getLiveStats(options?: { fresh?: boolean }): Promise<StatsResponse> {
     try {
-      const stats = await StatsModel.getLiveStats();
+      const stats = await StatsModel.getLiveStats(options);
       return {
         success: true,
         data: stats,
@@ -67,5 +67,12 @@ export class StatsService {
         error: error instanceof Error ? error.message : "Failed to record ping",
       };
     }
+  }
+
+  /**
+   * Remove active session immediately on visitor tab departure.
+   */
+  static async recordLeave(sessionId: string): Promise<void> {
+    await StatsModel.recordLeave(sessionId);
   }
 }

@@ -5,7 +5,7 @@ import type { TowerHandle } from "@/lib/three/app";
 import type { HoverData } from "@/components/floor-hover-card";
 import type { Floor } from "@/lib/db/config/schema";
 
-export default function TowerScene({
+export function TowerScene({
   handleRef,
   onFloorHover,
   theme = "sunset",

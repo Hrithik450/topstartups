@@ -14,7 +14,7 @@ import type { Floor } from "@/lib/db/config/schema";
 import { useFloorsStore } from "@/store/floors-store";
 import { useUserStore } from "@/store/user-store";
 
-const TowerScene = dynamic(() => import("./tower-scene"), { ssr: false });
+const TowerScene = dynamic(() => import("./tower-scene").then((m) => m.TowerScene), { ssr: false });
 
 export function Main({ initialFloors = [] }: { initialFloors?: Floor[] }) {
   const initializedRef = useRef(false);

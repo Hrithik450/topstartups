@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { StatsService } from "@/actions/stats/stats.service";
 
-import { auth } from "@/lib/auth/auth";
-
 export const dynamic = "force-dynamic";
 
 export async function GET() {
@@ -25,15 +23,11 @@ export async function POST(req: NextRequest) {
     const countryName = body.countryName || null;
     const isNewSession = Boolean(body.isNewSession ?? body.isInitialView);
 
-    const session = await auth().catch(() => null);
-    const userId = session?.user?.id || null;
-
     await StatsService.recordPing({
       sessionId,
       countryCode,
       countryName,
       isNewSession,
-      userId,
     });
 
     const res = await StatsService.getLiveStats();

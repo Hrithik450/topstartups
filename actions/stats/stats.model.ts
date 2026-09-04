@@ -12,7 +12,6 @@ export interface RecordVisitAndPingData {
   countryCode: string | null;
   countryName: string | null;
   isNewSession: boolean;
-  userId?: string | null;
 }
 
 export class StatsModel {
@@ -133,7 +132,6 @@ export class StatsModel {
         .values({
           sessionToken: data.sessionId,
           countryCode: data.countryCode,
-          userId: data.userId || null,
           expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           lastSeenAt: new Date(),
           createdAt: new Date(),
@@ -143,21 +141,15 @@ export class StatsModel {
           set: {
             lastSeenAt: new Date(),
             countryCode: data.countryCode || sessions.countryCode,
-            ...(data.userId ? { userId: data.userId } : {}),
             expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           },
         });
 
-      // Prune anonymous visitor heartbeats older than 1 hour, without touching authenticated user sessions
+      // Prune visitor heartbeats older than 1 hour
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
       await db
         .delete(sessions)
-        .where(
-          and(
-            isNull(sessions.userId),
-            sql`${sessions.lastSeenAt} < ${oneHourAgo}`
-          )
-        );
+        .where(sql`${sessions.lastSeenAt} < ${oneHourAgo}`);
     } catch (err) {
       console.error("Failed to record visit/ping:", err);
     }

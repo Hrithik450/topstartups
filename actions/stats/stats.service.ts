@@ -16,7 +16,6 @@ export const recordPingSchema = z.object({
   countryCode: z.string().optional(),
   countryName: z.string().optional(),
   isNewSession: z.boolean().optional(),
-  userId: z.string().optional().nullable(),
 });
 
 export type TRecordPingSchema = z.input<typeof recordPingSchema>;

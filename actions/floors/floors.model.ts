@@ -2,7 +2,7 @@ import { eq, and, sql, or } from "drizzle-orm";
 import { db } from "@/lib/db/config/client";
 import { unstable_cache } from "next/cache";
 import { extractRootHostname } from "@/lib/validation/domain";
-import { floors, claims, users, type Floor, type NewFloor } from "@/lib/db/config/schema";
+import { floors, claims, type Floor, type NewFloor } from "@/lib/db/config/schema";
 
 export interface ClaimFloorPreparedInput {
   paymentId?: string | null;
@@ -163,11 +163,7 @@ export class FloorsModel {
       async () => {
         const active = await FloorsModel.getActiveFloors();
         const result = await db.query.floors.findMany({
-          where: (f, { eq, sql, or }) =>
-            or(
-              eq(f.userEmail, email),
-              sql`${f.userId} IN (SELECT id FROM users WHERE email = ${email})`
-            ),
+          where: (f, { eq }) => eq(f.userEmail, email),
           orderBy: (f, { desc, asc }) => [desc(f.pricePaid), asc(f.claimedAt)],
         });
 
@@ -197,15 +193,7 @@ export class FloorsModel {
     const existing = await db
       .select()
       .from(floors)
-      .where(
-        and(
-          eq(floors.id, floorId),
-          or(
-            eq(floors.userEmail, email),
-            sql`${floors.userId} IN (SELECT id FROM users WHERE email = ${email})`
-          )
-        )
-      )
+      .where(and(eq(floors.id, floorId), eq(floors.userEmail, email)))
       .limit(1);
 
     if (existing.length === 0) return null;
@@ -232,15 +220,7 @@ export class FloorsModel {
     const existing = await db
       .select()
       .from(floors)
-      .where(
-        and(
-          eq(floors.id, floorId),
-          or(
-            eq(floors.userEmail, email),
-            sql`${floors.userId} IN (SELECT id FROM users WHERE email = ${email})`
-          )
-        )
-      )
+      .where(and(eq(floors.id, floorId), eq(floors.userEmail, email)))
       .limit(1);
 
     if (existing.length === 0) {
@@ -323,30 +303,7 @@ export class FloorsModel {
       let targetFloor: Floor;
       const isUpdate = Boolean(existingFloor);
 
-      // 3. User upsert if customer email provided
-      let userId: string | null = null;
-      if (input.customerEmail) {
-        const [upsertedUser] = await tx
-          .insert(users)
-          .values({
-            email: input.customerEmail,
-            name: input.customerName || null,
-            phone: input.customerPhone,
-          })
-          .onConflictDoUpdate({
-            target: users.email,
-            set: {
-              ...(input.customerName ? { name: input.customerName } : {}),
-              ...(input.customerPhone ? { phone: input.customerPhone } : {}),
-              updatedAt: new Date(),
-            },
-          })
-          .returning({ id: users.id });
-
-        userId = upsertedUser?.id ?? null;
-      }
-
-      // 4. If existing floor found, update in-place with added price; otherwise insert new floor
+      // 3. If existing floor found, update in-place with added price; otherwise insert new floor
       if (existingFloor) {
         finalPrice = Number(existingFloor.pricePaid || 0) + input.price;
 
@@ -361,7 +318,6 @@ export class FloorsModel {
             logoUrl: input.logoUrl || existingFloor.logoUrl,
             pricePaid: finalPrice,
             userEmail: input.customerEmail || existingFloor.userEmail,
-            userId: userId || existingFloor.userId,
             claimedAt: new Date(),
             updatedAt: new Date(),
           })
@@ -381,7 +337,6 @@ export class FloorsModel {
             logoUrl: input.logoUrl,
             pricePaid: finalPrice,
             userEmail: input.customerEmail,
-            userId: userId,
             claimedAt: new Date(),
             updatedAt: new Date(),
           })
@@ -390,7 +345,7 @@ export class FloorsModel {
         targetFloor = insertedFloor;
       }
 
-      // 5. Determine assigned rank based on pricePaid order via SQL COUNT
+      // 4. Determine assigned rank based on pricePaid order via SQL COUNT
       const higherCount = await tx
         .select({ count: sql<number>`count(*)` })
         .from(floors)
@@ -400,7 +355,7 @@ export class FloorsModel {
 
       const assignedRank = Number(higherCount[0]?.count || 0) + 1;
 
-      // 6. Upsert claim record
+      // 5. Upsert claim record
       await tx
         .insert(claims)
         .values({
@@ -414,7 +369,6 @@ export class FloorsModel {
           currency: "INR",
           customerEmail: input.customerEmail || undefined,
           customerPhone: input.customerPhone || undefined,
-          userId: userId || undefined,
           updatedAt: new Date(),
         })
         .onConflictDoUpdate({
@@ -425,7 +379,6 @@ export class FloorsModel {
             companyName: companyName || cleanHost,
             amount: input.price,
             customerPhone: input.customerPhone || undefined,
-            userId: userId || undefined,
             updatedAt: new Date(),
           },
         });

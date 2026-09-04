@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { Globe, Building, Arrow, Minus, Plus, Search, Close, Check, ChevronDown } from "./icons";
 import { MAIN_CATEGORIES, SPECIAL_OPTIONS, IndustryCategory } from "@/lib/categories";
 import { validateWebsiteSyntax } from "@/lib/validation/domain";
-import { useUserStore } from "@/store/user-store";
 import { useFloorsStore } from "@/store/floors-store";
 
 async function safeFetchJson(res: Response): Promise<any> {
@@ -28,8 +27,6 @@ export function Hero({
   initialFloors?: any[];
   initialLocks?: Record<number, any>;
 } = {}) {
-  const { user, login, logout, isLoading: authLoading } = useUserStore();
-  const { ownedFloors } = useFloorsStore();
 
   const maxInitialPrice = initialFloors.reduce(
     (max: number, f: any) => Math.max(max, Number(f.pricePaid || 0)),
@@ -165,11 +162,8 @@ export function Hero({
   const minAllowedPrice = 50;
 
   const targetLock = allLocks[1] || { isLocked: false };
-  const userEmail = user?.email?.toLowerCase().trim();
-  const lockHolderEmail = targetLock.lockedByEmail?.toLowerCase().trim();
-  const isHeldByMe = Boolean(userEmail && lockHolderEmail && userEmail === lockHolderEmail);
   const isTargetLocked = Boolean(targetLock.isLocked);
-  const isStrangerLocked = Boolean(isTargetLocked && !isHeldByMe);
+  const isStrangerLocked = isTargetLocked;
 
   // Sync current floors and concurrency locks
   const fetchFloorsAndLocks = () => {
@@ -245,24 +239,14 @@ export function Hero({
   useEffect(() => {
     const handlePageShow = () => {
       setIsSubmitting(false);
-      if (user?.email) {
-        fetch("/api/checkout/release-lock", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: user.email, targetRank }),
-        })
-          .then(() => fetchFloorsAndLocks())
-          .catch(() => fetchFloorsAndLocks());
-      } else {
-        fetchFloorsAndLocks();
-      }
+      fetchFloorsAndLocks();
     };
 
     window.addEventListener("pageshow", handlePageShow);
     return () => {
       window.removeEventListener("pageshow", handlePageShow);
     };
-  }, [user, targetRank]);
+  }, [targetRank]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -458,8 +442,6 @@ export function Hero({
           category: selectedCategory.name,
           price: Math.max(50, price),
           targetRank,
-          customerName: user?.name || undefined,
-          customerEmail: user?.email || undefined,
         }),
       });
 
@@ -773,11 +755,7 @@ export function Hero({
           ) : existingFloorOnTower && existingFloorOnTower.rank === 1 ? (
             <>👑 Already Top Floor #1</>
           ) : isTargetLocked && price >= topFloorPrice ? (
-            isHeldByMe ? (
-              <>⚡ Resume Claim Top Floor #1 <Arrow /></>
-            ) : (
-              <>🔒 Someone is claiming Top Floor #1...</>
-            )
+            <>🔒 Someone is claiming Top Floor #1...</>
           ) : existingFloorOnTower && existingFloorOnTower.rank > 1 ? (
             price >= differencePrice ? (
               <>⚡ Outbid & Reclaim Top Floor #1 for ₹{price} <Arrow /></>

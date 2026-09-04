@@ -5,15 +5,6 @@ dotenv.config({ path: ".env" });
 import fs from "fs";
 import path from "path";
 import { db } from "../lib/db/config/client";
-import {
-  users,
-  floors,
-  claims,
-  siteStats,
-  visitorCountries,
-  sessions,
-} from "../lib/db/config/schema";
-
 import { sql } from "drizzle-orm";
 
 async function exportSnapshot() {

@@ -9,7 +9,6 @@ import { validateWebsiteSyntax, extractRootHostname } from "@/lib/validation/dom
 import { scrapeWebsiteMetadata } from "@/lib/crawler/metadata";
 import { persistImageToBlob } from "@/lib/storage/blob";
 import { revalidateTag } from "next/cache";
-import { UserService } from "@/actions/user/user.service";
 
 export type { Floor, NewFloor, ClaimFloorPreparedInput, ClaimResultModelResponse };
 
@@ -181,11 +180,11 @@ export class FloorsService {
    */
   static async getFloorByRank(rank: number): Promise<FloorResponse> {
     try {
-      if (!rank || rank < 1 || rank > 50) {
+      if (!rank || rank < 1) {
         return {
           success: false,
           data: null,
-          error: "Valid rank between 1 and 50 is required",
+          error: "Valid rank is required",
         };
       }
 
@@ -277,46 +276,6 @@ export class FloorsService {
   }
 
   /**
-   * Vacate a floor.
-   */
-  static async deleteFloor(floorId: string, email: string): Promise<DeleteFloorResponse> {
-    try {
-      if (!floorId?.trim()) {
-        return {
-          success: false,
-          error: "Floor ID is required",
-        };
-      }
-
-      if (!email?.trim()) {
-        return {
-          success: false,
-          error: "Unauthorized. Email is required to vacate your floor.",
-        };
-      }
-
-      const cleanFloorId = floorId.trim();
-      const cleanEmail = email.toLowerCase().trim();
-      const result = await FloorsModel.deleteFloor(cleanFloorId, cleanEmail);
-
-      if (result.success) {
-        try {
-          revalidateTag("floors");
-          revalidateTag(`floor-${cleanFloorId}`);
-          revalidateTag(`floors-owner-${cleanEmail}`);
-        } catch {}
-      }
-
-      return result;
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Failed to vacate floor",
-      };
-    }
-  }
-
-  /**
    * Atomically claim top floor after payment verification.
    */
   static async claimTopFloor(data: TClaimFloorSchema): Promise<ClaimResultResponse> {
@@ -392,7 +351,6 @@ export class FloorsService {
 
       try {
         revalidateTag("floors");
-        if (cleanEmail) revalidateTag(`floors-owner-${cleanEmail}`);
       } catch {}
 
       return result;
@@ -400,6 +358,45 @@ export class FloorsService {
       return {
         success: false,
         error: error instanceof Error ? error.message : "Failed to claim top floor",
+      };
+    }
+  }
+
+  /**
+   * Vacate a floor.
+   */
+  static async deleteFloor(floorId: string, email: string): Promise<DeleteFloorResponse> {
+    try {
+      if (!floorId?.trim()) {
+        return {
+          success: false,
+          error: "Floor ID is required",
+        };
+      }
+
+      if (!email?.trim()) {
+        return {
+          success: false,
+          error: "Unauthorized. Email is required to vacate your floor.",
+        };
+      }
+
+      const cleanFloorId = floorId.trim();
+      const cleanEmail = email.toLowerCase().trim();
+      const result = await FloorsModel.deleteFloor(cleanFloorId, cleanEmail);
+
+      if (result.success) {
+        try {
+          revalidateTag("floors");
+          revalidateTag(`floor-${cleanFloorId}`);
+        } catch {}
+      }
+
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to vacate floor",
       };
     }
   }

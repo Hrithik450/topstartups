@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/admin-auth";
-import { UserService } from "@/actions/user/user.service";
 import { db } from "@/lib/db/config/client";
 import { floors } from "@/lib/db/config/schema";
-import { count, eq } from "drizzle-orm";
+import { desc, asc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -19,26 +18,47 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized admin access" }, { status: 401 });
     }
 
-    const { data: users = [] } = await UserService.getAllUsersWithFloors();
+    const allClaimedFloors = await db
+      .select()
+      .from(floors)
+      .orderBy(desc(floors.pricePaid), asc(floors.claimedAt));
 
-    // Calculate high-level stats using pure Drizzle
-    const totalClaimedFloors = await db
-      .select({ count: count() })
-      .from(floors);
+    const userMap = new Map<string, any>();
+    for (let i = 0; i < allClaimedFloors.length; i++) {
+      const f = allClaimedFloors[i];
+      const key = f.userEmail || f.companyUrl || `floor-${f.id}`;
+      if (!userMap.has(key)) {
+        userMap.set(key, {
+          id: f.id,
+          email: f.userEmail || "anonymous",
+          name: f.companyName,
+          phone: null,
+          createdAt: f.claimedAt ? new Date(f.claimedAt).toISOString() : new Date().toISOString(),
+          productCount: 0,
+          products: [],
+        });
+      }
+      const entry = userMap.get(key);
+      entry.productCount += 1;
+      entry.products.push({
+        id: f.id,
+        rank: i + 1,
+        companyName: f.companyName,
+        companyUrl: f.companyUrl,
+        category: f.category,
+        pricePaid: f.pricePaid,
+        claimedAt: f.claimedAt ? new Date(f.claimedAt).toISOString() : null,
+      });
+    }
+    const users = Array.from(userMap.values());
 
-    const claimedCount = Number(totalClaimedFloors[0]?.count || 0);
-
-    // Sum revenue from claimed floors
-    const allClaimed = await db
-      .select({ pricePaid: floors.pricePaid })
-      .from(floors);
-
-    const revenue = allClaimed.reduce((sum, f) => sum + (f.pricePaid || 0), 0);
+    const claimedCount = allClaimedFloors.length;
+    const revenue = allClaimedFloors.reduce((sum, f) => sum + (f.pricePaid || 0), 0);
 
     return NextResponse.json({
       success: true,
       stats: {
-        totalUsers: (users || []).length,
+        totalUsers: users.length,
         totalClaimedFloors: claimedCount,
         availableFloors: Math.max(0, 50 - claimedCount),
         totalRevenue: revenue,

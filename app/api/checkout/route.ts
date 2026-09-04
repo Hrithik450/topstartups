@@ -3,10 +3,7 @@ import { createDodoCheckout } from "@/lib/dodo";
 import { db } from "@/lib/db/config/client";
 import { claims } from "@/lib/db/config/schema";
 import { verifyWebsiteLive, extractRootHostname } from "@/lib/validation/domain";
-import { auth } from "@/lib/auth/auth";
 import { FloorsService } from "@/actions/floors/floors.service";
-
-import { UserModel } from "@/actions/user/user.model";
 
 export const dynamic = "force-dynamic";
 
@@ -66,14 +63,9 @@ export async function POST(req: NextRequest) {
     const cleanHost = extractRootHostname(verification.domain || cleanUrl);
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 2: GUEST OR OPTIONAL USER IDENTIFIER
+    // STEP 2: CUSTOMER EMAIL IDENTIFIER (OPTIONAL)
     // ─────────────────────────────────────────────────────────────
-    const session = await auth().catch(() => null);
-    const userEmail =
-      session?.user?.email?.toLowerCase().trim() ||
-      body.customerEmail?.trim()?.toLowerCase() ||
-      undefined;
-    const userId = session?.user?.id || null;
+    const userEmail = body.customerEmail?.trim()?.toLowerCase() || undefined;
 
     // ─────────────────────────────────────────────────────────────
     // STEP 3: DYNAMIC OUTBID PRICING CALCULATION (BY DOMAIN)
@@ -116,24 +108,13 @@ export async function POST(req: NextRequest) {
       : (process.env.NEXT_PUBLIC_BASE_URL || "https://getopfloor.com");
 
     // Determine customer personal name for billing invoice:
-    // Only pass real personal names from session, DB, or explicit input.
-    // Never fallback to company URL or domain name!
     let customerName: string | undefined = undefined;
-    const candidateName = session?.user?.name || body.customerName;
+    const candidateName = body.customerName;
     if (candidateName && typeof candidateName === "string" && candidateName.trim()) {
       const cleanCandidate = candidateName.trim();
       if (!cleanCandidate.includes(".") && !cleanCandidate.includes("/")) {
         customerName = sanitizeText(cleanCandidate, 100);
       }
-    }
-
-    if (!customerName && userEmail) {
-      try {
-        const userRecord = await UserModel.getUserByEmail(userEmail);
-        if (userRecord?.name && userRecord.name.trim() && !userRecord.name.includes(".")) {
-          customerName = sanitizeText(userRecord.name.trim(), 100);
-        }
-      } catch {}
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -163,7 +144,6 @@ export async function POST(req: NextRequest) {
         amount,
         currency: "INR",
         customerEmail: userEmail,
-        userId: userId,
         checkoutUrl: checkout.checkoutUrl,
         updatedAt: new Date(),
       });

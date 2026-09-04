@@ -2,7 +2,6 @@ import "./globals.css";
 import { bricolage } from "@/assets/fonts";
 import type { Metadata, Viewport } from "next";
 import { LayoutWrapper } from "@/app/layout-wrapper";
-import { UserService } from "@/actions/user/user.service";
 import { OrganizationJsonLd, WebsiteJsonLd, SoftwareApplicationJsonLd, FAQJsonLd } from "./jsonld";
 
 export const metadata: Metadata = {
@@ -88,10 +87,7 @@ export const viewport: Viewport = {
   themeColor: "#050811",
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const userRes = await UserService.getCurrentUser();
-  const initialUser = userRes?.success && userRes?.data ? userRes.data : null;
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={bricolage.variable}>
       <head>
@@ -102,7 +98,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
 
       <body className={bricolage.className}>
-        <LayoutWrapper initialUser={initialUser}>{children}</LayoutWrapper>
+        <LayoutWrapper>{children}</LayoutWrapper>
       </body>
     </html>
   );

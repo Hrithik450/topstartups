@@ -1,21 +1,15 @@
 import { create } from "zustand";
-import { useUserStore } from "./user-store";
 import { devtools } from "zustand/middleware";
 import type { Floor, NewFloor } from "@/lib/db/config/schema";
 import { extractRootHostname } from "@/lib/validation/domain";
 
 export interface FloorStore {
   floors: Floor[];
-  ownedFloors: Floor[];
   isFloorsReady: boolean;
 
   // Direct Setters
   setFloors: (floors: Floor[]) => void;
-  setOwnedFloors: (floors: Floor[]) => void;
   setIsFloorsReady: (isReady: boolean) => void;
-
-  // Ownership Check
-  isOwnerOfFloor: (floorIdOrRank: string) => boolean;
 
   // Mutations
   addNewFloor: (newFloor: NewFloor) => void;
@@ -24,7 +18,6 @@ export interface FloorStore {
 export const useFloorsStore = create<FloorStore>()(
   devtools((set, get) => ({
     floors: [],
-    ownedFloors: [],
     isFloorsReady: false,
 
     setFloors: (input) => {
@@ -35,26 +28,12 @@ export const useFloorsStore = create<FloorStore>()(
       });
     },
 
-    setOwnedFloors: (floors) => {
-      set({ ownedFloors: Array.isArray(floors) ? floors : [] });
-    },
-
     setIsFloorsReady: (isReady) => {
       set({ isFloorsReady: isReady });
     },
 
-    isOwnerOfFloor: (floorId: string) => {
-      const { ownedFloors } = get();
-      const currentUser = useUserStore.getState().user;
-      if (!currentUser || ownedFloors.length === 0) return false;
-      return ownedFloors.some((f) => String(f.id) === floorId);
-    },
-
     addNewFloor: (newFloor: NewFloor) => {
       const currentFloors = get().floors;
-      const currentOwned = get().ownedFloors;
-      const currentUser = useUserStore.getState().user;
-
       const newHost = extractRootHostname(newFloor.companyUrl || "");
       const newId = newFloor.id ? String(newFloor.id) : null;
 
@@ -89,7 +68,6 @@ export const useFloorsStore = create<FloorStore>()(
           logoUrl: newFloor.logoUrl !== undefined ? newFloor.logoUrl : existing.logoUrl,
           pricePaid: finalPrice,
           userEmail: newFloor.userEmail || existing.userEmail,
-          userId: newFloor.userId || existing.userId,
           claimedAt: new Date(),
           updatedAt: new Date(),
         };
@@ -108,7 +86,6 @@ export const useFloorsStore = create<FloorStore>()(
           logoUrl: newFloor.logoUrl || null,
           pricePaid: Number(newFloor.pricePaid || 0),
           userEmail: newFloor.userEmail || null,
-          userId: newFloor.userId || null,
           claimedAt: newFloor.claimedAt ? new Date(newFloor.claimedAt) : new Date(),
           updatedAt: new Date(),
         };
@@ -128,30 +105,8 @@ export const useFloorsStore = create<FloorStore>()(
           rank: idx + 1,
         }));
 
-      // 3. Update ownedFloors in-place if owned by current user
-      let updatedOwned = currentOwned;
-      const isOwnedByCurrent =
-        (currentUser?.email && targetFloor.userEmail === currentUser.email) ||
-        (currentUser?.id && targetFloor.userId === currentUser.id);
-
-      if (isOwnedByCurrent) {
-        const ownedIndex = currentOwned.findIndex(
-          (f) =>
-            String(f.id) === String(targetFloor.id) ||
-            (newHost && extractRootHostname(f.companyUrl || "") === newHost)
-        );
-
-        if (ownedIndex !== -1) {
-          updatedOwned = [...currentOwned];
-          updatedOwned[ownedIndex] = targetFloor;
-        } else {
-          updatedOwned = [targetFloor, ...currentOwned];
-        }
-      }
-
       set({
         floors: sortedFloors,
-        ownedFloors: updatedOwned,
         isFloorsReady: true,
       });
     },

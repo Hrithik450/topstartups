@@ -879,7 +879,7 @@ export function Hero({
       </form>
 
       <p className="subtitle">
-        Enter any custom bid starting at ₹50. Bid ₹{topFloorPrice} or more to take the Top Floor #1 spot.
+        Claim your startup&apos;s floor on the digital skyscraper. Outbid competitors to take Top Floor #1.
       </p>
 
       <div className="policy-links-container">

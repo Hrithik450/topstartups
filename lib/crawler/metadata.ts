@@ -143,8 +143,20 @@ async function crawlWithFirecrawl(url: string, apiKey: string): Promise<WebsiteM
 
   const title = meta.title || meta.ogTitle || "";
   const desc = meta.description || meta.ogDescription || "";
-  // Prioritize high-resolution brand logo / apple-touch-icon over 16px favicon
-  const icon = meta.logo || meta.appleTouchIcon || meta.ogImage || meta.icon || meta.favicon;
+  // Prioritize square brand logo, Apple touch icon, or favicon (never use wide ogImage social banners)
+  let icon = meta.logo || meta.appleTouchIcon || meta.icon || meta.favicon;
+
+  // Safeguard: Reject wide Open Graph / social share banners if present
+  if (
+    icon &&
+    (icon.includes("og-image") ||
+      icon.includes("opengraph") ||
+      icon.includes("twitter:image") ||
+      icon.includes("social-preview") ||
+      icon.includes("social-card"))
+  ) {
+    icon = meta.appleTouchIcon || meta.icon || meta.favicon || null;
+  }
 
   const companyName = cleanTitle(title, hostname);
   const tagline = truncate(desc, 110) || `${companyName} — Official Skyscraper Floor`;

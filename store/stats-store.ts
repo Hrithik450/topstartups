@@ -8,8 +8,7 @@ export interface StatsStore {
   stats: LiveStatsData;
   isStatsReady: boolean;
 
-  setStats: (newStats: Partial<LiveStatsData>) => void;
-  initializeStats: (initial: LiveStatsData | null) => void;
+  setStats: (newStats: Partial<LiveStatsData> | null) => void;
   fetchLiveStats: () => Promise<void>;
   pingAndSync: (input: {
     sessionId: string;
@@ -34,25 +33,11 @@ export const useStatsStore = create<StatsStore>()(
     isStatsReady: false,
 
     setStats: (newStats) => {
+      if (!newStats) return;
       set((state) => ({
         stats: { ...state.stats, ...newStats },
         isStatsReady: true,
       }));
-    },
-
-    initializeStats: (initial) => {
-      if (!initial) return;
-      set({
-        stats: {
-          online: Number(initial.online) || 1,
-          heightFt: Number(initial.heightFt) || 731,
-          claimedFloors: Number(initial.claimedFloors) || 0,
-          totalFloors: Number(initial.totalFloors) || 50,
-          totalViews: Number(initial.totalViews) || 0,
-          countriesCount: Number(initial.countriesCount) || 1,
-        },
-        isStatsReady: true,
-      });
     },
 
     fetchLiveStats: async () => {

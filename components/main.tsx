@@ -28,7 +28,7 @@ export function Main({
 
   const { user, login } = useUserStore();
   const { floors, isFloorsReady, setFloors, setIsFloorsReady } = useFloorsStore();
-  const { initializeStats } = useStatsStore();
+  const { setStats } = useStatsStore();
 
   const handleRef = useRef<TowerHandle | null>(null);
   const [hoveredData, setHoveredData] = useState<HoverData | null>(null);
@@ -50,10 +50,10 @@ export function Main({
         setFloors(initialFloors);
       }
       if (initialStats) {
-        initializeStats(initialStats);
+        setStats(initialStats);
       }
     }
-  }, [initialFloors, initialStats, setFloors, initializeStats]);
+  }, [initialFloors, initialStats, setFloors, setStats]);
 
   const toggleSound = useCallback(() => {
     const next = handleRef.current?.toggleSound?.() ?? false;

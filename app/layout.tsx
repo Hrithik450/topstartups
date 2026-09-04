@@ -1,13 +1,9 @@
-import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
-
-const bricolage = localFont({
-  src: "../assets/fonts/bricolage-grotesque-variable.woff2",
-  weight: "200 800",
-  variable: "--font-bricolage",
-  display: "swap",
-});
+import { bricolage } from "@/assets/fonts";
+import type { Metadata, Viewport } from "next";
+import { LayoutWrapper } from "@/app/layout-wrapper";
+import { UserService } from "@/actions/user/user.service";
+import { OrganizationJsonLd, WebsiteJsonLd, SoftwareApplicationJsonLd, FAQJsonLd } from "./jsonld";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://getopfloor.com"),
@@ -85,14 +81,6 @@ export const metadata: Metadata = {
   },
   category: "technology",
 };
-
-import {
-  OrganizationJsonLd,
-  WebsiteJsonLd,
-  SoftwareApplicationJsonLd,
-  FAQJsonLd,
-} from "./jsonld";
-
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -100,13 +88,10 @@ export const viewport: Viewport = {
   themeColor: "#050811",
 };
 
-import { UserAuthProvider } from "@/lib/auth/use-user-auth";
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const userRes = await UserService.getCurrentUser();
+  const initialUser = userRes?.success && userRes?.data ? userRes.data : null;
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
   return (
     <html lang="en" className={bricolage.variable}>
       <head>
@@ -115,8 +100,9 @@ export default function RootLayout({
         <SoftwareApplicationJsonLd />
         <FAQJsonLd />
       </head>
+
       <body className={bricolage.className}>
-        <UserAuthProvider>{children}</UserAuthProvider>
+        <LayoutWrapper initialUser={initialUser}>{children}</LayoutWrapper>
       </body>
     </html>
   );

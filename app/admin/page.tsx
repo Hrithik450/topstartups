@@ -5,9 +5,9 @@ import Link from "next/link";
 
 interface Product {
   id: string | number;
-  rank: number;
-  companyName: string;
-  url: string;
+  rank?: number;
+  companyName?: string;
+  companyUrl: string;
   category: string | null;
   pricePaid: number;
   claimedAt: string | null;
@@ -113,8 +113,8 @@ export default function AdminPage() {
       (u.phone && u.phone.toLowerCase().includes(q));
     const matchProduct = u.products.some(
       (p) =>
-        p.companyName.toLowerCase().includes(q) ||
-        p.url.toLowerCase().includes(q) ||
+        (p.companyName && p.companyName.toLowerCase().includes(q)) ||
+        (p.companyUrl && p.companyUrl.toLowerCase().includes(q)) ||
         (p.category && p.category.toLowerCase().includes(q))
     );
     return matchUser || matchProduct;
@@ -457,7 +457,7 @@ export default function AdminPage() {
                             {u.products.map((p) => (
                               <a
                                 key={p.id}
-                                href={p.url}
+                                href={p.companyUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 style={{
@@ -474,8 +474,8 @@ export default function AdminPage() {
                                   fontWeight: 500,
                                 }}
                               >
-                                <span style={{ color: "#ff6b1a", fontWeight: 700 }}>#{p.rank}</span>
-                                <span>{p.companyName}</span>
+                                {p.rank && <span style={{ color: "#ff6b1a", fontWeight: 700 }}>#{p.rank}</span>}
+                                <span>{p.companyName || p.companyUrl}</span>
                                 <span style={{ color: "#9ca3af", fontSize: "11px" }}>(₹{p.pricePaid})</span>
                               </a>
                             ))}

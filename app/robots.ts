@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/checkout/", "/api/floors/manage/"],
+        disallow: ["/api/checkout/"],
       },
     ],
     sitemap: "https://getopfloor.com/sitemap.xml",

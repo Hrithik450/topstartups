@@ -304,6 +304,59 @@ body.home-tower-scrolled .tower-top-fade {
   color: var(--ink);
 }
 
+.price-editable-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border-bottom: 3px dashed var(--brand-orange);
+  padding-bottom: 2px;
+  cursor: text;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s ease, border-bottom-style 0.15s ease;
+}
+
+.price-editable-wrap:hover,
+.price-editable-wrap:focus-within {
+  border-bottom-style: solid;
+  border-bottom-color: #ff6b1a;
+}
+
+.price-currency {
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  pointer-events: none;
+}
+
+.price-input {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: 1;
+  color: inherit;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+  -moz-appearance: textfield;
+  -webkit-appearance: none;
+  min-width: 1ch;
+  text-align: left;
+}
+
+.price-input::-webkit-outer-spin-button,
+.price-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .form {
   position: relative;
   z-index: 60;
@@ -353,7 +406,10 @@ body.home-tower-scrolled .tower-top-fade {
   background: transparent;
   font-size: 15px;
   color: var(--ink);
-  width: 230px;
+  width: 220px;
+}
+.url-field input {
+  width: 240px;
 }
 .field input::placeholder {
   color: var(--ink-faint);
@@ -400,92 +456,9 @@ body.home-tower-scrolled .tower-top-fade {
   cursor: not-allowed;
   filter: grayscale(0.2);
 }
-.claim-btn-locked {
-  background: linear-gradient(180deg, #64748b 0%, #475569 100%) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
-  color: rgba(255, 255, 255, 0.85) !important;
-}
 .claim-btn svg {
   width: 16px;
   height: 16px;
-}
-
-/* ---------- Top Floor Claim Lock Banner / Indicator ---------- */
-.top-floor-locked-notice {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 14px;
-  margin-bottom: -10px;
-  padding: 7px 16px;
-  border-radius: 999px;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  color: #fbbf24;
-  font-size: 13.5px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.18);
-  animation: lockBannerFade 0.25s ease-out;
-  z-index: 10;
-}
-
-[data-theme="sunset"] .top-floor-locked-notice {
-  background: rgba(217, 119, 6, 0.12);
-  border-color: rgba(217, 119, 6, 0.35);
-  color: #b45309;
-  box-shadow: 0 4px 16px -2px rgba(217, 119, 6, 0.12);
-}
-
-.locked-pulse-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #f59e0b;
-  box-shadow: 0 0 10px #f59e0b;
-  animation: lockedPulse 1.6s infinite ease-in-out;
-  flex-shrink: 0;
-}
-
-[data-theme="sunset"] .locked-pulse-dot {
-  background: #d97706;
-  box-shadow: 0 0 8px #d97706;
-}
-
-.locked-text {
-  font-weight: 600;
-}
-
-.locked-subtext {
-  opacity: 0.85;
-  font-size: 12.5px;
-}
-
-@keyframes lockedPulse {
-  0%, 100% {
-    transform: scale(0.85);
-    opacity: 0.65;
-  }
-  50% {
-    transform: scale(1.3);
-    opacity: 1;
-    box-shadow: 0 0 14px #f59e0b;
-  }
-}
-
-@keyframes lockBannerFade {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .subtitle {
@@ -1155,24 +1128,25 @@ button.chip:focus-visible {
 
   .form-inputs-row {
     display: flex;
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     gap: 8px;
     width: 100%;
   }
 
+  .company-field,
   .url-field {
-    flex: 1.15;
-    min-width: 0;
+    width: 100%;
     height: 46px;
-    padding: 0 12px;
-    gap: 6px;
+    padding: 0 14px;
+    gap: 8px;
   }
 
+  .company-field input,
   .url-field input {
     width: 100%;
     min-width: 0;
-    font-size: 13px;
+    font-size: 13.5px;
   }
 
   .category-wrapper {

@@ -53,11 +53,9 @@ Every claim generates a secret `manage_token` stored in the user's browser:
 - **Vacate Floor**: Reset floor back to an available premium slot at any time.
 
 ## API Endpoints
-- `GET /api/floors`: Returns current active 50 floors with company names, ranks, categories, and URLs.
 - `POST /api/checkout`: Initiates Dodo Payments checkout session with custom amount and return URL.
-- `GET /api/floors/manage?token=...`: Fetches private floor details for verified owner.
-- `PATCH /api/floors/manage`: Updates floor copy, URL, and category using secret manage token.
-- `DELETE /api/floors/manage?token=...`: Vacates floor.
+- `GET /api/checkout/verify`: Verifies Dodo Payment status and assigns dynamic skyscraper rank.
+- `POST /api/upload`: Authenticated logo upload to Vercel Blob Storage CDN.
 
 ## Resources
 - [Main Website](https://getopfloor.com)

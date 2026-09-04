@@ -10,24 +10,17 @@ GeTopFloor is a modern, high-performance web platform combining WebGL 3D visuali
 - **Deployment**: Multi-stage standalone Dockerfile with Alpine Linux runtime (~120MB image) suitable for VPS, Railway, Render, or Vercel.
 
 ## The Attention Economy & Floor Mechanics
-1. **Floor Slots**: Exactly 50 floors exist at all times.
-2. **Penthouse Floor #1**: Highest visibility position on the tower.
-3. **Atomic Rank Shifting**: When a floor is claimed, an ACID PostgreSQL transaction executes:
-   ```sql
-   UPDATE floors SET rank = -rank;
-   UPDATE floors SET rank = (-rank) + 1;
-   INSERT INTO floors (rank, is_claimed, company_name, url, ...) VALUES (1, true, ...);
-   DELETE FROM floors WHERE rank > 50;
-   ```
-   This sequential two-step shift eliminates unique constraint collisions while preserving atomic displacement.
-4. **CRUD Management**: Floor owners receive a private UUID `manage_token` enabling self-service updates to their listing without account passwords or tedious sign-in flows.
+1. **Dynamic Skyscraper**: Unlimited startup floors ranked dynamically by cumulative price paid (`price_paid DESC, claimed_at ASC`).
+2. **Penthouse Floor #1**: Highest visibility position on top of the tower awarded to the startup with the highest cumulative bid.
+3. **Outbid & Reclaim**: Startups outbid other companies or boost their existing floor lead in real time.
+4. **CRUD Management**: Floor owners sign in via Google OAuth to update their logo, category, tagline, description, and website URL.
 
 ## Frequently Asked Questions
 - **Q: How much does it cost?**
-  A: Bidding starts from ₹50 INR.
+  A: Outbidding to claim Top Floor #1 starts at the current highest floor price + ₹1 (or booster minimum ₹50).
 - **Q: How long does my company stay on the tower?**
-  A: Your company remains on the tower until 50 subsequent companies outbid and displace it down the 50 ranks.
+  A: Your company remains on the skyscraper permanently, moving up or down based on cumulative bids.
 - **Q: Can I change my link or logo later?**
-  A: Yes, via the Manage Floor modal using your private token.
+  A: Yes, via the Manage Floor modal after signing in.
 - **Q: Is fulfillment automated?**
   A: Yes, webhook events update the live database and 3D skyscraper within milliseconds of payment.

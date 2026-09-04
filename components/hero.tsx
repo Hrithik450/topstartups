@@ -10,7 +10,9 @@ async function safeFetchJson(res: Response): Promise<any> {
   const contentType = res.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
     if (res.status === 429) {
-      throw new Error("Too many requests or security check active. Please wait a few seconds and try again.");
+      throw new Error(
+        "Too many requests or security check active. Please wait a few seconds and try again."
+      );
     }
     if (!res.ok) {
       throw new Error(`Server temporarily unavailable (${res.status}). Please try again.`);
@@ -25,7 +27,6 @@ export function Hero({
 }: {
   initialFloors?: any[];
 } = {}) {
-
   const maxInitialPrice = initialFloors.reduce(
     (max: number, f: any) => Math.max(max, Number(f.pricePaid || 0)),
     0
@@ -54,10 +55,7 @@ export function Hero({
   // Close dropdown on click/touch outside or Esc key
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
-      if (
-        categoryWrapperRef.current &&
-        !categoryWrapperRef.current.contains(e.target as Node)
-      ) {
+      if (categoryWrapperRef.current && !categoryWrapperRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
@@ -102,7 +100,10 @@ export function Hero({
 
   const [url, setUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [justClaimed, setJustClaimed] = useState<string | null>(null);
+  const [justClaimed, setJustClaimed] = useState<{
+    companyName: string;
+    rank?: number;
+  } | null>(null);
   const [paymentNotice, setPaymentNotice] = useState<{
     type: "error" | "success" | "info";
     message: string;
@@ -152,12 +153,13 @@ export function Hero({
   const targetRank = 1;
   const minAllowedPrice = 50;
 
-  // Sync current floors
+  // Sync current floors across hero state and global floors store
   const fetchFloors = () => {
     fetch("/api/floors", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        if (data.floors) {
+        if (data.floors && Array.isArray(data.floors)) {
+          useFloorsStore.getState().setFloors(data.floors);
           setActiveFloors(data.floors);
           const maxClaimedPrice = data.floors.reduce(
             (max: number, f: any) => Math.max(max, Number(f.pricePaid || 0)),
@@ -218,9 +220,7 @@ export function Hero({
     const params = new URLSearchParams(window.location.search);
     const paymentId = params.get("payment_id");
     const rawSessionId =
-      params.get("session_id") ||
-      params.get("checkout_session_id") ||
-      params.get("checkout_id");
+      params.get("session_id") || params.get("checkout_session_id") || params.get("checkout_id");
     const sessionId = rawSessionId && rawSessionId !== "{CHECKOUT_ID}" ? rawSessionId : null;
     const targetId = paymentId || sessionId;
 
@@ -258,7 +258,11 @@ export function Hero({
           const data = await safeFetchJson(res);
 
           if (data.status === "succeeded") {
-            setJustClaimed(data.companyName || "Your company");
+            const assignedRank = typeof data.rank === "number" ? data.rank : undefined;
+            setJustClaimed({
+              companyName: data.companyName || "Your company",
+              rank: assignedRank,
+            });
             setPaymentNotice(null);
             setIsSubmitting(false);
             window.history.replaceState({}, "", window.location.pathname);
@@ -267,14 +271,30 @@ export function Hero({
               localStorage.setItem("getopfloor_manage_email", data.customerEmail);
             }
 
+            // Immediately push the newly claimed floor into Zustand store so 3D tower and listings re-render right away!
+            useFloorsStore.getState().addNewFloor({
+              id: data.id,
+              companyName: data.companyName,
+              companyUrl: data.companyUrl || data.url,
+              category: data.category || "Startup",
+              tagline: data.tagline || "",
+              description: data.description || "",
+              logoUrl: data.logoUrl || null,
+              pricePaid: Number(data.price || price),
+              claimedAt: new Date(),
+            });
+
+            // Re-fetch authoritative floor rankings from backend
+            fetchFloors();
+
             // Broadcast floor claim event for the owner
             window.dispatchEvent(
               new CustomEvent("floor-claimed-success", {
                 detail: {
                   isOwner: true,
-                  rank: data.rank || 1,
+                  rank: assignedRank || 1,
                   companyName: data.companyName,
-                  url: data.url,
+                  url: data.companyUrl || data.url,
                   logoUrl: data.logoUrl,
                   tagline: data.tagline,
                   description: data.description,
@@ -285,16 +305,20 @@ export function Hero({
 
             // Immediate multi-stage floor refresh to guarantee 3D tower and listings update
             window.dispatchEvent(new CustomEvent("floors-refresh"));
-            setTimeout(() => window.dispatchEvent(new CustomEvent("floors-refresh")), 500);
-            setTimeout(() => window.dispatchEvent(new CustomEvent("floors-refresh")), 1500);
+            setTimeout(() => {
+              fetchFloors();
+              window.dispatchEvent(new CustomEvent("floors-refresh"));
+            }, 600);
+            setTimeout(() => {
+              fetchFloors();
+              window.dispatchEvent(new CustomEvent("floors-refresh"));
+            }, 1800);
             return;
           } else if (data.status === "failed") {
             setIsSubmitting(false);
             setPaymentNotice({
               type: "error",
-              message:
-                data.error ||
-                "Payment was not completed. You can try claiming again.",
+              message: data.error || "Payment was not completed. You can try claiming again.",
             });
             window.history.replaceState({}, "", window.location.pathname);
             window.dispatchEvent(new CustomEvent("floors-refresh"));
@@ -309,7 +333,8 @@ export function Hero({
             setIsSubmitting(false);
             setPaymentNotice({
               type: "info",
-              message: "Your payment was received and is confirming. Your floor will appear momentarily!",
+              message:
+                "Your payment was received and is confirming. Your floor will appear momentarily!",
             });
             window.history.replaceState({}, "", window.location.pathname);
             window.dispatchEvent(new CustomEvent("floors-refresh"));
@@ -328,7 +353,10 @@ export function Hero({
     }
 
     if (params.get("claimed") === "true") {
-      setJustClaimed(params.get("company") || "Your company");
+      const company = params.get("company") || "Your company";
+      const rank = params.get("rank") ? Number(params.get("rank")) : undefined;
+      setJustClaimed({ companyName: company, rank });
+      fetchFloors();
       window.dispatchEvent(new CustomEvent("floors-refresh"));
       window.history.replaceState({}, "", window.location.pathname);
     }
@@ -378,7 +406,9 @@ export function Hero({
       if (!valRes.ok || !valData.valid) {
         setPaymentNotice({
           type: "error",
-          message: valData.error || "This website could not be reached or is not secure. Please enter an active HTTPS website.",
+          message:
+            valData.error ||
+            "This website could not be reached or is not secure. Please enter an active HTTPS website.",
         });
         setIsSubmitting(false);
         return;
@@ -428,10 +458,7 @@ export function Hero({
   return (
     <section className="hero">
       {paymentNotice && (
-        <div
-          className={`claimed-banner payment-notice ${paymentNotice.type}`}
-          role="status"
-        >
+        <div className={`claimed-banner payment-notice ${paymentNotice.type}`} role="status">
           <span>{paymentNotice.message}</span>
           <button
             type="button"
@@ -446,7 +473,15 @@ export function Hero({
 
       {justClaimed && (
         <div className="claimed-banner celebration" role="status">
-          <span>🏆 Congratulations! <strong>{justClaimed}</strong> has claimed Top Floor (#1)!</span>
+          <span>
+            🏆 Congratulations! <strong>{justClaimed.companyName}</strong> has claimed{" "}
+            {justClaimed.rank === 1
+              ? "Top Floor (#1)"
+              : justClaimed.rank
+                ? `Floor #${justClaimed.rank}`
+                : "a floor on the skyscraper"}
+            !
+          </span>
           <button
             type="button"
             className="claimed-close-btn"
@@ -461,32 +496,45 @@ export function Hero({
       {/* Existing Floor Reclaim / Top Floor Status Notice */}
       {existingFloorOnTower && existingFloorOnTower.rank === 1 && (
         <div className="claimed-banner celebration" style={{ marginBottom: "16px" }} role="status">
-          <span>👑 <strong>{existingFloorOnTower.companyName || url}</strong> is currently featured at Top Penthouse Floor #1!</span>
+          <span>
+            👑 <strong>{existingFloorOnTower.companyName || url}</strong> is currently featured at
+            Top Penthouse Floor #1!
+          </span>
         </div>
       )}
 
       {existingFloorOnTower && existingFloorOnTower.rank > 1 && (
         <div
           className="claimed-banner payment-notice info"
-          style={{ marginBottom: "16px", background: "rgba(255, 107, 0, 0.12)", border: "1px solid rgba(255, 120, 0, 0.35)", color: "#ff8c00" }}
+          style={{
+            marginBottom: "16px",
+            background: "rgba(255, 107, 0, 0.12)",
+            border: "1px solid rgba(255, 120, 0, 0.35)",
+            color: "#ff8c00",
+          }}
           role="status"
         >
           <span>
-            ⚡ <strong>{existingFloorOnTower.companyName || url}</strong> is on Floor #{existingFloorOnTower.rank} (₹{existingFloorOnTower.pricePaid} paid). Enter any bid starting at ₹50 to climb higher, or outbid for <strong>₹{differencePrice}</strong> to take <strong>Top Floor #1</strong>!
+            ⚡ <strong>{existingFloorOnTower.companyName || url}</strong> is on Floor #
+            {existingFloorOnTower.rank} (₹{existingFloorOnTower.pricePaid} paid). Enter any bid
+            starting at ₹50 to climb higher, or outbid for <strong>₹{differencePrice}</strong> to
+            take <strong>Top Floor #1</strong>!
           </span>
         </div>
       )}
 
       <h1 className="headline">
-        {existingFloorOnTower && existingFloorOnTower.rank > 1 ? (
-          price >= differencePrice ? "Outbid & reclaim top floor for" : "Boost your floor for"
-        ) : existingFloorOnTower && existingFloorOnTower.rank === 1 ? (
-          "Featured at Top Penthouse Floor #1"
-        ) : price >= topFloorPrice ? (
-          topFloorClaimed ? "Outbid top floor for" : "Claim top floor for"
-        ) : (
-          "Claim a floor for"
-        )}
+        {existingFloorOnTower && existingFloorOnTower.rank > 1
+          ? price >= differencePrice
+            ? "Outbid & reclaim top floor for"
+            : "Boost your floor for"
+          : existingFloorOnTower && existingFloorOnTower.rank === 1
+            ? "Featured at Top Penthouse Floor #1"
+            : price >= topFloorPrice
+              ? topFloorClaimed
+                ? "Outbid top floor for"
+                : "Claim top floor for"
+              : "Claim a floor for"}
         {(!existingFloorOnTower || existingFloorOnTower.rank > 1) && (
           <span className="price-stepper">
             <button
@@ -498,7 +546,10 @@ export function Hero({
             >
               <Minus />
             </button>
-            <span className="price-editable-wrap" title="Click or tap to type any custom bid amount (min ₹50)">
+            <span
+              className="price-editable-wrap"
+              title="Click or tap to type any custom bid amount (min ₹50)"
+            >
               <span className="price-currency">₹</span>
               <input
                 type="number"
@@ -686,7 +737,9 @@ export function Hero({
 
                   {!hasAnyMatches && (
                     <div className="category-empty-state">
-                      <p className="category-empty-text">No industries matching &ldquo;{searchQuery}&rdquo;</p>
+                      <p className="category-empty-text">
+                        No industries matching &ldquo;{searchQuery}&rdquo;
+                      </p>
                       <button
                         type="button"
                         className="category-empty-fallback-btn"
@@ -705,7 +758,9 @@ export function Hero({
         <button
           type="submit"
           className={`claim-btn ${existingFloorOnTower && existingFloorOnTower.rank === 1 ? "claim-btn-locked" : ""}`}
-          disabled={isSubmitting || Boolean(existingFloorOnTower && existingFloorOnTower.rank === 1)}
+          disabled={
+            isSubmitting || Boolean(existingFloorOnTower && existingFloorOnTower.rank === 1)
+          }
           title={
             existingFloorOnTower && existingFloorOnTower.rank === 1
               ? "This startup is already at Top Penthouse Floor #1"
@@ -718,32 +773,49 @@ export function Hero({
             <>👑 Already Top Floor #1</>
           ) : existingFloorOnTower && existingFloorOnTower.rank > 1 ? (
             price >= differencePrice ? (
-              <>⚡ Outbid & Reclaim Top Floor #1 for ₹{price} <Arrow /></>
+              <>
+                ⚡ Outbid & Reclaim Top Floor #1 for ₹{price} <Arrow />
+              </>
             ) : (
-              <>⚡ Boost Floor for ₹{price} <Arrow /></>
+              <>
+                ⚡ Boost Floor for ₹{price} <Arrow />
+              </>
             )
           ) : price >= topFloorPrice ? (
             topFloorClaimed ? (
-              <>⚡ Outbid Top Floor #1 for ₹{price} <Arrow /></>
+              <>
+                ⚡ Outbid Top Floor #1 for ₹{price} <Arrow />
+              </>
             ) : (
-              <>⚡ Claim Top Floor #1 for ₹{price} <Arrow /></>
+              <>
+                ⚡ Claim Top Floor #1 for ₹{price} <Arrow />
+              </>
             )
           ) : (
-            <>⚡ Claim Floor for ₹{price} <Arrow /></>
+            <>
+              ⚡ Claim Floor for ₹{price} <Arrow />
+            </>
           )}
         </button>
       </form>
 
       <p className="subtitle">
-        Claim your startup&apos;s floor on the digital skyscraper. Outbid competitors to take Top Floor #1.
+        Claim your startup&apos;s floor on the digital skyscraper. Outbid competitors to take Top
+        Floor #1.
       </p>
 
       <div className="policy-links-container">
-        <a href="/rules" className="policy-link">Platform Rules</a>
+        <a href="/rules" className="policy-link">
+          Platform Rules
+        </a>
         <span className="policy-dot">•</span>
-        <a href="/terms" className="policy-link">Terms</a>
+        <a href="/terms" className="policy-link">
+          Terms
+        </a>
         <span className="policy-dot">•</span>
-        <a href="/privacy" className="policy-link">Privacy</a>
+        <a href="/privacy" className="policy-link">
+          Privacy
+        </a>
       </div>
     </section>
   );

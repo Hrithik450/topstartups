@@ -124,6 +124,30 @@ export function Main({
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
+  // Sync floors store on any claim or refresh custom event
+  useEffect(() => {
+    const handleRefresh = async () => {
+      try {
+        const res = await fetch("/api/floors", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.floors && Array.isArray(data.floors)) {
+            useFloorsStore.getState().setFloors(data.floors);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to refresh floors:", err);
+      }
+    };
+
+    window.addEventListener("floors-refresh", handleRefresh);
+    window.addEventListener("floor-claimed-success", handleRefresh);
+    return () => {
+      window.removeEventListener("floors-refresh", handleRefresh);
+      window.removeEventListener("floor-claimed-success", handleRefresh);
+    };
+  }, []);
+
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "sunset" : "dark";
     setTheme(nextTheme);

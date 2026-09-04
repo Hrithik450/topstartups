@@ -481,6 +481,8 @@ export function Hero({
           category: selectedCategory?.name || "Startup",
           price: Math.max(50, price),
           targetRank,
+          customerName: user?.name || undefined,
+          customerEmail: user?.email || undefined,
         }),
       });
 

@@ -6,6 +6,8 @@ import { verifyWebsiteLive, extractRootHostname } from "@/lib/validation/domain"
 import { auth } from "@/lib/auth/auth";
 import { FloorsService } from "@/actions/floors/floors.service";
 
+import { UserModel } from "@/actions/user/user.model";
+
 export const dynamic = "force-dynamic";
 
 /** SECURITY: Strip HTML/script tags and limit length */
@@ -108,6 +110,27 @@ export async function POST(req: NextRequest) {
     const candidateOrigin = `${protoHeader}://${hostHeader}`;
     const origin = ALLOWED_ORIGINS.includes(candidateOrigin) ? candidateOrigin : ALLOWED_ORIGINS[0];
 
+    // Determine customer personal name for billing invoice:
+    // Only pass real personal names from session, DB, or explicit input.
+    // Never fallback to company URL or domain name!
+    let customerName: string | undefined = undefined;
+    const candidateName = session?.user?.name || body.customerName;
+    if (candidateName && typeof candidateName === "string" && candidateName.trim()) {
+      const cleanCandidate = candidateName.trim();
+      if (!cleanCandidate.includes(".") && !cleanCandidate.includes("/")) {
+        customerName = sanitizeText(cleanCandidate, 100);
+      }
+    }
+
+    if (!customerName && userEmail) {
+      try {
+        const userRecord = await UserModel.getUserByEmail(userEmail);
+        if (userRecord?.name && userRecord.name.trim() && !userRecord.name.includes(".")) {
+          customerName = sanitizeText(userRecord.name.trim(), 100);
+        }
+      } catch {}
+    }
+
     // ─────────────────────────────────────────────────────────────
     // STEP 4: CREATE DODO CHECKOUT SESSION & INSERT PENDING CLAIM
     // ─────────────────────────────────────────────────────────────
@@ -115,7 +138,7 @@ export async function POST(req: NextRequest) {
       companyUrl: cleanUrl,
       category: cleanCategory,
       companyName: name,
-      customerName: session?.user?.name || name,
+      customerName,
       price: amount,
       customerEmail: userEmail,
       returnUrl: origin,

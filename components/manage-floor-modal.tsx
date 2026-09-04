@@ -131,6 +131,8 @@ export function ManageFloorModal({ isOpen, onClose, onFloorUpdated }: ManageFloo
           category: current.category,
           price: diff,
           targetRank: 1,
+          customerName: user?.name || undefined,
+          customerEmail: user?.email || undefined,
         }),
       });
 

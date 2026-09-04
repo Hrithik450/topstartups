@@ -4,16 +4,7 @@ import { useEffect, useState } from "react";
 import { RulerTall, Stack, Eye, Globe, Close, BarChart, ManageIcon } from "./icons";
 import { useUserStore } from "@/store/user-store";
 import { useFloorsStore } from "@/store/floors-store";
-
-interface LiveStatsState {
-  online: number;
-  heightFt: number;
-  claimedFloors: number;
-  totalFloors: number;
-  totalViews: number;
-  countriesCount: number;
-  mounted: boolean;
-}
+import { useStatsStore } from "@/store/stats-store";
 
 function getClientCountryGuess(): { code: string; name: string } | null {
   try {
@@ -44,18 +35,12 @@ function getClientCountryGuess(): { code: string; name: string } | null {
 }
 
 export function useLiveStats(initialHeightFt = 731) {
-  const [stats, setStats] = useState<LiveStatsState>({
-    online: 1,
-    heightFt: initialHeightFt,
-    claimedFloors: 0,
-    totalFloors: 50,
-    totalViews: 0,
-    countriesCount: 1,
-    mounted: false,
-  });
+  const { stats, isStatsReady, pingAndSync } = useStatsStore();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Generate or retrieve persistent session ID for active presence tracking
+    setMounted(true);
+
     let sessionId = "";
     try {
       sessionId = sessionStorage.getItem("gtf_visitor_session") || "";
@@ -69,37 +54,6 @@ export function useLiveStats(initialHeightFt = 731) {
 
     const countryGuess = getClientCountryGuess();
 
-    // Ping server with visitor heartbeat and fetch real database stats
-    const pingAndSyncStats = async (isNewSession: boolean = false) => {
-      try {
-        const res = await fetch("/api/stats", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId,
-            countryCode: countryGuess?.code,
-            countryName: countryGuess?.name,
-            isNewSession,
-          }),
-        });
-
-        const data = await res.json();
-        if (data.success && data.stats) {
-          setStats({
-            online: data.stats.online,
-            heightFt: data.stats.heightFt || initialHeightFt,
-            claimedFloors: data.stats.claimedFloors,
-            totalFloors: data.stats.totalFloors || 50,
-            totalViews: data.stats.totalViews,
-            countriesCount: data.stats.countriesCount,
-            mounted: true,
-          });
-        }
-      } catch (err) {
-        console.warn("Could not sync live stats:", err);
-      }
-    };
-
     // Record 1 visit per visitor session (prevents duplicate increments on reloads)
     let isNewSession = false;
     try {
@@ -111,15 +65,32 @@ export function useLiveStats(initialHeightFt = 731) {
       isNewSession = true;
     }
 
-    // 1. Initial page load: sync stats (and increment only if new session)
-    pingAndSyncStats(isNewSession);
+    // 1. Initial heartbeat ping
+    pingAndSync({
+      sessionId,
+      countryCode: countryGuess?.code,
+      countryName: countryGuess?.name,
+      isNewSession,
+    });
 
-    // 2. Re-ping every 35 seconds to maintain real online presence (without incrementing view count)
-    const interval = setInterval(() => pingAndSyncStats(false), 35000);
+    // 2. Re-ping every 35 seconds to maintain real online presence
+    const interval = setInterval(() => {
+      pingAndSync({
+        sessionId,
+        countryCode: countryGuess?.code,
+        countryName: countryGuess?.name,
+        isNewSession: false,
+      });
+    }, 35000);
+
     return () => clearInterval(interval);
-  }, [initialHeightFt]);
+  }, [pingAndSync]);
 
-  return stats;
+  return {
+    ...stats,
+    heightFt: stats.heightFt || initialHeightFt,
+    mounted: mounted || isStatsReady,
+  };
 }
 
 export function StatChips({

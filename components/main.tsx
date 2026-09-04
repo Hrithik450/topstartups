@@ -13,10 +13,17 @@ import { Moon, Sun, ManageIcon, SoundOn, SoundOff } from "@/components/icons";
 import type { Floor } from "@/lib/db/config/schema";
 import { useFloorsStore } from "@/store/floors-store";
 import { useUserStore } from "@/store/user-store";
+import { useStatsStore, type LiveStatsData } from "@/store/stats-store";
 
 const TowerScene = dynamic(() => import("./tower-scene").then((m) => m.TowerScene), { ssr: false });
 
-export function Main({ initialFloors = [] }: { initialFloors?: Floor[] }) {
+export function Main({
+  initialFloors = [],
+  initialStats = null,
+}: {
+  initialFloors?: Floor[];
+  initialStats?: LiveStatsData | null;
+}) {
   const initializedRef = useRef(false);
 
   const { user, login } = useUserStore();
@@ -34,13 +41,18 @@ export function Main({ initialFloors = [] }: { initialFloors?: Floor[] }) {
   const [isSceneReady, setIsSceneReady] = useState(false);
   const isBuildingLoading = !(isSceneReady && isFloorsReady);
 
-  // Initialize store with SSR initialFloors once on mount
+  // Initialize store with SSR initialFloors and initialStats once on mount
   useEffect(() => {
-    if (!initializedRef.current && initialFloors.length > 0) {
+    if (!initializedRef.current) {
       initializedRef.current = true;
-      setFloors(initialFloors);
+      if (initialFloors.length > 0) {
+        setFloors(initialFloors);
+      }
+      if (initialStats) {
+        useStatsStore.getState().initializeStats(initialStats);
+      }
     }
-  }, [initialFloors, setFloors]);
+  }, [initialFloors, initialStats, setFloors]);
 
   const toggleSound = useCallback(() => {
     const next = handleRef.current?.toggleSound?.() ?? false;

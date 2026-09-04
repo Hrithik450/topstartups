@@ -8,11 +8,9 @@ import { StatChips, MobileStatsSheet } from "@/components/stat-chips";
 import { Controls } from "@/components/controls";
 import { FloorHoverCard, type HoverData } from "@/components/floor-hover-card";
 import { BuildingLoader } from "@/components/building-loader";
-import { ManageFloorModal } from "@/components/manage-floor-modal";
-import { Moon, Sun, ManageIcon, SoundOn, SoundOff } from "@/components/icons";
+import { Moon, Sun, SoundOn, SoundOff } from "@/components/icons";
 import type { Floor } from "@/lib/db/config/schema";
 import { useFloorsStore } from "@/store/floors-store";
-import { useUserStore } from "@/store/user-store";
 import { useStatsStore, type LiveStatsData } from "@/store/stats-store";
 
 const TowerScene = dynamic(() => import("./tower-scene").then((m) => m.TowerScene), { ssr: false });
@@ -26,7 +24,6 @@ export function Main({
 }) {
   const initializedRef = useRef(false);
 
-  const { user, login } = useUserStore();
   const { floors, isFloorsReady, setFloors, setIsFloorsReady } = useFloorsStore();
   const { setStats } = useStatsStore();
 
@@ -37,7 +34,6 @@ export function Main({
 
   const [isSoundOn, setIsSoundOn] = useState(false);
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
-  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
 
   const [isSceneReady, setIsSceneReady] = useState(false);
   const isBuildingLoading = !(isSceneReady && isFloorsReady);
@@ -171,60 +167,11 @@ export function Main({
             >
               {isSoundOn ? <SoundOn /> : <SoundOff />}
             </button>
-            {user ? (
-              <button
-                className="mobile-header-btn"
-                onClick={() => setIsManageModalOpen(true)}
-                aria-label="Manage your claimed floors"
-                title="Manage your claimed floors"
-                style={{ padding: "4px" }}
-              >
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl || ""}
-                    alt={user.name || user.email || "Founder"}
-                    referrerPolicy="no-referrer"
-                    style={{
-                      width: "22px",
-                      height: "22px",
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                    }}
-                  />
-                ) : (
-                  <span
-                    style={{
-                      width: "22px",
-                      height: "22px",
-                      borderRadius: "50%",
-                      background: "#ff9f43",
-                      color: "#000",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "10px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {(user.name || user.email).charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </button>
-            ) : (
-              <button
-                className="mobile-header-btn highlight mobile-login-bounce"
-                onClick={() => login()}
-                aria-label="Manage Floors"
-                title="Manage Floors"
-              >
-                <ManageIcon />
-              </button>
-            )}
           </div>
         </header>
 
-        <Hero onOpenManage={() => setIsManageModalOpen(true)} initialFloors={initialFloors} />
-        <StatChips onOpenManage={() => setIsManageModalOpen(true)} />
+        <Hero initialFloors={initialFloors} />
+        <StatChips />
         <Controls
           handleRef={handleRef}
           theme={theme}
@@ -236,12 +183,10 @@ export function Main({
         <FloorHoverCard
           data={hoveredData}
           onClose={handleCloseCard}
-          onManage={() => setIsManageModalOpen(true)}
           onMouseEnter={handleCardMouseEnter}
           onMouseLeave={handleCardMouseLeave}
         />
         <MobileStatsSheet open={isMobileStatsOpen} onClose={() => setIsMobileStatsOpen(false)} />
-        <ManageFloorModal isOpen={isManageModalOpen} onClose={() => setIsManageModalOpen(false)} />
 
         {/* Semantic SEO Directory for Search Engine Crawlers & Screen Readers */}
         <section

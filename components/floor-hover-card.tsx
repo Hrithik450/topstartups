@@ -3,8 +3,6 @@
 import React from "react";
 import type { Floor } from "@/lib/db/config/schema";
 import { Close } from "./icons";
-import { useUserStore } from "@/store/user-store";
-import { useFloorsStore } from "@/store/floors-store";
 
 function getTimeAgo(dateInput?: string | Date | null) {
   if (!dateInput) return "3d ago";
@@ -54,27 +52,18 @@ export function ExternalLink() {
 export function FloorHoverCard({
   data,
   onClose,
-  onManage,
   onMouseEnter,
   onMouseLeave,
 }: {
   data: HoverData | null;
   onClose?: () => void;
-  onManage?: (listing: Floor) => void;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }) {
-  const { user } = useUserStore();
-  const { isOwnerOfFloor } = useFloorsStore();
-
   if (!data) return null;
   const { listing, rank } = data;
   const rawUrl = listing?.companyUrl || "";
   const rawName = listing?.companyName || "";
-  const floorEmail = listing?.userEmail;
-  const isOwner =
-    (listing?.id ? isOwnerOfFloor(String(listing.id)) : false) ||
-    Boolean(user?.email && floorEmail && floorEmail === user.email);
 
   const cleanDomain = rawUrl
     .replace(/^https?:\/\//i, "")
@@ -196,7 +185,7 @@ export function FloorHoverCard({
               </div>
             </div>
 
-            {/* Action Buttons: Visit Website / Edit Floor (Owner Only) */}
+            {/* Action Button: Visit Website */}
             <div className="floor-hover-card-action">
               <a
                 href={targetUrl}
@@ -208,26 +197,6 @@ export function FloorHoverCard({
                 <span>Visit Website</span>
                 <ExternalLink />
               </a>
-
-              {isOwner && onManage && (
-                <button
-                  type="button"
-                  className="floor-hover-card-manage-btn"
-                  style={{
-                    background: "rgba(255, 159, 67, 0.18)",
-                    border: "1px solid rgba(255, 159, 67, 0.4)",
-                    color: "#ff9f43",
-                    fontWeight: 600,
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onManage(listing);
-                  }}
-                  title="Update your claimed floor details"
-                >
-                  Manage
-                </button>
-              )}
             </div>
           </div>
         </div>

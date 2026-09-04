@@ -27,12 +27,8 @@ export async function getTopFloorPriceAction() {
 /**
  * Server action to calculate outbid pricing for a host.
  */
-export async function getOutbidPricingAction(
-  cleanHost: string,
-  userEmail?: string | null,
-  userId?: string | null
-) {
-  return await FloorsService.getOutbidPricing(cleanHost, userEmail, userId);
+export async function getOutbidPricingAction(cleanHost: string) {
+  return await FloorsService.getOutbidPricing(cleanHost);
 }
 
 /**

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RulerTall, Stack, Eye, Globe, Close, BarChart, ManageIcon, Money } from "./icons";
-import { useUserStore } from "@/store/user-store";
+import { RulerTall, Stack, Eye, Globe, Close, BarChart, Money } from "./icons";
 import { useFloorsStore } from "@/store/floors-store";
 import { useStatsStore } from "@/store/stats-store";
 import { calculateTowerHeightFt } from "@/lib/stats";
@@ -113,90 +112,12 @@ export function useLiveStats(customHeightFt?: number | string) {
 
 export function StatChips({
   heightFt,
-  onOpenManage,
 }: {
   heightFt?: number | string;
-  onOpenManage?: () => void;
 } = {}) {
   const stats = useLiveStats(heightFt);
-  const { user, login } = useUserStore();
-  const { ownedFloors } = useFloorsStore();
 
   const chips = [
-    ...(user
-      ? [
-          {
-            key: "user-profile",
-            className: "user-profile-chip",
-            onClick: onOpenManage,
-            title: "Manage your claimed startup floors",
-            render: () => {
-              const userPhoto = user.avatarUrl || (user as any).image;
-              return (
-                <>
-                  {userPhoto ? (
-                    <img
-                      src={userPhoto}
-                      alt={user.name || user.email || "Founder"}
-                      referrerPolicy="no-referrer"
-                      style={{
-                        width: "16px",
-                        height: "16px",
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    <span
-                      style={{
-                        width: "16px",
-                        height: "16px",
-                        borderRadius: "50%",
-                        background: "#ff9f43",
-                        color: "#000",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "9px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {(user.name || user.email).charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                  <span>Manage</span>
-                  {ownedFloors.length > 0 && (
-                    <span
-                      style={{
-                        fontSize: "10.5px",
-                        opacity: 0.85,
-                        background: "rgba(255,159,67,0.25)",
-                        padding: "1px 6px",
-                        borderRadius: "999px",
-                      }}
-                    >
-                      {ownedFloors.length}
-                    </span>
-                  )}
-                </>
-              );
-            },
-          },
-        ]
-      : [
-          {
-            key: "manage-chip",
-            className: "login-chip-bounce",
-            onClick: () => login(),
-            title: "Manage your skyscraper startups",
-            render: () => (
-              <>
-                <ManageIcon />
-                <span>Manage</span>
-              </>
-            ),
-          },
-        ]),
     {
       key: "online",
       className: "online",
@@ -284,32 +205,15 @@ export function StatChips({
 
   return (
     <div className="stats desktop-stats">
-      {chips.map((c, i) => {
-        if ("onClick" in c && c.onClick) {
-          return (
-            <button
-              key={c.key}
-              type="button"
-              onClick={c.onClick}
-              title={c.title}
-              className={`chip ${c.className ?? ""}`}
-              style={{ ["--i" as string]: i }}
-            >
-              {c.render()}
-            </button>
-          );
-        }
-
-        return (
-          <span
-            key={c.key}
-            className={`chip ${c.className ?? ""}`}
-            style={{ ["--i" as string]: i }}
-          >
-            {c.render()}
-          </span>
-        );
-      })}
+      {chips.map((c, i) => (
+        <span
+          key={c.key}
+          className={`chip ${c.className ?? ""}`}
+          style={{ ["--i" as string]: i }}
+        >
+          {c.render()}
+        </span>
+      ))}
     </div>
   );
 }

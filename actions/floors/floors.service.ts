@@ -100,36 +100,14 @@ export class FloorsService {
   /**
    * Calculate outbid requirements and top floor pricing for a candidate domain.
    */
-  static async getOutbidPricing(
-    cleanHost: string,
-    userEmail?: string | null,
-    userId?: string | null
-  ): Promise<{
+  static async getOutbidPricing(cleanHost: string): Promise<{
     topFloorPrice: number;
     maxPrice: number;
     existingFloor: Floor | null;
     minRequiredPrice: number;
   }> {
     const { maxPrice, topFloorPrice } = await FloorsModel.getTopFloorPrice();
-
-    let existingFloor: Floor | null = null;
-
-    if (userId) {
-      const userRes = await UserService.getUserWithFloors(userId);
-      existingFloor =
-        userRes.data?.floors?.find((f) => extractRootHostname(f.companyUrl || "") === cleanHost) ||
-        null;
-    } else if (userEmail) {
-      const userRes = await UserService.getUserWithFloorsByEmail(userEmail);
-      existingFloor =
-        userRes.data?.floors?.find((f) => extractRootHostname(f.companyUrl || "") === cleanHost) ||
-        null;
-    }
-
-    if (!existingFloor) {
-      existingFloor = await FloorsModel.findFloorByHost(cleanHost);
-    }
-
+    const existingFloor = await FloorsModel.findFloorByHost(cleanHost);
     const minRequiredPrice = 50;
 
     return {

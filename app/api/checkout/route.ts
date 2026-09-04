@@ -66,28 +66,19 @@ export async function POST(req: NextRequest) {
     const cleanHost = extractRootHostname(verification.domain || cleanUrl);
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 2: AUTHENTICATION CHECK SECOND
-    // Must be logged in to claim/outbid on the skyscraper
+    // STEP 2: GUEST OR OPTIONAL USER IDENTIFIER
     // ─────────────────────────────────────────────────────────────
-    const session = await auth();
+    const session = await auth().catch(() => null);
     const userEmail =
-      session?.user?.email?.toLowerCase().trim() || body.customerEmail?.trim()?.toLowerCase();
-    if (!userEmail) {
-      return NextResponse.json(
-        { error: "Please sign in with Google to claim a floor on the skyscraper." },
-        { status: 401 }
-      );
-    }
+      session?.user?.email?.toLowerCase().trim() ||
+      body.customerEmail?.trim()?.toLowerCase() ||
+      undefined;
     const userId = session?.user?.id || null;
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 3: DYNAMIC OUTBID PRICING CALCULATION (DIRECT FROM SERVICE)
+    // STEP 3: DYNAMIC OUTBID PRICING CALCULATION (BY DOMAIN)
     // ─────────────────────────────────────────────────────────────
-    const { topFloorPrice } = await FloorsService.getOutbidPricing(
-      cleanHost,
-      userEmail,
-      userId
-    );
+    const { topFloorPrice } = await FloorsService.getOutbidPricing(cleanHost);
 
     // Bare minimum payment allowed is ₹50 (unlimited upper bound)
     const MIN_PLATFORM_PRICE = 50;

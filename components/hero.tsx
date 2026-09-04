@@ -22,11 +22,9 @@ async function safeFetchJson(res: Response): Promise<any> {
 }
 
 export function Hero({
-  onOpenManage,
   initialFloors = [],
   initialLocks = {},
 }: {
-  onOpenManage?: () => void;
   initialFloors?: any[];
   initialLocks?: Record<number, any>;
 } = {}) {
@@ -388,68 +386,6 @@ export function Hero({
     }
   }, []);
 
-  // Check for pending claim intent after returning from Google Auth
-  useEffect(() => {
-    if (!user || typeof window === "undefined") return;
-
-    try {
-      const pendingRaw = sessionStorage.getItem("pending_claim_intent");
-      if (pendingRaw) {
-        sessionStorage.removeItem("pending_claim_intent");
-        const pending = JSON.parse(pendingRaw);
-        if (pending.url) {
-          setUrl(pending.url);
-          if (pending.price) setPrice(pending.price);
-          if (pending.category) {
-            const cat =
-              MAIN_CATEGORIES.find((c) => c.name.toLowerCase() === pending.category.toLowerCase()) ||
-              SPECIAL_OPTIONS.find((c) => c.name.toLowerCase() === pending.category.toLowerCase());
-            if (cat) setSelectedCategory(cat);
-          }
-
-          const syntaxCheck = validateWebsiteSyntax(pending.url);
-          if (!syntaxCheck.valid) {
-            setPaymentNotice({
-              type: "error",
-              message: syntaxCheck.error || "Please enter a valid, secure HTTPS website.",
-            });
-            return;
-          }
-
-          setIsSubmitting(true);
-          fetch("/api/checkout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              url: syntaxCheck.cleanUrl || pending.url,
-              category: pending.category || "Startup",
-              price: pending.price || 50,
-            }),
-          })
-            .then(safeFetchJson)
-            .then(async (data) => {
-              if (data?.checkoutUrl) {
-                window.location.href = data.checkoutUrl;
-              } else {
-                setIsSubmitting(false);
-                setPaymentNotice({
-                  type: "error",
-                  message: data?.error || "Website verification failed. Please enter an active, secure HTTPS website.",
-                });
-              }
-            })
-            .catch((err) => {
-              setIsSubmitting(false);
-              setPaymentNotice({
-                type: "error",
-                message: err?.message || "Could not start checkout. Please try again.",
-              });
-            });
-        }
-      }
-    } catch (e) {}
-  }, [user]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) {
@@ -502,22 +438,17 @@ export function Hero({
 
       const verifiedUrl = valData.cleanUrl || syntaxCheck.cleanUrl || url.trim();
 
-      // Direct Google Auth Gate before checkout if not logged in
-      if (!user) {
-        try {
-          sessionStorage.setItem(
-            "pending_claim_intent",
-            JSON.stringify({
-              url: verifiedUrl,
-              category: selectedCategory.name,
-              price: Math.max(50, price),
-            })
-          );
-        } catch (e) {}
-
-        login("/");
-        return;
-      }
+      // Save pending claim intent in session storage for return verification
+      try {
+        sessionStorage.setItem(
+          "pending_claim_intent",
+          JSON.stringify({
+            url: verifiedUrl,
+            category: selectedCategory.name,
+            price: Math.max(50, price),
+          })
+        );
+      } catch (e) {}
 
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -572,13 +503,6 @@ export function Hero({
           <span>🏆 Congratulations! <strong>{justClaimed}</strong> has claimed Top Floor (#1)!</span>
           <button
             type="button"
-            className="claimed-edit-btn"
-            onClick={() => onOpenManage?.()}
-          >
-            Manage
-          </button>
-          <button
-            type="button"
             className="claimed-close-btn"
             onClick={() => setJustClaimed(null)}
             aria-label="Close"
@@ -591,10 +515,7 @@ export function Hero({
       {/* Existing Floor Reclaim / Top Floor Status Notice */}
       {existingFloorOnTower && existingFloorOnTower.rank === 1 && (
         <div className="claimed-banner celebration" style={{ marginBottom: "16px" }} role="status">
-          <span>👑 <strong>{existingFloorOnTower.companyName || url}</strong> is already featured at Top Penthouse Floor #1!</span>
-          <button type="button" className="claimed-edit-btn" onClick={() => onOpenManage?.()}>
-            Manage
-          </button>
+          <span>👑 <strong>{existingFloorOnTower.companyName || url}</strong> is currently featured at Top Penthouse Floor #1!</span>
         </div>
       )}
 
@@ -605,11 +526,8 @@ export function Hero({
           role="status"
         >
           <span>
-            ⚡ <strong>{existingFloorOnTower.companyName || url}</strong> is on Floor #{existingFloorOnTower.rank} (₹{existingFloorOnTower.pricePaid} paid). Outbid for <strong>₹{differencePrice}</strong> to reclaim <strong>Top Floor #1</strong> with a total floor value of <strong>₹{Number(existingFloorOnTower.pricePaid || 0) + differencePrice}</strong>!
+            ⚡ <strong>{existingFloorOnTower.companyName || url}</strong> is on Floor #{existingFloorOnTower.rank} (₹{existingFloorOnTower.pricePaid} paid). Enter any bid starting at ₹50 to climb higher, or outbid for <strong>₹{differencePrice}</strong> to take <strong>Top Floor #1</strong>!
           </span>
-          <button type="button" className="claimed-edit-btn" style={{ background: "#ff6b00", color: "#fff", borderColor: "#ff6b00" }} onClick={() => onOpenManage?.()}>
-            Manage
-          </button>
         </div>
       )}
 

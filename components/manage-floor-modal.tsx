@@ -430,7 +430,9 @@ export function ManageFloorModal({ isOpen, onClose, onFloorUpdated }: ManageFloo
                   onChange={(e) => setSelectedFloorId(e.target.value)}
                 >
                   {ownedFloors.map((f) => {
-                    const idx = floors.findIndex((fl) => fl.id === f.id || fl.companyUrl === f.companyUrl);
+                    const idx = floors.findIndex(
+                      (fl) => fl.id === f.id || fl.companyUrl === f.companyUrl
+                    );
                     const rankDisplay = idx !== -1 ? idx + 1 : f.rank || "—";
                     return (
                       <option key={f.id} value={f.id}>
@@ -661,8 +663,8 @@ export function ManageFloorModal({ isOpen, onClose, onFloorUpdated }: ManageFloo
                   {uploadingLogo
                     ? "Uploading Logo..."
                     : saving
-                    ? "Saving Changes..."
-                    : "Save Changes"}
+                      ? "Saving Changes..."
+                      : "Save Changes"}
                 </button>
               </div>
             </form>

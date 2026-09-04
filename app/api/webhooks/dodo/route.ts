@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       const checkoutSessionId =
         data.checkout_session_id || data.checkout_id || payload.checkout_session_id || paymentId;
 
-      const companyUrl = metadata.company_url || "https://getopfloor.com";
+      const companyUrl = metadata.company_url || metadata.url || "https://getopfloor.com";
       const companyName = metadata.company_name;
       const category = metadata.category;
       const price =

@@ -181,14 +181,16 @@ export async function GET(req: NextRequest) {
         metadata.company_name || pendingClaim?.companyName || customerName || "New Startup";
 
       const companyUrl =
-        pendingClaim?.companyUrl || metadata.company_url || "https://getopfloor.com";
+        pendingClaim?.companyUrl || metadata.company_url || metadata.url || "https://getopfloor.com";
       const category = pendingClaim?.category || metadata.category || "Startup";
       const price = pendingClaim?.amount || Number(metadata.price) || 50;
+      const finalCheckoutSessionId = checkoutSessionId || pendingClaim?.checkoutSessionId || targetId;
+      const finalPaymentId = paymentId || pendingClaim?.paymentId || (targetId.startsWith("pay_") ? targetId : undefined);
 
       // Claim floor atomically based on pricePaid via FloorsService
       const result = await FloorsService.claimTopFloor({
-        checkoutSessionId: checkoutSessionId || targetId,
-        paymentId: paymentId || undefined,
+        checkoutSessionId: finalCheckoutSessionId,
+        paymentId: finalPaymentId,
         companyName,
         companyUrl,
         category,

@@ -18,12 +18,23 @@ function sanitizeText(input: string, maxLength = 255): string {
     .slice(0, maxLength);
 }
 
-/** SECURITY: Whitelist of allowed return origins to prevent Host header injection */
-const ALLOWED_ORIGINS = [
-  process.env.NEXT_PUBLIC_BASE_URL || "https://getopfloor.com",
-  "http://localhost:3000",
-  "http://localhost:3001",
-];
+/** SECURITY: Validate return origin to allow custom domains, vercel previews, and localhost */
+function isAllowedOrigin(origin: string): boolean {
+  try {
+    const parsed = new URL(origin);
+    if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") return true;
+    if (parsed.hostname === "getopfloor.com" || parsed.hostname.endsWith(".getopfloor.com")) return true;
+    if (parsed.hostname.endsWith(".vercel.app")) return true;
+    if (process.env.NEXT_PUBLIC_BASE_URL) {
+      try {
+        if (new URL(process.env.NEXT_PUBLIC_BASE_URL).hostname === parsed.hostname) return true;
+      } catch {}
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -103,12 +114,14 @@ export async function POST(req: NextRequest) {
     const cleanCategory = sanitizeText(category.trim(), 128);
 
     // Determine return origin
-    const hostHeader = req.headers.get("host") || "localhost:3000";
+    const hostHeader = req.headers.get("host") || "getopfloor.com";
     const protoHeader =
       req.headers.get("x-forwarded-proto") ||
       (hostHeader.startsWith("localhost") ? "http" : "https");
     const candidateOrigin = `${protoHeader}://${hostHeader}`;
-    const origin = ALLOWED_ORIGINS.includes(candidateOrigin) ? candidateOrigin : ALLOWED_ORIGINS[0];
+    const origin = isAllowedOrigin(candidateOrigin)
+      ? candidateOrigin
+      : (process.env.NEXT_PUBLIC_BASE_URL || "https://getopfloor.com");
 
     // Determine customer personal name for billing invoice:
     // Only pass real personal names from session, DB, or explicit input.

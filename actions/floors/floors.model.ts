@@ -1,8 +1,8 @@
-import { floors, claims, users, type Floor, type NewFloor } from "@/lib/db/config/schema";
 import { eq, and, sql, or } from "drizzle-orm";
 import { db } from "@/lib/db/config/client";
 import { unstable_cache } from "next/cache";
 import { extractRootHostname } from "@/lib/validation/domain";
+import { floors, claims, users, type Floor, type NewFloor } from "@/lib/db/config/schema";
 
 export interface ClaimFloorPreparedInput {
   paymentId?: string | null;
@@ -404,7 +404,7 @@ export class FloorsModel {
       await tx
         .insert(claims)
         .values({
-          paymentId: input.paymentId || input.checkoutSessionId,
+          paymentId: input.paymentId || null,
           checkoutSessionId: input.checkoutSessionId,
           status: "succeeded",
           companyName: companyName || cleanHost,

@@ -260,15 +260,19 @@ export function Hero({
 
     const params = new URLSearchParams(window.location.search);
     const paymentId = params.get("payment_id");
-    const rawSessionId = params.get("session_id") || params.get("checkout_id");
+    const rawSessionId =
+      params.get("session_id") ||
+      params.get("checkout_session_id") ||
+      params.get("checkout_id");
     const sessionId = rawSessionId && rawSessionId !== "{CHECKOUT_ID}" ? rawSessionId : null;
     const targetId = paymentId || sessionId;
 
     // Check if returning from a real Dodo checkout session
     if (targetId && !targetId.startsWith("mock_")) {
-      const targetQuery = paymentId
-        ? `payment_id=${encodeURIComponent(paymentId)}`
-        : `session_id=${encodeURIComponent(sessionId || "")}`;
+      const queryParts: string[] = [];
+      if (paymentId) queryParts.push(`payment_id=${encodeURIComponent(paymentId)}`);
+      if (sessionId) queryParts.push(`session_id=${encodeURIComponent(sessionId)}`);
+      const targetQuery = queryParts.join("&");
 
       setPaymentNotice({
         type: "info",
@@ -276,7 +280,7 @@ export function Hero({
       });
 
       let attempts = 0;
-      const maxAttempts = 3;
+      const maxAttempts = 10;
 
       const pollVerification = async () => {
         try {
@@ -330,10 +334,13 @@ export function Hero({
           // Still pending/processing at payment gateway -> retry quick backoff
           attempts++;
           if (attempts < maxAttempts) {
-            setTimeout(pollVerification, 1000);
+            setTimeout(pollVerification, 1200);
           } else {
             setIsSubmitting(false);
-            setPaymentNotice(null);
+            setPaymentNotice({
+              type: "info",
+              message: "Your payment was received and is confirming. Your floor will appear momentarily!",
+            });
             window.history.replaceState({}, "", window.location.pathname);
             window.dispatchEvent(new CustomEvent("floors-refresh"));
           }
@@ -369,6 +376,12 @@ export function Hero({
         if (pending.url) {
           setUrl(pending.url);
           if (pending.price) setPrice(pending.price);
+          if (pending.category) {
+            const cat =
+              MAIN_CATEGORIES.find((c) => c.name.toLowerCase() === pending.category.toLowerCase()) ||
+              SPECIAL_OPTIONS.find((c) => c.name.toLowerCase() === pending.category.toLowerCase());
+            if (cat) setSelectedCategory(cat);
+          }
 
           const syntaxCheck = validateWebsiteSyntax(pending.url);
           if (!syntaxCheck.valid) {
@@ -423,6 +436,15 @@ export function Hero({
       return;
     }
 
+    if (!selectedCategory) {
+      setPaymentNotice({
+        type: "error",
+        message: "Category is mandatory. Please select an industry category for your startup.",
+      });
+      setOpen(true);
+      return;
+    }
+
     // Client-side domain & syntax validation filter
     const syntaxCheck = validateWebsiteSyntax(url.trim());
     if (!syntaxCheck.valid) {
@@ -463,7 +485,7 @@ export function Hero({
             "pending_claim_intent",
             JSON.stringify({
               url: verifiedUrl,
-              category: selectedCategory?.name || "Startup",
+              category: selectedCategory.name,
               price: Math.max(50, price),
             })
           );
@@ -478,7 +500,7 @@ export function Hero({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url: verifiedUrl,
-          category: selectedCategory?.name || "Startup",
+          category: selectedCategory.name,
           price: Math.max(50, price),
           targetRank,
           customerName: user?.name || undefined,

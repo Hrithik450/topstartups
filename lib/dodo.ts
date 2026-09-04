@@ -19,8 +19,13 @@ export interface CheckoutResult {
 }
 
 export function getDodoApiUrl(): string {
-  const env = (process.env.DODO_PAYMENTS_ENVIRONMENT || "test").trim().toLowerCase();
-  return env === "live" ? "https://live.dodopayments.com" : "https://test.dodopayments.com";
+  const env = (process.env.DODO_PAYMENTS_ENVIRONMENT || "").trim().toLowerCase();
+  const isLive =
+    env === "live" ||
+    env === "live_mode" ||
+    env === "production" ||
+    env === "prod";
+  return isLive ? "https://live.dodopayments.com" : "https://test.dodopayments.com";
 }
 
 /**
@@ -53,6 +58,11 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
     throw new Error("DODO_PAYMENTS_PRODUCT_ID is not configured");
   }
 
+  // Ensure return URL includes {CHECKOUT_ID} placeholder so Dodo injects checkout session ID on return
+  const returnUrlWithParams = input.returnUrl.includes("{CHECKOUT_ID}")
+    ? input.returnUrl
+    : `${input.returnUrl}${input.returnUrl.includes("?") ? "&" : "?"}session_id={CHECKOUT_ID}`;
+
   // Real Dodo Payments REST API call
   try {
     const response = await fetch(`${getDodoApiUrl()}/checkouts`, {
@@ -66,6 +76,7 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
           ...(input.customerEmail ? { email: input.customerEmail } : {}),
           ...(input.customerName ? { name: input.customerName } : {}),
         },
+        billing_currency: "INR",
         product_cart: [
           {
             product_id: productId,
@@ -73,9 +84,10 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
             quantity: 1,
           },
         ],
-        return_url: input.returnUrl,
+        return_url: returnUrlWithParams,
         metadata: {
           company_url: companyUrl,
+          url: companyUrl,
           category: input.category || "",
           company_name: input.companyName,
           target_rank: (input.targetRank || 1).toString(),
@@ -198,7 +210,12 @@ export function extractDodoRedirectParams(searchParams: URLSearchParams): {
   status: string | null;
 } {
   const paymentId = searchParams.get("payment_id")?.trim() || null;
-  const sessionId = searchParams.get("session_id")?.trim() || null;
+  const rawSessionId =
+    searchParams.get("session_id")?.trim() ||
+    searchParams.get("checkout_session_id")?.trim() ||
+    searchParams.get("checkout_id")?.trim() ||
+    null;
+  const sessionId = rawSessionId && rawSessionId !== "{CHECKOUT_ID}" ? rawSessionId : null;
   const status = searchParams.get("status")?.trim() || null;
   const targetId = paymentId || sessionId;
 

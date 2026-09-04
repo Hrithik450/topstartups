@@ -4,12 +4,10 @@
 > Outbid your rivals, claim the penthouse floor (#1), and put your company on the global stage.  
 > *Backed by [BharatHunt](https://bharathunt.org)*
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.2-black?style=flat&logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.5-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?style=flat&logo=react)](https://react.dev/)
 [![Three.js](https://img.shields.io/badge/Three.js-WebGL-blue?style=flat&logo=three.js)](https://threejs.org/)
 [![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-PostgreSQL-C5F74F?style=flat&logo=drizzle)](https://orm.drizzle.team/)
-[![Auth.js](https://img.shields.io/badge/Auth.js-v5_(Beta)-black?style=flat&logo=auth0)](https://authjs.dev/)
-[![Google OAuth 2.0](https://img.shields.io/badge/Auth-Google_OAuth_2.0-4285F4?style=flat&logo=google)](https://developers.google.com/identity/protocols/oauth2)
 [![Dodo Payments](https://img.shields.io/badge/Dodo_Payments-Merchant_of_Record-FF5722?style=flat)](https://dodopayments.com/)
 [![Zustand](https://img.shields.io/badge/State-Zustand_5-443e38?style=flat)](https://zustand.docs.pmnd.rs/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -19,7 +17,7 @@
 ## 🌟 Key Features
 
 ### 🏢 1. Real-Time 3D Skyscraper Experience
-- **Interactive 50-Story Skyscraper**: Built with [Three.js](https://threejs.org/) featuring architectural glass materials, dynamic procedural city skyline, night sky with twinkling starfield, and real-time altitude ruler.
+- **Dynamic 3D Skyscraper Architecture**: Built with [Three.js](https://threejs.org/) (WebGL) featuring procedural architectural glass, dynamic city skyline, night sky starfield, and real-time altitude ruler that dynamically scales with every claimed floor.
 - **Rooftop Observations & 3D Animations**:
   - **Helipad & Chopper**: Hovering helicopter with animated spinning rotor blades.
   - **Rooftop Cafe Pavilion**: Vibrant sRGB-rendered cafe with physics colliders and animated descending passenger.
@@ -29,48 +27,42 @@
 - **Sound & Audio Ambiance**: Custom sound toggle for ambient rooftop and elevator audio feedback.
 
 ### 💰 2. Atomic Outbidding & Dynamic Leaderboard Engine
-- **Rank 1 Penthouse Claiming**: Founders can claim the top floor by completing checkout and setting a new highest price.
-- **Dynamic Leaderboard Sorting**: Floor ranks are computed dynamically (`ORDER BY price_paid DESC, claimed_at ASC`), ensuring real-time positioning without race conditions.
+- **Rank 1 Penthouse Claiming**: Startups bid to take the prestigious Penthouse Top Floor (#1) or enter any bid starting from ₹50 to climb into the skyscraper.
+- **Instant Client-Side Synchronization (0ms Latency)**: Floor purchases immediately push directly to the live Zustand state and Three.js 3D canvas upon payment confirmation without requiring a page reload.
+- **Dynamic Rank Celebration**: Real-time celebration banner announces the startup's verified assigned floor rank (e.g. `Top Floor (#1)` vs `Floor #5`).
+- **Dynamic Leaderboard Sorting**: Floor ranks are computed dynamically (`ORDER BY price_paid DESC, claimed_at ASC`), guaranteeing real-time positioning without race conditions.
 - **Idempotency Safeguard**: Dual-check payment processing (`payment_id` and `checkout_session_id`) guarantees no duplicate rank shifts or charges occur even if webhooks or redirects retry.
-- **Clean 50-Floor Boundary**: The tower maintains an active 50-floor layout, gracefully pruning placeholder slots as verified startups claim floors.
 - **Standardized Lowercase Domains**: Normalized hostname branding (e.g., `mhrithik.com`, `yashnixai.tech`) ensures clean and consistent typography across the 3D tower and modals.
 
-### 🔐 3. Modern Authentication with Auth.js (NextAuth v5) & Google OAuth
-- **Auth.js v5 Beta + Drizzle Adapter**: Deeply integrated with PostgreSQL using `@auth/drizzle-adapter` (`users`, `accounts`, `sessions`, `verificationTokens`).
-- **Google Account Selection**: `prompt: "select_account"` configuration for effortless multi-account switching.
-- **Automatic Account Linking**: `allowDangerousEmailAccountLinking: true` ensures users claiming floors prior to logging in have their claims seamlessly linked upon Google sign-in.
-- **Dynamic Profile Avatars**: Renders the authenticated Google user's profile avatar on the **Manage** button in the header and live chips.
-- **Tamper-Proof JWT Sessions**: Secure HTTP-only 30-day session tokens with cryptographic verification.
-
-### 🛡️ 4. Live Domain Verification & Automated Metadata Crawler
+### 🛡️ 3. Live Domain Verification & Hybrid High-Resolution Logo Crawler
 - **Strict HTTPS Enforcement**: Rejects insecure `http://` URLs and raw IP addresses.
 - **Anti-Spam & Demo Filter**: Blocks placeholder and invalid test domains (`test.com`, `example.com`, `dummy.com`, `localhost`, etc.).
 - **Live Reachability Check**: Server-side network and SSL handshake verification tests that submitted URLs are live and secure before checkout.
-- **Multi-Tier Website Scraper**:
-  - Primary scraper powered by [Firecrawl](https://firecrawl.dev/) for high-precision metadata and favicon extraction.
-  - Resilient direct HTML/OpenGraph parser fallback.
+- **Hybrid High-Resolution Logo Scraper**:
+  - Primary metadata extraction powered by [Firecrawl](https://firecrawl.dev/) for titles, taglines, and descriptions.
+  - Intelligent scored HTML logo extractor that discovers and prioritizes vector **SVGs**, **512x512** PWA icons, and **Apple Touch Icons (180x180)** over low-res 16px/32px favicons.
+  - Automatic persistence to **Vercel Blob Storage CDN** with `Access-Control-Allow-Origin: *` headers for flawless WebGL Canvas texture rendering.
 
-### ☁️ 5. Vercel Blob CDN Asset Storage
-- **Permanent Asset Pipeline**: Custom startup logos and scraped favicons are automatically stored and served via high-performance [Vercel Blob Storage](https://vercel.com/docs/storage/vercel-blob) CDN.
-- **Direct Logo Uploads**: Verified floor owners can upload custom brand logos directly within the Manage drawer.
+### ☁️ 4. Vercel Blob CDN Asset Storage
+- **Permanent Asset Pipeline**: Custom startup logos and scraped brand assets are automatically stored and served via high-performance [Vercel Blob Storage](https://vercel.com/docs/storage/vercel-blob) CDN.
+- **Direct Logo Uploads**: Verified floor owners can upload custom brand logos directly via the `/api/upload` endpoint.
 
-### 📊 6. Real-Time Live Statistics Engine
+### 📊 5. Real-Time Live Statistics Engine
 - **Live Online Users**: Computed from active tab heartbeats (`WHERE last_seen_at > NOW() - INTERVAL '2 minutes'`).
 - **Tab-Session Views**: Real view tracking based on browser tab sessions (`sessionStorage`), preventing heartbeat pings from inflating view metrics.
 - **Distinct Visitor Countries**: `COUNT(DISTINCT country_code)` tracking geographical global reach with auto-detected IP headers (`x-vercel-ip-country`, `cf-ipcountry`).
 - **Claimed Floors Counter**: Real-time counter of active startup claims on the tower.
 
-### ⚙️ 7. Dynamic "Manage" Drawer & Owner Controls
+### ⚙️ 6. Dynamic Floor Management & Owner Controls
 - **Owner-Only Hover Controls**: Public visitors see "Visit Website" or "Claim Floor"; verified floor owners see `👑 Edit Floor`.
-- **Multi-Product Management**: Dedicated drawer to update company name, website URL, category, tagline, description, custom logo, or vacate floors.
-- **0-Products Empty State**: Clear feedback with a 1-click **"Claim Top Floor Now"** call to action when a user has no active floors.
+- **Startup Management**: Seamlessly manage company name, website URL, category, tagline, description, or custom brand logo.
 
-### 📊 8. Protected Admin Portal (`/admin`)
+### 📊 7. Protected Admin Portal (`/admin`)
 - **Password-Protected Authentication**: Admin login protected by `ADMIN_EMAIL` and `ADMIN_PASSWORD` using timing-safe HMAC validation.
 - **Platform Overview**: Live counters for total registered founders, claimed floors, available slots, and total revenue in ₹.
 - **Searchable Founder Directory**: Filter founders by name, email, phone number, or company name, complete with product badges showing ranks and prices paid.
 
-### 🌐 9. Comprehensive SEO & Structured Data
+### 🌐 8. Comprehensive SEO & Structured Data
 - **Structured JSON-LD**: Embedded `Organization`, `WebSite`, `SoftwareApplication`, and `FAQPage` schemas for enhanced search indexing.
 - **Dynamic Sitemap & Robots**: Generated at runtime via `app/sitemap.ts` and `app/robots.ts`.
 - **Rich Social Previews**: OpenGraph and Twitter cards configured for social sharing.

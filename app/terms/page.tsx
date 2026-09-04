@@ -37,7 +37,7 @@ export default function TermsPage() {
             1. Overview &amp; Service Description
           </h2>
           <p className="legal-text">
-            <strong>GeTopFloor</strong> operates an interactive 3D digital skyscraper and startup discovery platform. By claiming a floor or purchasing placement, you acquire a prominent digital advertisement listing on our 50-story virtual tower, which includes your startup name, URL, description, category, and brand logo.
+            <strong>GeTopFloor</strong> operates an interactive 3D digital skyscraper and startup discovery platform. By claiming a floor or purchasing placement, you acquire a prominent digital advertisement listing on our virtual tower, which includes your startup name, destination URL, description, category, and brand logo rendered directly into the 3D scene and interactive directory.
           </p>
         </section>
 
@@ -47,21 +47,24 @@ export default function TermsPage() {
             2. Floor Claiming &amp; Outbidding Mechanics
           </h2>
           <p className="legal-text">
-            The skyscraper operates on a competitive outbid hierarchy designed to maximize startup visibility:
+            The skyscraper operates on a transparent, competitive outbid leaderboard designed to maximize startup visibility:
           </p>
           <div className="legal-card">
             <ul className="legal-list">
               <li className="legal-list-item">
-                <strong>Top Floor (#1 Placement):</strong> The most recent claim occupies the Penthouse Top Floor (Rank #1) for maximum exposure.
+                <strong>Dynamic Leaderboard Ranking:</strong> Floor rankings are calculated in real time by total price paid (ordered by price paid descending, followed by claim timestamp ascending).
               </li>
               <li className="legal-list-item">
-                <strong>Sequential Shift:</strong> Whenever a new founder claims the top floor, all existing startups shift downward by one floor (Floor #1 becomes #2, #2 becomes #3, etc.).
+                <strong>Penthouse Top Floor (#1):</strong> The startup with the highest cumulative bid occupies the prestigious Penthouse Floor #1 for maximum global exposure.
               </li>
               <li className="legal-list-item">
-                <strong>Permanent Indexing:</strong> All 50 floors remain indexed, publicly searchable, and interactable on the 3D tower and floor directory.
+                <strong>Flexible Entry:</strong> Startups can claim a verified floor spot with an entry bid starting at ₹50.
               </li>
               <li className="legal-list-item">
-                <strong>Re-Claiming:</strong> Founders can re-claim the top floor at any time by paying the incremental price difference.
+                <strong>Outbidding &amp; Climbing Ranks:</strong> Existing startups can place incremental bids at any time to climb higher up the skyscraper or reclaim Top Floor (#1).
+              </li>
+              <li className="legal-list-item">
+                <strong>Real-Time 3D Rendering:</strong> Claimed floors and brand marks are rendered immediately upon payment confirmation without manual delays.
               </li>
             </ul>
           </div>

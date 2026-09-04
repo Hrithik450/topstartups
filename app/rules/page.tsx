@@ -37,7 +37,7 @@ export default function RulesPage() {
             1. Overview &amp; Objective
           </h2>
           <p className="legal-text">
-            <strong>GeTopFloor</strong> is a global, interactive 3D digital discovery and advertising platform for technology startups, SaaS products, open-source projects, and indie founders. Founders claim virtual floors on a 50-story skyscraper to showcase their company name, URL, and description.
+            <strong>GeTopFloor</strong> is a global, interactive 3D digital discovery and advertising platform for technology startups, SaaS products, open-source projects, and indie founders. Founders claim virtual floors on an interactive 3D skyscraper to showcase their company name, URL, description, and brand logo.
           </p>
           <p className="legal-text">
             To maintain a trustworthy, safe, and professional ecosystem for all visitors, founders, and payment partners, all floor submissions and listings must comply strictly with these guidelines.

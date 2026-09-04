@@ -42,7 +42,7 @@ export default function PrivacyPage() {
           <div className="legal-card">
             <ul className="legal-list">
               <li className="legal-list-item">
-                <strong>Account &amp; Profile Data:</strong> Email address and profile name provided through Google OAuth authentication.
+                <strong>Account &amp; Contact Data:</strong> Email address provided during checkout or through authentication to deliver claim receipts and enable floor management.
               </li>
               <li className="legal-list-item">
                 <strong>Company &amp; Listing Details:</strong> Company name, destination website URL, product category, tagline, description, and brand logo.
@@ -92,9 +92,9 @@ export default function PrivacyPage() {
               </p>
             </div>
             <div className="legal-grid-item">
-              <h3 className="legal-grid-title">Google OAuth</h3>
+              <h3 className="legal-grid-title">Vercel &amp; Vercel Blob</h3>
               <p className="legal-grid-desc">
-                Secure identity provider used for passwordless, authenticated floor management.
+                High-performance global serverless hosting and secure CDN storage for high-resolution brand logos and 3D assets.
               </p>
             </div>
           </div>

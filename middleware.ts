@@ -40,12 +40,14 @@ const BLOCKED_USER_AGENTS = [
 const ROUTE_LIMITS: { pattern: string; method?: string; max: number; windowMs: number }[] = [
   // Admin login brute-force protection: max 5 attempts per 15 minutes
   { pattern: "/api/admin/login", method: "POST", max: 5, windowMs: 15 * 60_000 },
-  // URL live validator: max 12 requests per minute (prevents SSRF scanning)
-  { pattern: "/api/validate-url", method: "POST", max: 12, windowMs: 60_000 },
-  // Checkout creation: max 6 checkouts per minute per IP
-  { pattern: "/api/checkout", method: "POST", max: 6, windowMs: 60_000 },
-  // Floor asset upload: max 6 uploads per minute per IP
-  { pattern: "/api/upload", method: "POST", max: 6, windowMs: 60_000 },
+  // URL live validator: max 30 requests per minute
+  { pattern: "/api/validate-url", method: "POST", max: 30, windowMs: 60_000 },
+  // Checkout creation: max 30 checkouts per minute per IP
+  { pattern: "/api/checkout", method: "POST", max: 30, windowMs: 60_000 },
+  // Checkout verification polling: max 120 requests per minute
+  { pattern: "/api/checkout/verify", max: 120, windowMs: 60_000 },
+  // Floor asset upload: max 20 uploads per minute per IP
+  { pattern: "/api/upload", method: "POST", max: 20, windowMs: 60_000 },
   // Auth operations: max 30 requests per minute
   { pattern: "/api/auth", max: 30, windowMs: 60_000 },
   // Webhooks: high throughput for verified payment provider

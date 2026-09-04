@@ -7,6 +7,20 @@ import { validateWebsiteSyntax } from "@/lib/validation/domain";
 import { useUserStore } from "@/store/user-store";
 import { useFloorsStore } from "@/store/floors-store";
 
+async function safeFetchJson(res: Response): Promise<any> {
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    if (res.status === 429) {
+      throw new Error("Too many requests or security check active. Please wait a few seconds and try again.");
+    }
+    if (!res.ok) {
+      throw new Error(`Server temporarily unavailable (${res.status}). Please try again.`);
+    }
+    throw new Error("Unexpected server response format. Please refresh the page and try again.");
+  }
+  return await res.json();
+}
+
 export function Hero({
   onOpenManage,
   initialFloors = [],
@@ -298,7 +312,7 @@ export function Hero({
       const pollVerification = async () => {
         try {
           const res = await fetch(`/api/checkout/verify?${targetQuery}`, { cache: "no-store" });
-          const data = await res.json();
+          const data = await safeFetchJson(res);
 
           if (data.status === "succeeded") {
             setJustClaimed(data.companyName || "Your company");
@@ -415,23 +429,23 @@ export function Hero({
               price: pending.price || 50,
             }),
           })
-            .then(async (res) => {
-              const data = await res.json();
-              if (res.ok && data.checkoutUrl) {
+            .then(safeFetchJson)
+            .then(async (data) => {
+              if (data?.checkoutUrl) {
                 window.location.href = data.checkoutUrl;
               } else {
                 setIsSubmitting(false);
                 setPaymentNotice({
                   type: "error",
-                  message: data.error || "Website verification failed. Please enter an active, secure HTTPS website.",
+                  message: data?.error || "Website verification failed. Please enter an active, secure HTTPS website.",
                 });
               }
             })
-            .catch(() => {
+            .catch((err) => {
               setIsSubmitting(false);
               setPaymentNotice({
                 type: "error",
-                message: "Could not start checkout. Please try again.",
+                message: err?.message || "Could not start checkout. Please try again.",
               });
             });
         }
@@ -479,7 +493,7 @@ export function Hero({
         body: JSON.stringify({ url: syntaxCheck.cleanUrl || url.trim() }),
       });
 
-      const valData = await valRes.json();
+      const valData = await safeFetchJson(valRes);
       if (!valRes.ok || !valData.valid) {
         setPaymentNotice({
           type: "error",
@@ -521,7 +535,7 @@ export function Hero({
         }),
       });
 
-      const data = await res.json();
+      const data = await safeFetchJson(res);
       if (!res.ok || !data.checkoutUrl) {
         throw new Error(data.error || "Failed to create checkout session");
       }

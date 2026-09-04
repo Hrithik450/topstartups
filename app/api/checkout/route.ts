@@ -83,19 +83,20 @@ export async function POST(req: NextRequest) {
     // ─────────────────────────────────────────────────────────────
     // STEP 3: DYNAMIC OUTBID PRICING CALCULATION (DIRECT FROM SERVICE)
     // ─────────────────────────────────────────────────────────────
-    const { minRequiredPrice, topFloorPrice } = await FloorsService.getOutbidPricing(
+    const { topFloorPrice } = await FloorsService.getOutbidPricing(
       cleanHost,
       userEmail,
       userId
     );
 
-    // User can enter ANY amount >= minRequiredPrice (variable, unlimited upper bound)
+    // Bare minimum payment allowed is ₹50 (unlimited upper bound)
+    const MIN_PLATFORM_PRICE = 50;
     const submittedPrice = Number(price);
-    if (isNaN(submittedPrice) || submittedPrice < minRequiredPrice) {
+    if (isNaN(submittedPrice) || submittedPrice < MIN_PLATFORM_PRICE) {
       return NextResponse.json(
         {
-          error: `Minimum outbid amount required is ₹${minRequiredPrice}.`,
-          minRequiredPrice,
+          error: `Minimum payment amount required is ₹${MIN_PLATFORM_PRICE}.`,
+          minRequiredPrice: MIN_PLATFORM_PRICE,
           topFloorPrice,
         },
         { status: 400 }

@@ -162,12 +162,9 @@ export function Hero({
     }
   }, [existingFloorOnTower, differencePrice]);
 
-  // Normal bidding: all new bids and reclaims target Top Penthouse Floor #1
+  // Normal bidding: all new bids and reclaims can enter any price >= ₹50 (minimum cutoff)
   const targetRank = 1;
-  const minAllowedPrice = useMemo(() => {
-    if (existingFloorOnTower && existingFloorOnTower.rank > 1) return differencePrice;
-    return topFloorPrice;
-  }, [existingFloorOnTower, differencePrice, topFloorPrice]);
+  const minAllowedPrice = 50;
 
   const targetLock = allLocks[1] || { isLocked: false };
   const userEmail = user?.email?.toLowerCase().trim();
@@ -192,7 +189,7 @@ export function Hero({
           const requiredTopPrice = hasClaimed ? maxClaimedPrice + 1 : 99;
           setTopFloorClaimed(hasClaimed);
           setTopFloorPrice(requiredTopPrice);
-          setPrice((prev) => Math.max(requiredTopPrice, prev));
+          setPrice((prev) => (prev === 0 || prev === 99 ? requiredTopPrice : prev));
         }
       })
       .catch(() => {});
@@ -618,13 +615,13 @@ export function Hero({
 
       <h1 className="headline">
         {existingFloorOnTower && existingFloorOnTower.rank > 1 ? (
-          "Outbid & reclaim top floor for"
+          price >= differencePrice ? "Outbid & reclaim top floor for" : "Boost your floor for"
         ) : existingFloorOnTower && existingFloorOnTower.rank === 1 ? (
           "Featured at Top Penthouse Floor #1"
-        ) : topFloorClaimed ? (
-          "Outbid top floor for"
+        ) : price >= topFloorPrice ? (
+          topFloorClaimed ? "Outbid top floor for" : "Claim top floor for"
         ) : (
-          "Claim top floor for"
+          "Claim a floor for"
         )}
         {(!existingFloorOnTower || existingFloorOnTower.rank > 1) && (
           <span className="price-stepper">
@@ -637,7 +634,7 @@ export function Hero({
             >
               <Minus />
             </button>
-            <span className="price-editable-wrap" title="Click or tap to type any custom bid amount (e.g. ₹202)">
+            <span className="price-editable-wrap" title="Click or tap to type any custom bid amount (min ₹50)">
               <span className="price-currency">₹</span>
               <input
                 type="number"
@@ -857,24 +854,32 @@ export function Hero({
             "Verifying..."
           ) : existingFloorOnTower && existingFloorOnTower.rank === 1 ? (
             <>👑 Already Top Floor #1</>
-          ) : isTargetLocked ? (
+          ) : isTargetLocked && price >= topFloorPrice ? (
             isHeldByMe ? (
               <>⚡ Resume Claim Top Floor #1 <Arrow /></>
             ) : (
               <>🔒 Someone is claiming Top Floor #1...</>
             )
           ) : existingFloorOnTower && existingFloorOnTower.rank > 1 ? (
-            <>⚡ Outbid & Reclaim Top Floor #1 for ₹{price} <Arrow /></>
-          ) : topFloorClaimed ? (
-            <>⚡ Outbid Top Floor #1 for ₹{price} <Arrow /></>
+            price >= differencePrice ? (
+              <>⚡ Outbid & Reclaim Top Floor #1 for ₹{price} <Arrow /></>
+            ) : (
+              <>⚡ Boost Floor for ₹{price} <Arrow /></>
+            )
+          ) : price >= topFloorPrice ? (
+            topFloorClaimed ? (
+              <>⚡ Outbid Top Floor #1 for ₹{price} <Arrow /></>
+            ) : (
+              <>⚡ Claim Top Floor #1 for ₹{price} <Arrow /></>
+            )
           ) : (
-            <>Claim top floor <Arrow /></>
+            <>⚡ Claim Floor for ₹{price} <Arrow /></>
           )}
         </button>
       </form>
 
       <p className="subtitle">
-        Click or tap the price to enter any custom bid amount. Outbid the current top floor to claim the penthouse spot on the digital tower skyline.
+        Enter any custom bid starting at ₹50. Bid ₹{topFloorPrice} or more to take the Top Floor #1 spot.
       </p>
 
       <div className="policy-links-container">

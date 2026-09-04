@@ -130,11 +130,7 @@ export class FloorsService {
       existingFloor = await FloorsModel.findFloorByHost(cleanHost);
     }
 
-    let minRequiredPrice = topFloorPrice;
-    if (existingFloor) {
-      const diff = topFloorPrice - Number(existingFloor.pricePaid || 0);
-      minRequiredPrice = Math.max(50, diff);
-    }
+    const minRequiredPrice = 50;
 
     return {
       topFloorPrice,

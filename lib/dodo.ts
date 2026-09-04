@@ -72,10 +72,14 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        customer: {
-          ...(input.customerEmail ? { email: input.customerEmail } : {}),
-          ...(input.customerName ? { name: input.customerName } : {}),
-        },
+        ...(input.customerEmail?.trim()
+          ? {
+              customer: {
+                email: input.customerEmail.trim(),
+                ...(input.customerName?.trim() ? { name: input.customerName.trim() } : {}),
+              },
+            }
+          : {}),
         billing_currency: "INR",
         minimal_address: true,
         billing_address: {

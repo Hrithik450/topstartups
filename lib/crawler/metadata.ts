@@ -135,6 +135,131 @@ function isWideOgBanner(url?: string | null): boolean {
   );
 }
 
+/**
+ * Checks if a logo URL is low resolution (e.g. 16px/32px .ico or generic favicon).
+ */
+function isLowResLogo(url?: string | null): boolean {
+  if (!url) return true;
+  const lower = url.toLowerCase();
+  if (lower.endsWith(".ico") || lower.includes(".ico?")) return true;
+  if (lower.includes("google.com/s2/favicons")) return true;
+  if (lower.includes("favicon") && !lower.includes("512") && !lower.includes("192") && !lower.includes("svg")) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Extracts high-resolution logo from HTML:
+ * Prioritizes SVGs, 512x512, 192x192, Apple Touch Icons (180x180), Schema.org logos, and nav images.
+ */
+function extractHighResBrandLogo(html: string, baseUrl: string): string | null {
+  const candidates: { url: string; score: number }[] = [];
+
+  // 1. Parse all <link> tags regardless of attribute order
+  const linkRegex = /<link\s+([^>]+)>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = linkRegex.exec(html)) !== null) {
+    const attrs = match[1];
+    const rel = attrs.match(/rel=["']([^"']+)["']/i)?.[1]?.toLowerCase() || "";
+    const href = attrs.match(/href=["']([^"']+)["']/i)?.[1] || "";
+    const sizes = attrs.match(/sizes=["']([^"']+)["']/i)?.[1]?.toLowerCase() || "";
+    const type = attrs.match(/type=["']([^"']+)["']/i)?.[1]?.toLowerCase() || "";
+
+    if ((rel.includes("icon") || rel.includes("apple-touch")) && href) {
+      if (isWideOgBanner(href)) continue;
+
+      let score = 300;
+      const lowerHref = href.toLowerCase();
+
+      // Highest: Vector SVGs
+      if (type.includes("svg") || lowerHref.endsWith(".svg")) {
+        score = 1000;
+      } else if (sizes.includes("512x512") || lowerHref.includes("512")) {
+        score = 900;
+      } else if (sizes.includes("256x256") || sizes.includes("384x384") || lowerHref.includes("256")) {
+        score = 850;
+      } else if (sizes.includes("192x192") || lowerHref.includes("192")) {
+        score = 800;
+      } else if (rel.includes("apple-touch-icon") || sizes.includes("180x180") || lowerHref.includes("apple-touch")) {
+        score = 750;
+      } else if (sizes.includes("96x96") || sizes.includes("128x128") || sizes.includes("144x144")) {
+        score = 600;
+      } else if (sizes.includes("48x48") || sizes.includes("64x64")) {
+        score = 400;
+      } else if (lowerHref.endsWith(".ico") || sizes.includes("16x16") || sizes.includes("32x32")) {
+        score = 100;
+      }
+
+      candidates.push({ url: resolveUrl(href, baseUrl), score });
+    }
+  }
+
+  // 2. Check JSON-LD Schema.org for official Organization/Brand logo
+  const jsonLdMatches = html.matchAll(
+    /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+  );
+  for (const jMatch of jsonLdMatches) {
+    try {
+      const parsedJson = JSON.parse(jMatch[1]);
+      const candidate =
+        parsedJson.logo?.url ||
+        parsedJson.logo ||
+        parsedJson.publisher?.logo?.url ||
+        parsedJson.publisher?.logo;
+      if (candidate && typeof candidate === "string" && !isWideOgBanner(candidate)) {
+        candidates.push({ url: resolveUrl(candidate, baseUrl), score: 850 });
+        break;
+      }
+    } catch {}
+  }
+
+  // 3. Check for Header / Nav Brand Images (e.g. logo.png, logo.svg)
+  const navImgRegex = /<(?:img|source)[^>]+(?:src|srcset)=["']([^"']*(?:logo|brand)[^"']*\.(?:png|svg|webp))["']/gi;
+  let imgMatch: RegExpExecArray | null;
+  while ((imgMatch = navImgRegex.exec(html)) !== null) {
+    const src = imgMatch[1];
+    if (src && !isWideOgBanner(src)) {
+      const score = src.toLowerCase().endsWith(".svg") ? 950 : 780;
+      candidates.push({ url: resolveUrl(src, baseUrl), score });
+      break;
+    }
+  }
+
+  // Sort candidates by score descending
+  candidates.sort((a, b) => b.score - a.score);
+
+  // Return best high-res candidate (score > 100 avoids tiny .ico)
+  if (candidates.length > 0 && candidates[0].score > 100) {
+    return candidates[0].url;
+  }
+
+  return candidates[0]?.url || null;
+}
+
+/**
+ * Fast direct HTML scraper to fetch high-res logo when Firecrawl only has low-res icon.
+ */
+async function scrapeDirectHighResLogo(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 GeTopFloorBot/1.0",
+        Accept: "text/html,application/xhtml+xml",
+      },
+      signal: AbortSignal.timeout(4000),
+      redirect: "follow",
+    });
+
+    if (!res.ok) return null;
+    const html = await res.text();
+    return extractHighResBrandLogo(html, url);
+  } catch {
+    return null;
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // 2. FIRECRAWL SCRAPER
 // ─────────────────────────────────────────────────────────────
@@ -163,7 +288,7 @@ async function crawlWithFirecrawl(url: string, apiKey: string): Promise<WebsiteM
   const title = meta.title || meta.ogTitle || "";
   const desc = meta.description || meta.ogDescription || "";
 
-  // Prioritize square brand logo, Apple touch icon, or favicon (never use wide ogImage social banners)
+  // Prioritize square brand logo or Apple touch icon from Firecrawl metadata
   let icon = meta.logo;
   if (isWideOgBanner(icon)) {
     icon = null;
@@ -178,9 +303,18 @@ async function crawlWithFirecrawl(url: string, apiKey: string): Promise<WebsiteM
   const companyName = cleanTitle(title, hostname);
   const tagline = truncate(desc, 110) || `${companyName} — Official Skyscraper Floor`;
   const description = truncate(desc, 240) || `Claimed top floor on GeTopFloor skyscraper.`;
-  const logoUrl = icon
+  let logoUrl = icon
     ? resolveUrl(icon, url)
     : `https://www.google.com/s2/favicons?domain=${hostname}&sz=256`;
+
+  // If Firecrawl only returned a low-res .ico/favicon, scrape the high-res logo from HTML
+  if (isLowResLogo(logoUrl)) {
+    const directLogo = await scrapeDirectHighResLogo(url);
+    if (directLogo) {
+      logoUrl = directLogo;
+    }
+  }
+
   const category = guessCategory(`${companyName} ${desc}`);
 
   return {
@@ -233,51 +367,10 @@ async function crawlDirectHtml(url: string): Promise<WebsiteMetadata> {
     const tagline = truncate(rawDesc, 110) || `${companyName} — Official Skyscraper Floor`;
     const description = truncate(rawDesc, 240) || `Claimed top floor on GeTopFloor skyscraper.`;
 
-    // 3. Extract High-Res Icon or Brand Logo
-    let detectedLogo: string | null = null;
-
-    // A. Check JSON-LD Schema.org for official brand logo (e.g. GrowEasy, Stripe, etc.)
-    const jsonLdMatches = html.matchAll(
-      /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
-    );
-    for (const match of jsonLdMatches) {
-      try {
-        const parsedJson = JSON.parse(match[1]);
-        const candidate =
-          parsedJson.logo?.url ||
-          parsedJson.logo ||
-          parsedJson.publisher?.logo?.url ||
-          parsedJson.publisher?.logo;
-        if (candidate && typeof candidate === "string" && !isWideOgBanner(candidate)) {
-          detectedLogo = resolveUrl(candidate, url);
-          break;
-        }
-      } catch {}
-    }
-
-    if (!detectedLogo) {
-      // B. Look for largest icon, SVG icon, or Apple Touch icon
-      const appleIcon = html.match(
-        /<link[^>]+rel=["'][^"']*apple-touch-icon[^"']*["'][^>]+href=["']([^"']+)["']/i
-      )?.[1];
-      const svgIcon = html.match(
-        /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+type=["']image\/svg\+xml["'][^>]+href=["']([^"']+)["']/i
-      )?.[1];
-      const icon512 = html.match(
-        /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+sizes=["'](?:512x512|192x192)["'][^>]+href=["']([^"']+)["']/i
-      )?.[1];
-      const stdIcon = html.match(
-        /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+href=["']([^"']+)["']/i
-      )?.[1];
-
-      const rawIcon = appleIcon || svgIcon || icon512 || stdIcon;
-      if (rawIcon && !isWideOgBanner(rawIcon)) {
-        detectedLogo = resolveUrl(rawIcon, url);
-      }
-    }
-
+    // 3. Extract High-Resolution Brand Logo
     const logoUrl =
-      detectedLogo || `https://www.google.com/s2/favicons?domain=${hostname}&sz=256`;
+      extractHighResBrandLogo(html, url) ||
+      `https://www.google.com/s2/favicons?domain=${hostname}&sz=256`;
 
     const category = guessCategory(`${companyName} ${rawDesc}`);
 

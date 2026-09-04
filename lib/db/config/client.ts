@@ -29,7 +29,10 @@ function createDb(): AppDatabase {
   // Handle unexpected idle client errors (e.g. ETIMEDOUT / ECONNRESET when Supabase or network drops idle TCP sockets)
   // node-postgres will automatically discard the dead client from the pool.
   pool.on("error", (err) => {
-    console.warn("PostgreSQL idle client connection warning (auto-recovering):", err?.message || err);
+    console.warn(
+      "PostgreSQL idle client connection warning (auto-recovering):",
+      err?.message || err
+    );
   });
 
   globalThis._pgPool = pool;

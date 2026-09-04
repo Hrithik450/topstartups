@@ -1,6 +1,6 @@
-import { eq, and, sql, or } from "drizzle-orm";
 import { db } from "@/lib/db/config/client";
 import { unstable_cache } from "next/cache";
+import { eq, and, sql, or } from "drizzle-orm";
 import { extractRootHostname } from "@/lib/validation/domain";
 import { floors, claims, type Floor, type NewFloor } from "@/lib/db/config/schema";
 
@@ -194,11 +194,7 @@ export class FloorsModel {
       ? and(eq(floors.id, floorId), eq(floors.userEmail, email.toLowerCase().trim()))
       : eq(floors.id, floorId);
 
-    const existing = await db
-      .select()
-      .from(floors)
-      .where(whereClause)
-      .limit(1);
+    const existing = await db.select().from(floors).where(whereClause).limit(1);
 
     if (existing.length === 0) return null;
 
@@ -225,11 +221,7 @@ export class FloorsModel {
       ? and(eq(floors.id, floorId), eq(floors.userEmail, email.toLowerCase().trim()))
       : eq(floors.id, floorId);
 
-    const existing = await db
-      .select()
-      .from(floors)
-      .where(whereClause)
-      .limit(1);
+    const existing = await db.select().from(floors).where(whereClause).limit(1);
 
     if (existing.length === 0) {
       return {

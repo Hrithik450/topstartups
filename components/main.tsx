@@ -57,8 +57,8 @@ export function Main({
     return next;
   }, []);
 
-  const isCardHoveredRef = useRef(false);
   const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isCardHoveredRef = useRef(false);
   const isPinnedRef = useRef(false);
 
   const handleFloorHover = useCallback((data: HoverData | null) => {

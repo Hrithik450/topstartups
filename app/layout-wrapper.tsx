@@ -5,11 +5,7 @@ import { useErrorStore } from "@/store/error-store";
 import { SuccessAlert } from "@/components/alerts/success";
 import { FailureAlert } from "@/components/alerts/failure";
 
-export function LayoutWrapper({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const { status, message } = useErrorStore();
 
   return (

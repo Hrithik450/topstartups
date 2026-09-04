@@ -75,13 +75,13 @@
 |---|---|---|
 | **Framework** | [Next.js 15](https://nextjs.org/) | App Router, React 19 Server Components, Server Actions & Route Handlers |
 | **Frontend UI** | [React 19](https://react.dev/) + [Lucide React](https://lucide.dev/) | High-performance UI components, icons, and modern React hooks |
-| **3D Engine** | [Three.js](https://threejs.org/) (WebGL) | 50-floor procedural building, GLTF models, shaders, and raycast interactions |
-| **State Management**| [Zustand 5](https://zustand.docs.pmnd.rs/) | Global state for floors, user profiles, modal states, and client error handling |
+| **3D Engine** | [Three.js](https://threejs.org/) (WebGL) | Procedural skyscraper architecture, GLTF models, shaders, and raycast interactions |
+| **State Management**| [Zustand 5](https://zustand.docs.pmnd.rs/) | Global state for skyscraper floors, live platform metrics, and client error handling |
 | **Database & ORM** | [PostgreSQL](https://www.postgresql.org/) + [Drizzle ORM](https://orm.drizzle.team/) | Type-safe SQL queries, migrations, indexes, and connection poolers |
-| **Authentication** | [Auth.js v5](https://authjs.dev/) + Google OAuth 2.0 | NextAuth beta with Drizzle adapter, JWT session cookies, and Google Provider |
+| **Security & Auth** | Admin HMAC Auth + Timing-Safe Security | Zero-login frictionless founder checkout with cryptographically signed Admin Portal auth |
 | **Payments** | [Dodo Payments](https://dodopayments.com/) | Merchant of Record with UPI, Cards, NetBanking, and cryptographically verified webhooks |
 | **Storage & CDN** | [Vercel Blob Storage](https://vercel.com/docs/storage/vercel-blob) | Permanent logo CDN caching & direct user uploads |
-| **Metadata Scraper**| [Firecrawl](https://firecrawl.dev/) + HTML Parser | Automated title, description, and high-res favicon extraction |
+| **Metadata Scraper**| [Firecrawl](https://firecrawl.dev/) + HTML Parser | Automated title, description, and high-res favicon/touch-icon extraction |
 | **Validation** | [Zod 4](https://zod.dev/) | Strict runtime input validation for actions, schemas, and API routes |
 | **Styling** | Modern CSS Variables | Responsive layout, dark/sunset themes, glassmorphism, and custom animations |
 
@@ -92,17 +92,16 @@
 ```
 outbid/
 ├── actions/                      # ⚡ Server Actions & Business Logic
-│   ├── auth/                     # Sign-in and sign-out server actions
-│   ├── floors/                   # Floors service, model, and server actions
-│   ├── stats/                    # Real-time statistics service and model
-│   └── user/                     # User profile, owned floors, and session service
+│   ├── floors/                   # Floors service, database model, and server actions
+│   ├── stats/                    # Real-time statistics service and database model
+│   └── index.ts                  # Centralized actions exports
 │
 ├── app/                          # 🌐 Next.js App Router
 │   ├── admin/                    # 📊 Protected Admin Dashboard (/admin)
 │   ├── api/                      # ⚡ REST API Endpoints
 │   │   ├── admin/                # Admin login, logout, and founder queries
-│   │   ├── auth/[...nextauth]/   # Auth.js / NextAuth v5 handler
-│   │   ├── checkout/             # Dodo payment session creation, verify & mock-success
+│   │   ├── checkout/             # Dodo payment session creation, verify & mock-sandbox
+│   │   ├── floors/               # Public floors query API route
 │   │   ├── stats/                # Real-time live statistics ping & session metrics
 │   │   ├── upload/               # ☁️ Vercel Blob Storage logo upload endpoint
 │   │   ├── validate-url/         # Live website URL & SSL security reachability checker
@@ -111,8 +110,9 @@ outbid/
 │   ├── rules/                    # Skyscraper outbidding rules page
 │   ├── terms/                    # Terms of service page
 │   ├── globals.css               # Global theme styling (Dark & Sunset themes)
-│   ├── layout-wrapper.tsx        # Client layout wrapper with user & stat stores
-│   ├── layout.tsx                # Metadata, OpenGraph, JSON-LD schema, and font configs
+│   ├── jsonld.tsx                # Structured JSON-LD schemas
+│   ├── layout-wrapper.tsx        # Client layout wrapper with store hydration & sound state
+│   ├── layout.tsx                # Root layout with metadata, OpenGraph, and font configs
 │   ├── page.tsx                  # 3D Skyscraper landing page
 │   ├── robots.ts                 # Dynamic robots.txt
 │   └── sitemap.ts                # Dynamic sitemap.xml
@@ -120,45 +120,50 @@ outbid/
 ├── components/                   # 🧩 Client & UI Components
 │   ├── alerts/                   # Success and failure alert toast banners
 │   ├── building-loader.tsx       # 3D building initialization progress indicator
-│   ├── controls.tsx              # Three.js camera controls & theme toggles
-│   ├── floor-hover-card.tsx      # 3D raycast hover card with startup preview & owner controls
-│   ├── hero.tsx                  # Interactive claim form & direct payment flow
+│   ├── controls.tsx              # Three.js camera controls, sound, & theme toggles
+│   ├── floor-hover-card.tsx      # 3D raycast hover card with startup preview & visit CTA
+│   ├── hero.tsx                  # Interactive claim form & direct payment modal
 │   ├── icons.tsx                 # Brand and UI icon definitions
-│   ├── main.tsx                  # Main client shell with header and sound controls
-│   ├── manage-floor-modal.tsx    # Multi-product management drawer with Logo Uploader
-│   ├── stat-chips.tsx            # Real-time live metrics & Manage button
+│   ├── main.tsx                  # Main client shell with header and controls
+│   ├── stat-chips.tsx            # Real-time live metrics (online, views, countries)
 │   └── tower-scene.tsx           # Dynamic Three.js canvas mount
 │
 ├── lib/                          # 🛠️ Shared Libraries & Utilities
-│   ├── auth/                     # Auth.js / NextAuth configuration with Google Provider
 │   ├── crawler/                  # Firecrawl & HTML Favicon/Logo Metadata Scraper
 │   ├── db/
 │   │   └── config/               # PostgreSQL Connection Pool & Drizzle Schema
 │   │       ├── client.ts         # Resilient connection pooler (with pool.on('error') safety)
 │   │       ├── pool-config.ts    # Multi-tier connection pooler (:5432 & :6543)
-│   │       ├── schema.ts         # Drizzle schemas (users, accounts, sessions, floors, claims, stats)
-│   │       └── ssl.ts            # Auto-detecting SSL for VPS, Docker & Cloud
+│   │       ├── schema.ts         # Drizzle schemas (floors, claims, sessions, stats)
+│   │       ├── ssl.ts            # Auto-detecting SSL for VPS, Docker & Cloud
+│   │       └── index.ts          # Central database exports
 │   ├── drizzle/                  # Drizzle migration files and metadata snapshots
 │   ├── storage/                  # Vercel Blob Storage client & image persistence
 │   ├── three/                    # Complete Three.js 3D Skyscraper engine & models
+│   ├── types/                    # TypeScript declaration files
 │   ├── validation/               # Live domain & SSL security reachability checker
 │   ├── admin-auth.ts             # Admin authentication & timing-safe token helpers
 │   ├── categories.ts             # Startup category definitions
-│   └── dodo.ts                   # Dodo Payments SDK client & webhook validator
+│   ├── dodo.ts                   # Dodo Payments SDK client & webhook validator
+│   └── stats.ts                  # Client-side statistics heartbeat helper
 │
 ├── store/                        # 🐻 Zustand State Stores
 │   ├── error-store.ts            # Global error banner state
 │   ├── floors-store.ts           # Skyscraper floors & active selection state
-│   └── user-store.ts             # Authenticated user & owned floors state
+│   └── stats-store.ts            # Live visitor count, view count, and countries state
 │
 ├── scripts/                      # 📜 Database Management & Utility Scripts
+│   ├── create-snapshot.ts        # Create local JSON snapshot of database tables
 │   ├── drop-legacy-columns.ts    # Clean up legacy database columns safely
 │   ├── export-snapshot.ts        # Export database schema and table rows snapshot
-│   └── migrate-safe.ts           # Safe schema migration runner
+│   ├── migrate-safe.ts           # Safe schema migration runner
+│   └── remove-auth-tables.ts     # Safe migration dropping legacy NextAuth tables
 │
-├── public/models/                # Optimized GLB 3D models (Pizza Hut, Chopper, Team)
+├── public/models/                # Optimized GLB 3D models (Chopper, Spider-Man, Office, Cars)
+├── public/sounds/                # Ambient audio clips (Helicopter, Birds, Sky, Spider)
 ├── drizzle.config.ts             # Drizzle Kit migration configuration
 ├── Dockerfile                    # Multi-stage standalone production Dockerfile
+├── middleware.ts                 # Rate limiting, anti-DDoS, and security headers middleware
 └── next.config.mjs               # Standalone output, CSP security headers & webhook routing
 ```
 
@@ -177,10 +182,7 @@ cp .env.example .env.local
 | `DATABASE_URL` | PostgreSQL connection string (Vercel Postgres, Supabase, Neon, or VPS) | `postgresql://postgres:postgres@127.0.0.1:5432/outbid` |
 | `DATABASE_DIRECT_URL` | Direct connection (port 5432) for migrations & Drizzle Kit | `postgresql://postgres:postgres@127.0.0.1:5432/outbid` |
 | `DATABASE_SSL` | Force SSL on/off (`false` for local/Docker, `true` for Cloud) | `false` |
-| `AUTH_SECRET` / `SESSION_SECRET`| Secret key for signing Auth.js / NextAuth JWT sessions (`openssl rand -base64 32`) | `your_32_character_random_hmac_secret` |
-| `GOOGLE_CLIENT_ID` | Google OAuth 2.0 Client ID from Google Cloud Console | `your_client_id.apps.googleusercontent.com` |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 Client Secret from Google Cloud Console | `GOCSPX-xxxxxxxxxxxxxxxx` |
-| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Public Google Client ID | `your_client_id.apps.googleusercontent.com` |
+| `SESSION_SECRET` | Secret key for signing Admin session cookies (`openssl rand -base64 32`) | `your_32_character_random_hmac_secret` |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob Storage token for permanent logo CDN storage | `vercel_blob_rw_...` |
 | `BLOB_STORE_ID` | Vercel Blob Store unique identifier | `store_...` |
 | `BLOB_WEBHOOK_PUBLIC_KEY` | Public key for verifying Vercel Blob upload event signatures | `...` |
@@ -259,11 +261,11 @@ docker run -d \
   --restart always \
   -e DATABASE_URL="postgresql://user:pass@127.0.0.1:5432/outbid" \
   -e DATABASE_SSL="false" \
-  -e AUTH_SECRET="your_random_secret_here" \
-  -e GOOGLE_CLIENT_ID="your_google_client_id" \
-  -e GOOGLE_CLIENT_SECRET="your_google_client_secret" \
+  -e SESSION_SECRET="your_random_secret_here" \
   -e ADMIN_EMAIL="admin@getopfloor.com" \
   -e ADMIN_PASSWORD="your_admin_password" \
+  -e DODO_PAYMENTS_API_KEY="your_dodo_api_key" \
+  -e DODO_PAYMENTS_WEBHOOK_SECRET="your_dodo_webhook_secret" \
   getopfloor:latest
 ```
 
@@ -284,7 +286,7 @@ pm2 start pnpm --name "getopfloor" -- start
    - In Vercel Project Settings $\rightarrow$ **Storage** $\rightarrow$ **Create Database** $\rightarrow$ select **Blob**.
    - Connect the Blob store to your project (Vercel automatically sets `BLOB_READ_WRITE_TOKEN`).
 3. **Connect Database**: Add your PostgreSQL / Neon / Supabase `DATABASE_URL` under **Environment Variables**.
-4. **Configure OAuth & Payments**: Add `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DODO_PAYMENTS_API_KEY`, etc.
+4. **Configure Payments & Admin**: Add `SESSION_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DODO_PAYMENTS_API_KEY`, and `DODO_PAYMENTS_WEBHOOK_SECRET`.
 
 ---
 
@@ -294,10 +296,11 @@ pm2 start pnpm --name "getopfloor" -- start
 
 | Method | Endpoint | Description | Auth Required |
 |---|---|---|---|
-| `POST` | `/api/upload` | Upload custom startup logo to Vercel Blob Storage CDN | User Session |
+| `GET` | `/api/floors` | Retrieve all active claimed skyscraper floors | Public |
+| `POST` | `/api/upload` | Upload custom startup logo to Vercel Blob Storage CDN | Public (Rate-Limited) |
 | `GET` | `/api/validate-url?url=...` | Verify website reachability and SSL security handshake | Public |
 | `GET` | `/api/stats` | Retrieve live skyscraper metrics (online, views, countries) | Public |
-| `POST` | `/api/checkout` | Create Dodo Payments checkout session with domain validation | Public / User Session |
+| `POST` | `/api/checkout` | Create Dodo Payments checkout session with domain validation | Public |
 | `GET` | `/api/checkout/verify` | Verify payment status and dynamically register floor claim | Public |
 | `POST` | `/api/checkout/mock-success` | Mock sandbox payment success verification (dev only) | Public |
 | `POST` | `/api/webhooks/dodo` | Receive and process cryptographically verified payment webhooks | Dodo Signature |
@@ -308,9 +311,11 @@ pm2 start pnpm --name "getopfloor" -- start
 ### Key Server Actions (`actions/`)
 
 - **`FloorsService.getFloors()`**: Fetch all active skyscraper floors sorted by leaderboard rank.
-- **`FloorsService.updateFloor(input)`**: Update company name, URL, tagline, description, category, or logo for an owned floor.
-- **`FloorsService.vacateFloor(floorId)`**: Vacate or release a floor back to available status.
-- **`UserService.getCurrentUser()`**: Fetch authenticated user profile, avatar URL, and owned floors list.
+- **`FloorsService.getTopFloorPrice()`**: Calculate required bid amount to claim Top Floor (#1).
+- **`FloorsService.getOutbidPricing(cleanHost)`**: Compute outbid cost and ranking preview for any domain.
+- **`FloorsService.updateFloor(input, email)`**: Update company name, URL, tagline, description, category, or logo for a floor.
+- **`FloorsService.claimTopFloor(input)`**: Atomically register a floor claim after payment confirmation with idempotent safety.
+- **`FloorsService.deleteFloor(floorId, email)`**: Vacate or release a floor back to available status.
 - **`StatsService.getStats()`**: Fetch live platform statistics (online count, total views, visitor countries).
 
 ---

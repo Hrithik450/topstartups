@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /**
- * ENTERPRISE SECURITY & AUTHS MIDDLEWARE
- * - NextAuth Session resolution
+ * ENTERPRISE SECURITY MIDDLEWARE
  * - Real client IP detection (Cloudflare, Vercel, Proxies)
  * - Anti-flood rate limiting per route and HTTP method
  * - Known exploit scanner & bot blocker

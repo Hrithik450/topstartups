@@ -52,8 +52,7 @@ export class UserService {
             email: cleanEmail,
             name: session?.user?.name || null,
             emailVerified: null,
-            image: session?.user?.image || null,
-            avatarUrl: session?.user?.image || null,
+            avatarUrl: (session?.user as any)?.avatarUrl || session?.user?.image || null,
             phone: null,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -61,13 +60,15 @@ export class UserService {
         };
       }
 
-      const googlePhoto = session?.user?.image || user.image || user.avatarUrl || null;
+      const googlePhoto =
+        (session?.user as any)?.avatarUrl || session?.user?.image || user.avatarUrl || null;
+      const googleName = session?.user?.name || user.name || null;
 
       return {
         success: true,
         data: {
           ...user,
-          image: googlePhoto,
+          name: googleName,
           avatarUrl: googlePhoto,
         },
       };

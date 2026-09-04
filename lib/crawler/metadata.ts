@@ -143,14 +143,15 @@ async function crawlWithFirecrawl(url: string, apiKey: string): Promise<WebsiteM
 
   const title = meta.title || meta.ogTitle || "";
   const desc = meta.description || meta.ogDescription || "";
-  const icon = meta.appleTouchIcon || meta.favicon || meta.icon || meta.logo || meta.ogImage;
+  // Prioritize high-resolution brand logo / apple-touch-icon over 16px favicon
+  const icon = meta.logo || meta.appleTouchIcon || meta.ogImage || meta.icon || meta.favicon;
 
   const companyName = cleanTitle(title, hostname);
   const tagline = truncate(desc, 110) || `${companyName} — Official Skyscraper Floor`;
   const description = truncate(desc, 240) || `Claimed top floor on GeTopFloor skyscraper.`;
   const logoUrl = icon
     ? resolveUrl(icon, url)
-    : `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
+    : `https://www.google.com/s2/favicons?domain=${hostname}&sz=256`;
   const category = guessCategory(`${companyName} ${desc}`);
 
   return {
@@ -203,15 +204,20 @@ async function crawlDirectHtml(url: string): Promise<WebsiteMetadata> {
     const tagline = truncate(rawDesc, 110) || `${companyName} — Official Skyscraper Floor`;
     const description = truncate(rawDesc, 240) || `Claimed top floor on GeTopFloor skyscraper.`;
 
-    // 3. Extract Favicon
+    // 3. Extract High-Res Icon (Apple touch icon 180px, SVG icon, or standard icon)
     const appleIcon = html.match(
       /<link[^>]+rel=["'][^"']*apple-touch-icon[^"']*["'][^>]+href=["']([^"']+)["']/i
+    )?.[1];
+    const svgIcon = html.match(
+      /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+type=["']image\/svg\+xml["'][^>]+href=["']([^"']+)["']/i
     )?.[1];
     const stdIcon = html.match(
       /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+href=["']([^"']+)["']/i
     )?.[1];
-    const rawIcon = appleIcon || stdIcon;
-    const logoUrl = rawIcon ? resolveUrl(rawIcon, url) : fallbackFavicon;
+    const rawIcon = appleIcon || svgIcon || stdIcon;
+    const logoUrl = rawIcon
+      ? resolveUrl(rawIcon, url)
+      : `https://www.google.com/s2/favicons?domain=${hostname}&sz=256`;
 
     const category = guessCategory(`${companyName} ${rawDesc}`);
 

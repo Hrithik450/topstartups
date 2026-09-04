@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RulerTall, Stack, Eye, Globe, Close, BarChart, ManageIcon, Rupee } from "./icons";
+import { RulerTall, Stack, Eye, Globe, Close, BarChart, ManageIcon, Money } from "./icons";
 import { useUserStore } from "@/store/user-store";
 import { useFloorsStore } from "@/store/floors-store";
 import { useStatsStore } from "@/store/stats-store";
@@ -98,8 +98,10 @@ export function useLiveStats(customHeightFt?: number | string) {
       ? stats.heightFt
       : calculateTowerHeightFt(0);
 
-  const activeFloorsSales = floors.reduce((sum, f) => sum + Number(f.pricePaid || 0), 0);
-  const dynamicSales = Math.max(stats.totalSales || 0, activeFloorsSales);
+  const dynamicSales =
+    floors.length > 0
+      ? floors.reduce((sum, f) => sum + Number(f.pricePaid || 0), 0)
+      : Number(stats.totalSales || 0);
 
   return {
     ...stats,
@@ -129,13 +131,14 @@ export function StatChips({
             onClick: onOpenManage,
             title: "Manage your claimed startup floors",
             render: () => {
-              const userPhoto = user.image || user.avatarUrl;
+              const userPhoto = user.avatarUrl || (user as any).image;
               return (
                 <>
                   {userPhoto ? (
                     <img
                       src={userPhoto}
                       alt={user.name || user.email || "Founder"}
+                      referrerPolicy="no-referrer"
                       style={{
                         width: "16px",
                         height: "16px",
@@ -225,7 +228,7 @@ export function StatChips({
       key: "sales",
       render: () => (
         <>
-          <Rupee />{" "}
+          <Money />{" "}
           <span className="num" suppressHydrationWarning>
             ₹{(stats.mounted ? stats.totalSales : 0).toLocaleString("en-IN")}
           </span>{" "}
@@ -356,7 +359,7 @@ export function MobileStatsSheet({
 
           <div className="mobile-stat-card">
             <div className="stat-card-top">
-              <Rupee />
+              <Money />
               <span className="stat-card-badge">SALES MADE</span>
             </div>
             <div className="stat-card-value" suppressHydrationWarning>

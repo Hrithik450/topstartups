@@ -179,10 +179,11 @@ export function Main({
                 title="Manage your claimed floors"
                 style={{ padding: "4px" }}
               >
-                {user.image || user.avatarUrl ? (
+                {user.avatarUrl ? (
                   <img
-                    src={user.image || user.avatarUrl || ""}
+                    src={user.avatarUrl || ""}
                     alt={user.name || user.email || "Founder"}
+                    referrerPolicy="no-referrer"
                     style={{
                       width: "22px",
                       height: "22px",

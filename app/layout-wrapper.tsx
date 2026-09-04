@@ -32,8 +32,36 @@ export function LayoutWrapper({
         });
       }
     } else {
-      setUser(null);
-      setOwnedFloors([]);
+      // Client-side session fallback if SSR didn't have session cookies
+      fetch("/api/auth/session")
+        .then((r) => r.json())
+        .then((session) => {
+          if (session?.user?.email) {
+            const clientUser: User = {
+              id: session.user.id || "",
+              email: session.user.email,
+              name: session.user.name || null,
+              emailVerified: null,
+              phone: null,
+              avatarUrl: (session.user as any).avatarUrl || session.user.image || null,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+            setUser(clientUser);
+            getFloorsByEmailAction(session.user.email).then((res) => {
+              if (res.success && res.data) {
+                setOwnedFloors(res.data);
+              }
+            });
+          } else {
+            setUser(null);
+            setOwnedFloors([]);
+          }
+        })
+        .catch(() => {
+          setUser(null);
+          setOwnedFloors([]);
+        });
     }
   }, [initialUser, setUser, setOwnedFloors]);
 

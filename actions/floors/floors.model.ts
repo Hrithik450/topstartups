@@ -14,6 +14,7 @@ export interface ClaimFloorPreparedInput {
   tagline?: string | null;
   description?: string | null;
   logoUrl?: string | null;
+  customerName?: string | null;
   customerEmail?: string | null;
   customerPhone?: string | null;
 }
@@ -329,12 +330,13 @@ export class FloorsModel {
           .insert(users)
           .values({
             email: input.customerEmail,
-            name: companyName || cleanHost,
+            name: input.customerName || null,
             phone: input.customerPhone,
           })
           .onConflictDoUpdate({
             target: users.email,
             set: {
+              ...(input.customerName ? { name: input.customerName } : {}),
               ...(input.customerPhone ? { phone: input.customerPhone } : {}),
               updatedAt: new Date(),
             },

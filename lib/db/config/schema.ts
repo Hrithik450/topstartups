@@ -22,7 +22,6 @@ export const users = pgTable(
     email: varchar("email", { length: 255 }).notNull().unique(),
     name: varchar("name", { length: 255 }),
     emailVerified: timestamp("emailVerified", { mode: "date" }),
-    image: text("image"),
     phone: varchar("phone", { length: 50 }),
     avatarUrl: text("avatar_url"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

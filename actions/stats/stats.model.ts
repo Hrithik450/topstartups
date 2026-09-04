@@ -12,6 +12,7 @@ export interface RecordVisitAndPingData {
   countryCode: string | null;
   countryName: string | null;
   isNewSession: boolean;
+  userId?: string | null;
 }
 
 export class StatsModel {
@@ -30,25 +31,15 @@ export class StatsModel {
 
           const onlineCount = Math.max(1, Number(activeRes[0]?.count || 0));
 
-          const claimsRes = await db
-            .select({
-              total: sql<number>`COALESCE(SUM(${claims.amount}), 0)::int`,
-            })
-            .from(claims)
-            .where(eq(claims.status, "succeeded"));
-
-          const claimsSales = Number(claimsRes[0]?.total || 0);
-
           const claimedRes = await db
             .select({
               count: count(),
-              total: sql<number>`COALESCE(SUM(${floors.pricePaid}), 0)::int`,
+              totalSales: sql<number>`COALESCE(SUM(${floors.pricePaid}), 0)::int`,
             })
             .from(floors);
 
           const claimedCount = Number(claimedRes[0]?.count || 0);
-          const floorsSales = Number(claimedRes[0]?.total || 0);
-          const totalSales = Math.max(claimsSales, floorsSales);
+          const totalSales = Number(claimedRes[0]?.totalSales || 0);
 
           const statsRes = await db
             .select()
@@ -142,6 +133,8 @@ export class StatsModel {
         .values({
           sessionToken: data.sessionId,
           countryCode: data.countryCode,
+          userId: data.userId || null,
+          expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           lastSeenAt: new Date(),
           createdAt: new Date(),
         })
@@ -150,6 +143,8 @@ export class StatsModel {
           set: {
             lastSeenAt: new Date(),
             countryCode: data.countryCode || sessions.countryCode,
+            ...(data.userId ? { userId: data.userId } : {}),
+            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           },
         });
 

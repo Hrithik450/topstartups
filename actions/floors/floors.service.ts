@@ -36,6 +36,7 @@ export const claimFloorSchema = z.object({
   tagline: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   logoUrl: z.string().nullable().optional(),
+  customerName: z.string().nullable().optional(),
   customerEmail: z.string().email().or(z.literal("")).nullable().optional(),
   customerPhone: z.string().nullable().optional(),
 });
@@ -408,6 +409,7 @@ export class FloorsService {
         tagline: finalTagline,
         description: finalDescription,
         logoUrl: finalLogoUrl,
+        customerName: validated.customerName || null,
         customerEmail: cleanEmail,
         customerPhone: cleanPhone,
       };

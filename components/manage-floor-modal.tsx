@@ -268,24 +268,73 @@ export function ManageFloorModal({ isOpen, onClose, onFloorUpdated }: ManageFloo
   if (!isOpen) return null;
 
   return (
-    <div className="manage-modal-overlay animate-fade-in" onClick={onClose}>
+    <div
+      className="manage-modal-overlay animate-fade-in"
+      onClick={() => {
+        if (!saving && !uploadingLogo && !deleting) onClose();
+      }}
+    >
       <div className="manage-modal-container animate-scale-up" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="manage-modal-header">
-          <div>
-            <h2 className="manage-modal-title">Manage Your Skyscraper Floors</h2>
-            <p className="manage-modal-subtitle">
-              {loading || authLoading
-                ? "Connecting to verified startup skyscraper database..."
-                : user
-                  ? `Logged in as ${user.email} — Update startup details, logos, or vacate floors anytime.`
-                  : "Sign in with Google to manage your claimed skyscraper startups."}
-            </p>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            {user && (
+              <div style={{ flexShrink: 0 }}>
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name || user.email || "Profile"}
+                    referrerPolicy="no-referrer"
+                    style={{
+                      width: "44px",
+                      height: "44px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "2px solid rgba(255, 107, 26, 0.5)",
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "44px",
+                      height: "44px",
+                      borderRadius: "50%",
+                      background: "#ff9f43",
+                      color: "#000",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: "bold",
+                      fontSize: "18px",
+                    }}
+                  >
+                    {(user.name || user.email || "U").charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+            )}
+            <div>
+              <h2 className="manage-modal-title">Manage Your Skyscraper Floors</h2>
+              <p className="manage-modal-subtitle">
+                {loading || authLoading
+                  ? "Connecting to verified startup skyscraper database..."
+                  : user
+                    ? `Logged in as ${user.name ? `${user.name} (${user.email})` : user.email} — Update startup details, logos, or vacate floors anytime.`
+                    : "Sign in with Google to manage your claimed skyscraper startups."}
+              </p>
+            </div>
           </div>
           <button
             type="button"
             className="manage-modal-close"
             onClick={onClose}
+            disabled={saving || uploadingLogo || deleting}
+            style={
+              saving || uploadingLogo || deleting
+                ? { opacity: 0.4, cursor: "not-allowed", pointerEvents: "none" }
+                : undefined
+            }
             aria-label="Close"
             title="Close"
           >
@@ -563,13 +612,20 @@ export function ManageFloorModal({ isOpen, onClose, onFloorUpdated }: ManageFloo
                         value={formData.logoUrl}
                         onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
                       />
-                      <label className="manage-file-upload-btn">
+                      <label
+                        className={`manage-file-upload-btn ${uploadingLogo || saving || deleting ? "disabled" : ""}`}
+                        style={
+                          uploadingLogo || saving || deleting
+                            ? { opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }
+                            : undefined
+                        }
+                      >
                         {uploadingLogo ? "Uploading..." : "Upload File"}
                         <input
                           type="file"
                           accept="image/*"
                           style={{ display: "none" }}
-                          disabled={uploadingLogo}
+                          disabled={uploadingLogo || saving || deleting}
                           onChange={handleLogoUpload}
                         />
                       </label>
@@ -590,15 +646,23 @@ export function ManageFloorModal({ isOpen, onClose, onFloorUpdated }: ManageFloo
                 <button
                   type="button"
                   onClick={handleDelete}
-                  disabled={deleting || saving}
+                  disabled={deleting || saving || uploadingLogo}
                   className="manage-delete-btn"
                   title="Vacate and reset this floor"
                 >
                   {deleting ? "Vacating..." : "Vacate Floor"}
                 </button>
 
-                <button type="submit" disabled={saving || deleting} className="manage-save-btn">
-                  {saving ? "Saving..." : "Save Changes"}
+                <button
+                  type="submit"
+                  disabled={saving || deleting || uploadingLogo}
+                  className="manage-save-btn"
+                >
+                  {uploadingLogo
+                    ? "Uploading Logo..."
+                    : saving
+                    ? "Saving Changes..."
+                    : "Save Changes"}
                 </button>
               </div>
             </form>

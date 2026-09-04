@@ -844,13 +844,29 @@ button.chip:focus-visible {
   flex: none;
 }
 .ctrl.active {
-  background: var(--brand-orange);
-  border-color: var(--brand-orange);
-  color: #fff;
+  background: var(--brand-orange) !important;
+  border-color: var(--brand-orange) !important;
+  color: #fff !important;
   box-shadow: 0 4px 14px rgba(255, 107, 26, 0.4);
 }
-.ctrl.active svg {
-  color: #fff;
+.ctrl.active:hover,
+[data-theme="sunset"] .ctrl.active:hover,
+[data-theme="dark"] .ctrl.active:hover {
+  background: #ea580c !important;
+  border-color: #ea580c !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(255, 107, 26, 0.5);
+  transform: translateX(-2px);
+}
+.ctrl.active svg,
+.ctrl.active:hover svg,
+[data-theme="sunset"] .ctrl.active:hover svg,
+[data-theme="dark"] .ctrl.active:hover svg,
+.ctrl.active span,
+.ctrl.active:hover span,
+[data-theme="sunset"] .ctrl.active:hover span,
+[data-theme="dark"] .ctrl.active:hover span {
+  color: #fff !important;
 }
 
 /* grouped controls (rotate / move floors) */

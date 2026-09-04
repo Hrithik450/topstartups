@@ -580,17 +580,41 @@ export function Hero({
             <button
               type="button"
               className="step-btn"
-              onClick={() => setPrice((p) => Math.max(minAllowedPrice, p - 1))}
+              onClick={() => setPrice((p) => Math.max(minAllowedPrice, (p || minAllowedPrice) - 1))}
               aria-label="Lower bid"
               disabled={price <= minAllowedPrice}
             >
               <Minus />
             </button>
-            <span className="price">₹{price}</span>
+            <span className="price-editable-wrap" title="Click or tap to edit custom price">
+              <span className="price-currency">₹</span>
+              <input
+                type="number"
+                className="price-input"
+                value={price === 0 ? "" : price}
+                min={minAllowedPrice}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") {
+                    setPrice(0);
+                    return;
+                  }
+                  const val = parseInt(raw, 10);
+                  if (!isNaN(val)) {
+                    setPrice(val);
+                  }
+                }}
+                onBlur={() => {
+                  setPrice((p) => Math.max(minAllowedPrice, p || minAllowedPrice));
+                }}
+                style={{ width: `${Math.max(2, String(price || minAllowedPrice).length)}ch` }}
+                aria-label="Bid Price in INR"
+              />
+            </span>
             <button
               type="button"
               className="step-btn"
-              onClick={() => setPrice((p) => p + 1)}
+              onClick={() => setPrice((p) => (p === 0 ? minAllowedPrice : p + 1))}
               aria-label="Raise bid"
             >
               <Plus />

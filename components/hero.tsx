@@ -269,6 +269,19 @@ export function Hero({
 
     // Check if returning from a real Dodo checkout session
     if (targetId && !targetId.startsWith("mock_")) {
+      const statusParam = params.get("status")?.toLowerCase();
+      if (statusParam === "failed" || statusParam === "cancelled") {
+        setIsSubmitting(false);
+        setPaymentNotice({
+          type: "error",
+          message:
+            "Your payment was cancelled or could not be completed. Your account was not charged. You can restart checkout whenever you're ready.",
+        });
+        window.history.replaceState({}, "", window.location.pathname);
+        window.dispatchEvent(new CustomEvent("floors-refresh"));
+        return;
+      }
+
       const queryParts: string[] = [];
       if (paymentId) queryParts.push(`payment_id=${encodeURIComponent(paymentId)}`);
       if (sessionId) queryParts.push(`session_id=${encodeURIComponent(sessionId)}`);

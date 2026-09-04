@@ -32,7 +32,14 @@ export async function getOutbidPricingAction(cleanHost: string) {
 }
 
 /**
- * Server action to fetch floors owned by an email.
+ * Server action to fetch a floor by domain or URL.
+ */
+export async function getFloorByDomainAction(domainOrUrl: string): Promise<FloorResponse> {
+  return await FloorsService.getFloorByDomain(domainOrUrl);
+}
+
+/**
+ * Server action to fetch floors owned by an email (optional).
  */
 export async function getFloorsByEmailAction(email: string): Promise<FloorsResponse> {
   return await FloorsService.getFloorsByEmail(email);
@@ -57,7 +64,7 @@ export async function getFloorByRankAction(rank: number): Promise<FloorResponse>
  */
 export async function updateFloorAction(
   data: TUpdateFloorSchema,
-  email: string
+  email?: string | null
 ): Promise<FloorResponse> {
   return await FloorsService.updateFloor(data, email);
 }
@@ -67,7 +74,7 @@ export async function updateFloorAction(
  */
 export async function deleteFloorAction(
   floorId: string,
-  email: string
+  email?: string | null
 ): Promise<DeleteFloorResponse> {
   return await FloorsService.deleteFloor(floorId, email);
 }

@@ -187,13 +187,17 @@ export class FloorsModel {
    */
   static async updateFloor(
     floorId: string,
-    email: string,
-    payload: Partial<NewFloor>
+    email?: string | null,
+    payload: Partial<NewFloor> = {}
   ): Promise<Floor | null> {
+    const whereClause = email?.trim()
+      ? and(eq(floors.id, floorId), eq(floors.userEmail, email.toLowerCase().trim()))
+      : eq(floors.id, floorId);
+
     const existing = await db
       .select()
       .from(floors)
-      .where(and(eq(floors.id, floorId), eq(floors.userEmail, email)))
+      .where(whereClause)
       .limit(1);
 
     if (existing.length === 0) return null;
@@ -215,18 +219,22 @@ export class FloorsModel {
    */
   static async deleteFloor(
     floorId: string,
-    email: string
+    email?: string | null
   ): Promise<{ success: boolean; message: string; rank?: number }> {
+    const whereClause = email?.trim()
+      ? and(eq(floors.id, floorId), eq(floors.userEmail, email.toLowerCase().trim()))
+      : eq(floors.id, floorId);
+
     const existing = await db
       .select()
       .from(floors)
-      .where(and(eq(floors.id, floorId), eq(floors.userEmail, email)))
+      .where(whereClause)
       .limit(1);
 
     if (existing.length === 0) {
       return {
         success: false,
-        message: "Floor not found or you are not authorized to manage it.",
+        message: "Floor not found.",
       };
     }
 
@@ -281,13 +289,12 @@ export class FloorsModel {
         };
       }
 
-      // 2. Check if website already claimed on the skyscraper (targeted query)
+      // 2. Check if website already claimed on the skyscraper (targeted domain query)
       const candidateFloors = await tx
         .select()
         .from(floors)
         .where(
           or(
-            input.customerEmail ? eq(floors.userEmail, input.customerEmail) : sql`false`,
             sql`${floors.companyUrl} ILIKE ${"%" + cleanHost + "%"}`,
             sql`${floors.companyName} ILIKE ${"%" + cleanHost + "%"}`
           )

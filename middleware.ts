@@ -48,8 +48,8 @@ const ROUTE_LIMITS: { pattern: string; method?: string; max: number; windowMs: n
   { pattern: "/api/checkout/verify", max: 120, windowMs: 60_000 },
   // Floor asset upload: max 20 uploads per minute per IP
   { pattern: "/api/upload", method: "POST", max: 20, windowMs: 60_000 },
-  // Auth operations: max 30 requests per minute
-  { pattern: "/api/auth", max: 30, windowMs: 60_000 },
+  // Floors endpoint: max 120 requests per minute
+  { pattern: "/api/floors", max: 120, windowMs: 60_000 },
   // Webhooks: high throughput for verified payment provider
   { pattern: "/api/webhooks", max: 100, windowMs: 60_000 },
   // General POST / mutation endpoints: max 25 requests per minute

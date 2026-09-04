@@ -118,7 +118,35 @@ export class FloorsService {
   }
 
   /**
-   * Get claimed floors owned by a founder email.
+   * Fetch a single floor by domain or URL.
+   */
+  static async getFloorByDomain(domainOrUrl: string): Promise<FloorResponse> {
+    try {
+      if (!domainOrUrl?.trim()) {
+        return {
+          success: false,
+          data: null,
+          error: "Domain or website URL is required",
+        };
+      }
+
+      const cleanHost = extractRootHostname(domainOrUrl);
+      const floor = await FloorsModel.findFloorByHost(cleanHost);
+      return {
+        success: true,
+        data: floor,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: null,
+        error: error instanceof Error ? error.message : "Failed to fetch floor by domain",
+      };
+    }
+  }
+
+  /**
+   * Get claimed floors owned by a founder email (optional).
    */
   static async getFloorsByEmail(email: string): Promise<FloorsResponse> {
     try {
@@ -205,18 +233,10 @@ export class FloorsService {
   /**
    * Update floor details.
    */
-  static async updateFloor(data: TUpdateFloorSchema, email: string): Promise<FloorResponse> {
+  static async updateFloor(data: TUpdateFloorSchema, email?: string | null): Promise<FloorResponse> {
     try {
-      if (!email?.trim()) {
-        return {
-          success: false,
-          data: null,
-          error: "Unauthorized. Email is required to update your floor.",
-        };
-      }
-
       const validated = updateFloorSchema.parse(data);
-      const cleanEmail = email.toLowerCase().trim();
+      const cleanEmail = email?.toLowerCase().trim() || null;
       const setPayload: Partial<NewFloor> = {};
 
       if (validated.companyName?.trim()) {
@@ -365,7 +385,7 @@ export class FloorsService {
   /**
    * Vacate a floor.
    */
-  static async deleteFloor(floorId: string, email: string): Promise<DeleteFloorResponse> {
+  static async deleteFloor(floorId: string, email?: string | null): Promise<DeleteFloorResponse> {
     try {
       if (!floorId?.trim()) {
         return {
@@ -374,15 +394,8 @@ export class FloorsService {
         };
       }
 
-      if (!email?.trim()) {
-        return {
-          success: false,
-          error: "Unauthorized. Email is required to vacate your floor.",
-        };
-      }
-
       const cleanFloorId = floorId.trim();
-      const cleanEmail = email.toLowerCase().trim();
+      const cleanEmail = email?.toLowerCase().trim() || null;
       const result = await FloorsModel.deleteFloor(cleanFloorId, cleanEmail);
 
       if (result.success) {

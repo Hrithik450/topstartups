@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 /**
- * ENTERPRISE SECURITY MIDDLEWARE
+ * ENTERPRISE SECURITY & AUTHS MIDDLEWARE
+ * - NextAuth Session resolution
  * - Real client IP detection (Cloudflare, Vercel, Proxies)
  * - Anti-flood rate limiting per route and HTTP method
  * - Known exploit scanner & bot blocker
@@ -44,10 +46,8 @@ const ROUTE_LIMITS: { pattern: string; method?: string; max: number; windowMs: n
   { pattern: "/api/checkout", method: "POST", max: 6, windowMs: 60_000 },
   // Floor asset upload: max 6 uploads per minute per IP
   { pattern: "/api/upload", method: "POST", max: 6, windowMs: 60_000 },
-  // Floor management / edits: max 12 requests per minute per IP
-  { pattern: "/api/floors/manage", method: "POST", max: 12, windowMs: 60_000 },
-  // Auth operations: max 15 requests per minute
-  { pattern: "/api/auth", max: 15, windowMs: 60_000 },
+  // Auth operations: max 30 requests per minute
+  { pattern: "/api/auth", max: 30, windowMs: 60_000 },
   // Webhooks: high throughput for verified payment provider
   { pattern: "/api/webhooks", max: 100, windowMs: 60_000 },
   // General POST / mutation endpoints: max 25 requests per minute
@@ -101,7 +101,7 @@ function getClientIp(req: NextRequest): string {
 }
 
 export function middleware(req: NextRequest) {
-  // Only apply to API routes
+  // Only apply rate limiting and security checks to API routes
   if (!req.nextUrl.pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
@@ -181,5 +181,6 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: "/api/:path*",
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
+

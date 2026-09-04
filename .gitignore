@@ -13,3 +13,5 @@ next-env.d.ts
 db-snapshot*.json
 /snapshots
 *.snapshot.json
+.vercel
+.env*.local

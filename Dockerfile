@@ -7,11 +7,13 @@ RUN apk add --no-cache libc6-compat
 
 # ─── Step 1: Install Dependencies ───
 FROM base AS deps
-COPY package.json package-lock.json* ./
-RUN npm ci
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
 
 # ─── Step 2: Build Application ───
 FROM base AS builder
+RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -21,7 +23,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
 ENV DATABASE_SSL=false
 
-RUN npm run build
+RUN pnpm run build
 
 # ─── Step 3: Production Runner ───
 FROM node:20-alpine AS runner

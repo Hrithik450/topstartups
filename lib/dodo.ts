@@ -1,7 +1,8 @@
 import crypto from "crypto";
 
 export interface CreateCheckoutInput {
-  url: string;
+  companyUrl: string;
+  url?: string;
   category?: string;
   companyName: string;
   customerName?: string;
@@ -12,16 +13,14 @@ export interface CreateCheckoutInput {
 }
 
 export interface CheckoutResult {
-  paymentId: string;
+  checkoutSessionId: string;
   checkoutUrl: string;
   isMock?: boolean;
 }
 
 export function getDodoApiUrl(): string {
   const env = (process.env.DODO_PAYMENTS_ENVIRONMENT || "test").trim().toLowerCase();
-  return env === "live"
-    ? "https://live.dodopayments.com"
-    : "https://test.dodopayments.com";
+  return env === "live" ? "https://live.dodopayments.com" : "https://test.dodopayments.com";
 }
 
 /**
@@ -29,22 +28,21 @@ export function getDodoApiUrl(): string {
  * If DODO_PAYMENTS_API_KEY is not configured or in test mock mode,
  * falls back to a sandbox test checkout URL for seamless local developer testing.
  */
-export async function createDodoCheckout(
-  input: CreateCheckoutInput
-): Promise<CheckoutResult> {
+export async function createDodoCheckout(input: CreateCheckoutInput): Promise<CheckoutResult> {
   const apiKey = process.env.DODO_PAYMENTS_API_KEY?.trim();
+  const companyUrl = input.companyUrl || input.url || "";
 
   // If no API key or mock flag, return seamless mock checkout for local dev
   if (!apiKey || apiKey.startsWith("mock_")) {
-    const mockPaymentId = `mock_dodo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const mockCheckoutUrl = `/api/checkout/mock-success?payment_id=${mockPaymentId}&url=${encodeURIComponent(
-      input.url
+    const mockSessionId = `mock_cks_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const mockCheckoutUrl = `/api/checkout/mock-success?session_id=${mockSessionId}&company_url=${encodeURIComponent(
+      companyUrl
     )}&category=${encodeURIComponent(input.category || "")}&company_name=${encodeURIComponent(
       input.companyName
     )}&price=${input.price}&return_url=${encodeURIComponent(input.returnUrl)}`;
 
     return {
-      paymentId: mockPaymentId,
+      checkoutSessionId: mockSessionId,
       checkoutUrl: mockCheckoutUrl,
       isMock: true,
     };
@@ -77,7 +75,7 @@ export async function createDodoCheckout(
         ],
         return_url: input.returnUrl,
         metadata: {
-          url: input.url,
+          company_url: companyUrl,
           category: input.category || "",
           company_name: input.companyName,
           target_rank: (input.targetRank || 1).toString(),
@@ -94,13 +92,17 @@ export async function createDodoCheckout(
         const parsed = JSON.parse(errorText);
         parsedMsg = parsed.message || parsed.error || "";
       } catch {}
-      throw new Error(parsedMsg ? `Payment gateway error: ${parsedMsg}` : "Payment processing failed. Please try again.");
+      throw new Error(
+        parsedMsg
+          ? `Payment gateway error: ${parsedMsg}`
+          : "Payment processing failed. Please try again."
+      );
     }
 
     const data = await response.json();
     return {
-      paymentId: data.session_id || data.payment_id || data.id,
-      checkoutUrl: data.checkout_url || data.url,
+      checkoutSessionId: data.session_id || data.checkout_id || data.id,
+      checkoutUrl: data.checkout_url || data.payment_url || data.url,
       isMock: false,
     };
   } catch (err) {
@@ -110,38 +112,95 @@ export async function createDodoCheckout(
 }
 
 /**
- * Verify Dodo Payments webhook signature using HMAC SHA256.
- * SECURITY: Always reject if webhook secret is not configured.
+ * Standard Webhooks verification using the official Standard Webhooks specification
+ * as mandated by Dodo Payments documentation (Svix-standard webhook-id, webhook-timestamp, webhook-signature).
  */
+import { Webhook } from "standardwebhooks";
+
 export function verifyDodoWebhookSignature(
   rawBody: string,
-  signatureHeader: string | null
+  headersOrSignature: Record<string, string | null | undefined> | string | null
 ): boolean {
   const webhookSecret = process.env.DODO_PAYMENTS_WEBHOOK_SECRET?.trim();
   if (!webhookSecret) {
-    console.error(
-      "DODO_PAYMENTS_WEBHOOK_SECRET is not configured — rejecting webhook"
-    );
+    console.error("DODO_PAYMENTS_WEBHOOK_SECRET is not configured — rejecting webhook");
     return false;
   }
 
-  if (!signatureHeader) return false;
+  // Normalize headers
+  const headers =
+    typeof headersOrSignature === "object" && headersOrSignature !== null
+      ? headersOrSignature
+      : { "webhook-signature": headersOrSignature };
 
-  try {
-    const computedSignature = crypto
-      .createHmac("sha256", webhookSecret)
-      .update(rawBody)
-      .digest("hex");
+  const id = headers["webhook-id"] || headers["x-webhook-id"] || "";
+  const timestamp = headers["webhook-timestamp"] || headers["x-webhook-timestamp"] || "";
+  const signature =
+    headers["webhook-signature"] || headers["dodo-signature"] || headers["x-dodo-signature"] || "";
 
-    // SECURITY: Check length match before timingSafeEqual to prevent crash
-    const computedBuf = Buffer.from(computedSignature, "utf8");
-    const receivedBuf = Buffer.from(signatureHeader, "utf8");
-    if (computedBuf.length !== receivedBuf.length) return false;
-
-    return crypto.timingSafeEqual(computedBuf, receivedBuf);
-  } catch (err) {
-    console.error("Error verifying Dodo webhook signature:", err);
-    return false;
+  // 1. Try official standardwebhooks verification if id & timestamp are present
+  if (id && timestamp && signature) {
+    try {
+      const wh = new Webhook(webhookSecret);
+      wh.verify(rawBody, {
+        "webhook-id": id,
+        "webhook-timestamp": timestamp,
+        "webhook-signature": signature,
+      });
+      return true;
+    } catch (err) {
+      console.warn("Standard Webhooks signature mismatch, checking fallback:", err);
+    }
   }
+
+  // 2. Fallback: direct HMAC SHA256 verification (for CLI / testing / direct signatures)
+  if (signature) {
+    try {
+      const cleanSig = signature.startsWith("v1,") ? signature.slice(3) : signature;
+      const secret = webhookSecret.startsWith("whsec_")
+        ? Buffer.from(webhookSecret.slice(6), "base64")
+        : Buffer.from(webhookSecret, "utf8");
+
+      const computedBase64 = crypto
+        .createHmac("sha256", secret)
+        .update(id && timestamp ? `${id}.${timestamp}.${rawBody}` : rawBody)
+        .digest("base64");
+
+      if (computedBase64 === cleanSig) return true;
+
+      // Hex comparison fallback
+      const computedHex = crypto.createHmac("sha256", webhookSecret).update(rawBody).digest("hex");
+
+      const computedBuf = Buffer.from(computedHex, "utf8");
+      const receivedBuf = Buffer.from(signature, "utf8");
+      if (
+        computedBuf.length === receivedBuf.length &&
+        crypto.timingSafeEqual(computedBuf, receivedBuf)
+      ) {
+        return true;
+      }
+    } catch (err) {
+      console.error("Error in fallback webhook verification:", err);
+    }
+  }
+
+  return false;
 }
 
+/**
+ * Extracts payment_id, session_id, and status according to the official Dodo Payments redirect specification:
+ * Dodo redirects with: ?payment_id=pay_xxx&status=succeeded&email=customer@example.com
+ */
+export function extractDodoRedirectParams(searchParams: URLSearchParams): {
+  paymentId: string | null;
+  sessionId: string | null;
+  targetId: string | null;
+  status: string | null;
+} {
+  const paymentId = searchParams.get("payment_id")?.trim() || null;
+  const sessionId = searchParams.get("session_id")?.trim() || null;
+  const status = searchParams.get("status")?.trim() || null;
+  const targetId = paymentId || sessionId;
+
+  return { paymentId, sessionId, targetId, status };
+}

@@ -63,6 +63,8 @@ export function getPoolConfig(connectionString: string): PoolConfig {
     idleTimeoutMillis: envInt("DATABASE_POOL_IDLE_MS", onVercel ? 10_000 : 30_000),
     connectionTimeoutMillis: envInt("DATABASE_POOL_CONNECT_MS", 10_000),
     allowExitOnIdle: onVercel || usingTransactionPooler,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000,
   };
 }
 

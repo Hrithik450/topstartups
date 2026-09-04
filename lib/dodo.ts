@@ -77,10 +77,6 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
           ...(input.customerName ? { name: input.customerName } : {}),
         },
         billing_currency: "INR",
-        minimal_address: true,
-        billing_address: {
-          country: "IN",
-        },
         product_cart: [
           {
             product_id: productId,

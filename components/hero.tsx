@@ -586,13 +586,15 @@ export function Hero({
             >
               <Minus />
             </button>
-            <span className="price-editable-wrap" title="Click or tap to edit custom price">
+            <span className="price-editable-wrap" title="Click or tap to type any custom bid amount (e.g. ₹202)">
               <span className="price-currency">₹</span>
               <input
                 type="number"
                 className="price-input"
                 value={price === 0 ? "" : price}
                 min={minAllowedPrice}
+                placeholder={String(minAllowedPrice)}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => {
                   const raw = e.target.value;
                   if (raw === "") {
@@ -607,8 +609,12 @@ export function Hero({
                 onBlur={() => {
                   setPrice((p) => Math.max(minAllowedPrice, p || minAllowedPrice));
                 }}
-                style={{ width: `${Math.max(2, String(price || minAllowedPrice).length)}ch` }}
-                aria-label="Bid Price in INR"
+                style={{
+                  width: `${Math.max(2, String(price || minAllowedPrice).length + 0.5)}ch`,
+                  minWidth: "2ch",
+                  cursor: "text",
+                }}
+                aria-label="Custom Bid Price in INR"
               />
             </span>
             <button
@@ -817,8 +823,7 @@ export function Hero({
       </form>
 
       <p className="subtitle">
-        To claim top floor again, use the same URL you used earlier.
-        You&apos;ll pay the difference &amp; claim top floor.
+        Click or tap the price to enter any custom bid amount. Outbid the current top floor to claim the penthouse spot on the digital tower skyline.
       </p>
 
       <div className="policy-links-container">

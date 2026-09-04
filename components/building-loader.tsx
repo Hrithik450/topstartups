@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export default function BuildingLoader({ isLoading }: { isLoading: boolean }) {
+export function BuildingLoader({ isLoading }: { isLoading: boolean }) {
   const [shouldRender, setShouldRender] = useState(true);
 
   // When 3D assets & building finish loading, immediately fade out and unmount smoothly

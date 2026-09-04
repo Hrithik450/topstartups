@@ -10,28 +10,34 @@
     "lint": "next lint",
     "db:push": "drizzle-kit push",
     "db:reset": "tsx scripts/reset-db.ts",
-    "db:seed": "tsx lib/db/config/seed.ts",
+    "db:snapshot": "tsx scripts/export-snapshot.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@auth/drizzle-adapter": "^1.11.3",
     "@vercel/blob": "^2.8.0",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
-    "next": "14.2.15",
+    "lucide-react": "^1.40.0",
+    "next": "^15.2.1",
+    "next-auth": "5.0.0-beta.32",
     "pg": "^8.23.0",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "three": "0.169.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "standardwebhooks": "^1.1.1",
+    "three": "0.169.0",
+    "zod": "^4.5.4",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@types/node": "20.16.11",
+    "@types/node": "^20",
     "@types/pg": "^8.23.1",
-    "@types/react": "18.3.11",
-    "@types/react-dom": "18.3.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "@types/three": "0.169.0",
     "drizzle-kit": "^0.31.10",
     "playwright": "1.61.1",
     "tsx": "^4.23.13",
-    "typescript": "5.6.3"
+    "typescript": "^5"
   }
 }

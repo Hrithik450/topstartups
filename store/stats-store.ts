@@ -9,7 +9,6 @@ export interface StatsStore {
   isStatsReady: boolean;
 
   setStats: (newStats: Partial<LiveStatsData> | null) => void;
-  fetchLiveStats: () => Promise<void>;
   pingAndSync: (input: {
     sessionId: string;
     countryCode?: string;
@@ -38,18 +37,6 @@ export const useStatsStore = create<StatsStore>()(
         stats: { ...state.stats, ...newStats },
         isStatsReady: true,
       }));
-    },
-
-    fetchLiveStats: async () => {
-      try {
-        const res = await fetch("/api/stats", { cache: "no-store" });
-        const data = await res.json();
-        if (data.success && data.stats) {
-          get().setStats(data.stats);
-        }
-      } catch (err) {
-        console.warn("Could not fetch live stats:", err);
-      }
     },
 
     pingAndSync: async ({ sessionId, countryCode, countryName, isNewSession = false }) => {

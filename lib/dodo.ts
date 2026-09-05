@@ -61,6 +61,20 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
 
   // Real Dodo Payments REST API call
   try {
+    // Dodo Payments requires BOTH email and name if customer object is provided (un-tagged CustomerRequest enum)
+    const cleanEmail = input.customerEmail?.trim().toLowerCase();
+    const cleanName =
+      (input.customerName && input.customerName.trim()) ||
+      (cleanEmail ? cleanEmail.split("@")[0] : undefined) ||
+      "Customer";
+
+    const customerPayload = cleanEmail
+      ? {
+          email: cleanEmail,
+          name: cleanName,
+        }
+      : undefined;
+
     const response = await fetch(`${getDodoApiUrl()}/checkouts`, {
       method: "POST",
       headers: {
@@ -69,14 +83,7 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
       },
       signal: AbortSignal.timeout(8000),
       body: JSON.stringify({
-        ...(input.customerEmail?.trim()
-          ? {
-              customer: {
-                email: input.customerEmail.trim(),
-                ...(input.customerName?.trim() ? { name: input.customerName.trim() } : {}),
-              },
-            }
-          : {}),
+        ...(customerPayload ? { customer: customerPayload } : {}),
         billing_currency: "INR",
         minimal_address: true,
         billing_address: {

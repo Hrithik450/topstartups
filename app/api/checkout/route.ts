@@ -120,6 +120,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (!customerName && userEmail) {
+      const emailName = userEmail.split("@")[0].replace(/[^a-zA-Z0-9 ]/g, " ").trim();
+      customerName = emailName
+        ? emailName.charAt(0).toUpperCase() + emailName.slice(1)
+        : "Customer";
+    }
     // ─────────────────────────────────────────────────────────────
     // STEP 4: CREATE DODO CHECKOUT SESSION & INSERT PENDING CLAIM
     // ─────────────────────────────────────────────────────────────

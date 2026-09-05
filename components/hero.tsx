@@ -431,14 +431,12 @@ export function Hero({
       <h1 className="headline">
         {existingFloorOnTower && existingFloorOnTower.rank > 1
           ? price >= differencePrice
-            ? "Upgrade & reclaim Top Floor #1 for"
+            ? "Reclaim Top Floor #1 for"
             : "Boost your floor for"
           : existingFloorOnTower && existingFloorOnTower.rank === 1
-            ? "Defend & boost Top Floor #1 for"
+            ? "Boost Top Floor #1 for"
             : price >= topFloorPrice
-              ? topFloorClaimed
-                ? "Claim Top Floor #1 for"
-                : "Claim Top Floor #1 for"
+              ? "Claim Top Floor #1 for"
               : "Claim a floor for"}
         <span className="price-stepper">
           <button

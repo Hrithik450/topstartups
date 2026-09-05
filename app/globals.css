@@ -254,16 +254,17 @@ body.home-tower-scrolled .tower-top-fade {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: nowrap;
-  white-space: nowrap;
+  flex-wrap: wrap;
   gap: 12px 18px;
   font-size: clamp(28px, 4.6vw, 64px);
   font-weight: 800;
   letter-spacing: -0.03em;
-  line-height: 1.1;
+  line-height: 1.2;
   margin: 0;
+  padding: 6px 0 10px;
   color: var(--ink);
   max-width: 100%;
+  box-sizing: border-box;
 }
 
 .price-stepper {
@@ -1124,19 +1125,25 @@ button.chip:focus-visible {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-    font-size: clamp(19px, 5.2vw, 34px);
-    gap: 8px;
-    line-height: 1.15;
+    flex-wrap: wrap;
+    white-space: normal;
+    text-align: center;
+    font-size: clamp(18px, 5.2vw, 28px);
+    gap: 8px 12px;
+    line-height: 1.25;
+    padding: 12px 6px;
+    margin: 6px 0 10px;
+    width: 100%;
     max-width: 100%;
+    box-sizing: border-box;
   }
 
   .price-stepper {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
     flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .step-btn {

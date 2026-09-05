@@ -1,4 +1,5 @@
 import { db } from "@/lib/db/config/client";
+import { unstable_cache } from "next/cache";
 import { eq, and, sql, or } from "drizzle-orm";
 import { extractRootHostname } from "@/lib/validation/domain";
 import { floors, claims, type Floor, type NewFloor } from "@/lib/db/config/schema";
@@ -34,12 +35,13 @@ export interface ClaimResultModelResponse {
   error?: string;
 }
 
-export class FloorsModel {
-  /**
-   * Fetch active claimed skyscraper floors sorted by pricePaid DESC, claimedAt ASC.
-   * Rank is dynamically assigned based on leaderboard position.
-   */
-  static async getActiveFloors(): Promise<Floor[]> {
+/**
+ * Module-level cached fetcher for active floors.
+ * Cached in memory / data-cache across requests with 0ms database overhead.
+ * Invalidated on-demand the exact millisecond revalidateTag("floors") is called.
+ */
+const getCachedActiveFloors = unstable_cache(
+  async (): Promise<Floor[]> => {
     try {
       const result = await db.query.floors.findMany({
         orderBy: (f, { desc, asc }) => [desc(f.pricePaid), asc(f.claimedAt)],
@@ -61,6 +63,20 @@ export class FloorsModel {
       console.warn("Error fetching active claimed floors:", err?.message);
       return [];
     }
+  },
+  ["active-claimed-floors-cache-key"],
+  {
+    tags: ["floors"],
+  }
+);
+
+export class FloorsModel {
+  /**
+   * Fetch active claimed skyscraper floors sorted by pricePaid DESC, claimedAt ASC.
+   * Uses module-level on-demand cache (0ms latency, purged via revalidateTag("floors")).
+   */
+  static async getActiveFloors(): Promise<Floor[]> {
+    return await getCachedActiveFloors();
   }
 
   /**

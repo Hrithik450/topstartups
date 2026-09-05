@@ -17,10 +17,10 @@ export function getAdminCredentials() {
 
 function getSessionSecret(): string {
   const isProd = process.env.NODE_ENV === "production";
-  const secret = process.env.SESSION_SECRET || (isProd ? "" : DEFAULT_INSECURE_SECRET);
+  const secret = process.env.AUTH_SECRET || process.env.SESSION_SECRET || (isProd ? "" : DEFAULT_INSECURE_SECRET);
 
   if (isProd && (!secret || secret === DEFAULT_INSECURE_SECRET)) {
-    console.error("CRITICAL SECURITY ERROR: SESSION_SECRET must be configured with a random 32+ character key in production!");
+    console.error("CRITICAL SECURITY ERROR: AUTH_SECRET must be configured with a random 32+ character key in production!");
   }
 
   return secret || DEFAULT_INSECURE_SECRET;

@@ -175,7 +175,7 @@ cp .env.example .env.local
 | `DATABASE_URL` | PostgreSQL connection string (Vercel Postgres, Supabase, Neon, or VPS) | `postgresql://postgres:postgres@127.0.0.1:5432/outbid` |
 | `DATABASE_DIRECT_URL` | Direct connection (port 5432) for migrations & Drizzle Kit | `postgresql://postgres:postgres@127.0.0.1:5432/outbid` |
 | `DATABASE_SSL` | Force SSL on/off (`false` for local/Docker, `true` for Cloud) | `false` |
-| `SESSION_SECRET` | Secret key for signing Admin session cookies (`openssl rand -base64 32`) | `your_32_character_random_hmac_secret` |
+| `AUTH_SECRET` | Secret key for signing Admin session cookies (`openssl rand -base64 32`) | `your_32_character_random_hmac_secret` |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob Storage token for permanent logo CDN storage | `vercel_blob_rw_...` |
 | `BLOB_STORE_ID` | Vercel Blob Store unique identifier | `store_...` |
 | `BLOB_WEBHOOK_PUBLIC_KEY` | Public key for verifying Vercel Blob upload event signatures | `...` |
@@ -253,7 +253,7 @@ docker run -d \
   --restart always \
   -e DATABASE_URL="postgresql://user:pass@127.0.0.1:5432/outbid" \
   -e DATABASE_SSL="false" \
-  -e SESSION_SECRET="your_random_secret_here" \
+  -e AUTH_SECRET="your_random_secret_here" \
   -e ADMIN_EMAIL="admin@getopfloor.com" \
   -e ADMIN_PASSWORD="your_admin_password" \
   -e DODO_PAYMENTS_API_KEY="your_dodo_api_key" \
@@ -278,7 +278,7 @@ pm2 start pnpm --name "getopfloor" -- start
    - In Vercel Project Settings $\rightarrow$ **Storage** $\rightarrow$ **Create Database** $\rightarrow$ select **Blob**.
    - Connect the Blob store to your project (Vercel automatically sets `BLOB_READ_WRITE_TOKEN`).
 3. **Connect Database**: Add your PostgreSQL / Neon / Supabase `DATABASE_URL` under **Environment Variables**.
-4. **Configure Payments & Admin**: Add `SESSION_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DODO_PAYMENTS_API_KEY`, and `DODO_PAYMENTS_WEBHOOK_SECRET`.
+4. **Configure Payments & Admin**: Add `AUTH_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DODO_PAYMENTS_API_KEY`, and `DODO_PAYMENTS_WEBHOOK_SECRET`.
 
 ---
 

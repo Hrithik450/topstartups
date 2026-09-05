@@ -2028,15 +2028,15 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     img.crossOrigin = "anonymous";
     img.onload = () => onLoaded?.();
     img.onerror = () => {
-      if (!img.src.includes("google.com/s2/favicons")) {
-        img.src = `https://www.google.com/s2/favicons?domain=${clean}&sz=128`;
-      }
+      // If custom or unavatar fails, avoid crashing; canvas falls back to letter badge
     };
 
-    if (customLogoUrl) {
+    // Use unavatar.io which supports Access-Control-Allow-Origin: * required for WebGL CanvasTextures
+    const fallbackLogo = `https://unavatar.io/${clean}`;
+    if (customLogoUrl && !customLogoUrl.includes("google.com/s2/favicons")) {
       img.src = customLogoUrl;
     } else {
-      img.src = `https://www.google.com/s2/favicons?domain=${clean}&sz=128`;
+      img.src = fallbackLogo;
     }
 
     logoImagesCache.set(cacheKey, img);

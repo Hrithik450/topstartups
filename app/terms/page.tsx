@@ -76,7 +76,7 @@ export default function TermsPage() {
             3. Payments &amp; Refunds
           </h2>
           <p className="legal-text">
-            All payments are processed securely through our authorized Merchant of Record, <strong>Dodo Payments</strong>.
+            All payments are processed securely through our authorized payment processing partner, <strong>Cashfree Payments</strong> (supporting UPI, NetBanking, Debit/Credit Cards, and Wallets).
           </p>
           <p className="legal-text">
             Because floor placements are fulfilled immediately in real time on the live 3D skyscraper upon successful payment, floor spot purchases are generally non-refundable once published, except in cases of billing error or technical placement failure.

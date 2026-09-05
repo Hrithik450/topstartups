@@ -79,7 +79,7 @@
 | **State Management**| [Zustand 5](https://zustand.docs.pmnd.rs/) | Global state for skyscraper floors, live platform metrics, and client error handling |
 | **Database & ORM** | [PostgreSQL](https://www.postgresql.org/) + [Drizzle ORM](https://orm.drizzle.team/) | Type-safe SQL queries, migrations, indexes, and connection poolers |
 | **Security & Auth** | Admin HMAC Auth + Timing-Safe Security | Zero-login frictionless founder checkout with cryptographically signed Admin Portal auth |
-| **Payments** | [Dodo Payments](https://dodopayments.com/) | Merchant of Record with UPI, Cards, NetBanking, and cryptographically verified webhooks |
+| **Payments** | [Cashfree Payments](https://www.cashfree.com/) | RBI-regulated Payment Gateway supporting domestic UPI, NetBanking, Debit/Credit Cards & Wallets |
 | **Storage & CDN** | [Vercel Blob Storage](https://vercel.com/docs/storage/vercel-blob) | Permanent logo CDN caching & direct user uploads |
 | **Metadata Scraper**| [Firecrawl](https://firecrawl.dev/) + HTML Parser | Automated title, description, and high-res favicon/touch-icon extraction |
 | **Validation** | [Zod 4](https://zod.dev/) | Strict runtime input validation for actions, schemas, and API routes |

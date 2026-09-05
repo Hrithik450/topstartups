@@ -233,7 +233,10 @@ export class FloorsService {
   /**
    * Update floor details.
    */
-  static async updateFloor(data: TUpdateFloorSchema, email?: string | null): Promise<FloorResponse> {
+  static async updateFloor(
+    data: TUpdateFloorSchema,
+    email?: string | null
+  ): Promise<FloorResponse> {
     try {
       const validated = updateFloorSchema.parse(data);
       const cleanEmail = email?.toLowerCase().trim() || null;

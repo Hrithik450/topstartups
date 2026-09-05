@@ -35,5 +35,11 @@
     "playwright": "1.61.1",
     "tsx": "^4.23.13",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": "^8.5.28",
+      "esbuild": "^0.25.0"
+    }
   }
 }

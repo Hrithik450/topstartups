@@ -216,33 +216,6 @@ export function Main({
           onMouseLeave={handleCardMouseLeave}
         />
         <MobileStatsSheet open={isMobileStatsOpen} onClose={() => setIsMobileStatsOpen(false)} />
-
-        {/* Semantic SEO Directory for Search Engine Crawlers & Screen Readers */}
-        <section
-          className="sr-only"
-          aria-label="GeTopFloor Skyscraper Directory & Company Listings"
-        >
-          <h2>GeTopFloor — Internet&apos;s Tallest 3D Startup Skyscraper</h2>
-          <p>
-            A real-time attention market and virtual skyscraper where startups and founders claim
-            floors to outbid competitors, showcase their products, and reach thousands of global
-            investors.
-          </p>
-          <ol>
-            {(floors || []).map((floor, idx) => (
-              <li key={floor.id || idx}>
-                <h3>
-                  Floor #{floor.rank || idx + 1}: {floor.companyName || floor.companyUrl}
-                </h3>
-                <p>Category: {floor.category}</p>
-                <p>{floor.description}</p>
-                <a href={floor.companyUrl} rel="noopener noreferrer">
-                  Visit {floor.companyName || floor.companyUrl}
-                </a>
-              </li>
-            ))}
-          </ol>
-        </section>
       </div>
     </div>
   );

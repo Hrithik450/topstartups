@@ -1,7 +1,7 @@
 import { Main } from "@/components/main";
 import { FloorsService } from "@/actions/floors/floors.service";
 import { StatsService } from "@/actions/stats/stats.service";
-import { FloorsDirectorySeo } from "@/components/floors-directory-seo";
+import { FloorsDirectorySeo } from "@/components/seo/floors-directory";
 
 export const dynamic = "force-dynamic";
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FloorsService } from "@/actions/floors/floors.service";
-import { validateWebsiteSyntax } from "@/lib/validation/domain";
+import { verifyWebsiteLive } from "@/lib/validation/domain-server";
 
 export const dynamic = "force-dynamic";
 
@@ -17,22 +17,22 @@ export async function GET(req: NextRequest) {
   const companyName = searchParams.get("company_name") || "Mock Startup";
   const price = Math.max(50, Number(searchParams.get("price")) || 50);
 
-  // Fast domain syntax validation
-  const syntaxCheck = validateWebsiteSyntax(url);
-  if (!syntaxCheck.valid || !syntaxCheck.cleanUrl) {
+  // Server-side domain liveness & HTTPS validation
+  const verification = await verifyWebsiteLive(url);
+  if (!verification.valid || !verification.cleanUrl) {
     return NextResponse.json(
-      { error: syntaxCheck.error || "Invalid website URL format." },
+      { error: verification.error || "Insecure or unreachable website URL." },
       { status: 400 }
     );
   }
 
   try {
-    console.log(`Executing test mock payment for ${syntaxCheck.cleanUrl} at ₹${price}...`);
+    console.log(`Executing test mock payment for ${verification.cleanUrl} at ₹${price}...`);
     const result = await FloorsService.claimTopFloor({
       checkoutSessionId: paymentId,
       paymentId,
       companyName,
-      companyUrl: syntaxCheck.cleanUrl,
+      companyUrl: verification.cleanUrl,
       category,
       price,
     });
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     const target = new URL("/", origin);
     target.searchParams.set("payment_id", paymentId);
     target.searchParams.set("status", "succeeded");
-    console.log(`[DEV] Mock claim succeeded for ${syntaxCheck.cleanUrl}`);
+    console.log(`[DEV] Mock claim succeeded for ${verification.cleanUrl}`);
 
     return NextResponse.redirect(target);
   } catch (err: any) {

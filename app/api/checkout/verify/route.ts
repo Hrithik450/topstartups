@@ -5,6 +5,7 @@ import { eq, or } from "drizzle-orm";
 import { FloorsService } from "@/actions/floors/floors.service";
 import { FloorsModel } from "@/actions/floors/floors.model";
 import { extractRootHostname } from "@/lib/validation/domain";
+import { verifyWebsiteLive } from "@/lib/validation/domain-server";
 import { getDodoApiUrl, extractDodoRedirectParams } from "@/lib/dodo";
 
 export const dynamic = "force-dynamic";
@@ -127,6 +128,7 @@ export async function GET(req: NextRequest) {
     let customerEmail: string | null = null;
     let customerPhone: string | null = null;
     let metadata: any = {};
+    let gatewayPaidAmount: number | null = null;
 
     // If targetId starts with "pay_", query the /payments endpoint
     if (targetId.startsWith("pay_")) {
@@ -144,6 +146,9 @@ export async function GET(req: NextRequest) {
         customerEmail = data.customer?.email || null;
         customerPhone = data.customer?.phone_number || null;
         metadata = data.metadata || {};
+        if (data.total_amount != null && !isNaN(Number(data.total_amount))) {
+          gatewayPaidAmount = Math.floor(Number(data.total_amount) / 100);
+        }
       }
     }
 
@@ -227,7 +232,20 @@ export async function GET(req: NextRequest) {
         metadata.url ||
         "https://getopfloor.com";
       const category = pendingClaim?.category || metadata.category || "Startup";
-      const price = pendingClaim?.amount || Number(metadata.price) || 50;
+
+      // SECURITY: Authoritative amount verification.
+      // Must use actual verified payment amount from gateway in INR, never client-submitted pendingClaim.amount or metadata.price!
+      const price = gatewayPaidAmount ?? (pendingClaim ? Number(pendingClaim.amount) : 50);
+
+      if (gatewayPaidAmount != null && pendingClaim?.amount && gatewayPaidAmount < Number(pendingClaim.amount)) {
+        console.error(
+          `Rejecting floor claim: gateway verified paid amount ₹${gatewayPaidAmount} is less than required ₹${pendingClaim.amount}`
+        );
+        return NextResponse.json(
+          { error: "Paid amount does not match required order amount." },
+          { status: 400 }
+        );
+      }
       const finalCheckoutSessionId =
         checkoutSessionId || pendingClaim?.checkoutSessionId || targetId;
       const finalPaymentId =
@@ -235,12 +253,25 @@ export async function GET(req: NextRequest) {
         pendingClaim?.paymentId ||
         (targetId.startsWith("pay_") ? targetId : undefined);
 
+      // Enforce live website reachability before claiming
+      const verification = await verifyWebsiteLive(companyUrl);
+      if (!verification.valid || !verification.cleanUrl) {
+        console.error(
+          `Rejecting fallback verify for ${companyUrl}: unreachable or invalid domain (${verification.error})`
+        );
+        return NextResponse.json(
+          { error: verification.error || "Invalid or unreachable website URL" },
+          { status: 400 }
+        );
+      }
+      const cleanCompanyUrl = verification.cleanUrl;
+
       // Claim floor atomically based on pricePaid via FloorsService
       const result = await FloorsService.claimTopFloor({
         checkoutSessionId: finalCheckoutSessionId,
         paymentId: finalPaymentId,
         companyName,
-        companyUrl,
+        companyUrl: cleanCompanyUrl,
         category,
         price,
         customerEmail: finalEmail || undefined,

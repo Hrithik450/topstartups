@@ -6,6 +6,7 @@ import {
 } from "@/actions/floors/floors.model";
 import type { Floor, NewFloor } from "@/lib/db/config/schema";
 import { validateWebsiteSyntax, extractRootHostname } from "@/lib/validation/domain";
+import { verifyWebsiteLive } from "@/lib/validation/domain-server";
 import { scrapeWebsiteMetadata } from "@/lib/crawler/metadata";
 import { persistImageToBlob } from "@/lib/storage/blob";
 import { revalidatePath, revalidateTag } from "next/cache";
@@ -253,10 +254,7 @@ export class FloorsService {
   /**
    * Update floor details.
    */
-  static async updateFloor(
-    data: TUpdateFloorSchema,
-    email: string
-  ): Promise<FloorResponse> {
+  static async updateFloor(data: TUpdateFloorSchema, email: string): Promise<FloorResponse> {
     try {
       const validated = updateFloorSchema.parse(data);
       const cleanEmail = email?.toLowerCase().trim() || "";
@@ -275,7 +273,17 @@ export class FloorsService {
       if (validated.companyUrl?.trim()) {
         let cleanUrl = validated.companyUrl.trim();
         if (!cleanUrl.startsWith("http")) cleanUrl = `https://${cleanUrl}`;
-        setPayload.companyUrl = cleanUrl;
+        const verification = await verifyWebsiteLive(cleanUrl);
+        if (!verification.valid || !verification.cleanUrl) {
+          return {
+            success: false,
+            data: null,
+            error:
+              verification.error ||
+              "Insecure or unreachable website URL. Please provide an active HTTPS website.",
+          };
+        }
+        setPayload.companyUrl = verification.cleanUrl;
       }
       if (validated.category !== undefined) {
         setPayload.category = validated.category?.trim() || null;
@@ -328,14 +336,16 @@ export class FloorsService {
     try {
       const validated = claimFloorSchema.parse(data);
 
-      const syntaxCheck = validateWebsiteSyntax(validated.companyUrl);
-      if (!syntaxCheck.valid || !syntaxCheck.cleanUrl) {
+      const verification = await verifyWebsiteLive(validated.companyUrl);
+      if (!verification.valid || !verification.cleanUrl) {
         return {
           success: false,
-          error: syntaxCheck.error || "Invalid website URL format.",
+          error:
+            verification.error ||
+            "Insecure or unreachable website URL. Please provide an active HTTPS website.",
         };
       }
-      const cleanUrl = syntaxCheck.cleanUrl;
+      const cleanUrl = verification.cleanUrl;
 
       let finalCompanyName = validated.companyName?.trim();
       let finalTagline = validated.tagline?.trim();

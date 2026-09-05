@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyDodoWebhookSignature } from "@/lib/dodo";
 import { FloorsService } from "@/actions/floors/floors.service";
+import { verifyWebsiteLive } from "@/lib/validation/domain-server";
 import { db } from "@/lib/db/config/client";
 import { claims } from "@/lib/db/config/schema";
 import { eq, or } from "drizzle-orm";
@@ -63,20 +64,61 @@ export async function POST(req: NextRequest) {
       const companyUrl = metadata.company_url || metadata.url || "https://getopfloor.com";
       const companyName = metadata.company_name;
       const category = metadata.category;
-      const price =
-        Number(metadata.price) ||
-        Math.round(Number(data.total_amount || data.amount || 5000) / 100);
+
+      // SECURITY: Always calculate price from the authoritative gateway charge amount (in paise / subunits).
+      // Never trust client-supplied or mutable metadata.price over the actual amount charged!
+      const rawGatewayAmount = data.total_amount ?? data.amount;
+      const actualPaidInr =
+        rawGatewayAmount != null && !isNaN(Number(rawGatewayAmount))
+          ? Math.floor(Number(rawGatewayAmount) / 100)
+          : null;
+
+      if (actualPaidInr == null || actualPaidInr < 50) {
+        console.error(
+          `Rejecting webhook for ${companyUrl}: invalid or sub-minimum charge amount (raw: ${rawGatewayAmount}, inr: ${actualPaidInr})`
+        );
+        return NextResponse.json(
+          { error: "Payment amount does not meet minimum threshold" },
+          { status: 400 }
+        );
+      }
+
+      // If metadata specifies an expected price, verify the customer actually paid at least that amount
+      const expectedPrice = Number(metadata.price);
+      if (!isNaN(expectedPrice) && expectedPrice > 0 && actualPaidInr < expectedPrice) {
+        console.error(
+          `Rejecting webhook for ${companyUrl}: paid ₹${actualPaidInr} but metadata claimed ₹${expectedPrice} (underpayment/metadata manipulation)`
+        );
+        return NextResponse.json(
+          { error: "Paid amount does not match expected metadata price" },
+          { status: 400 }
+        );
+      }
+
+      const price = actualPaidInr;
       const customerEmail = data.customer?.email || metadata.customer_email;
       const customerPhone =
         data.customer?.phone_number || data.customer_phone || data.billing?.phone;
 
-      console.log(`Processing verified webhook payment for ${companyUrl} (${paymentId})...`);
+      const verification = await verifyWebsiteLive(companyUrl);
+      if (!verification.valid || !verification.cleanUrl) {
+        console.error(
+          `Rejecting webhook for ${companyUrl}: unreachable or invalid domain (${verification.error})`
+        );
+        return NextResponse.json(
+          { error: verification.error || "Invalid or unreachable website URL" },
+          { status: 400 }
+        );
+      }
+      const cleanCompanyUrl = verification.cleanUrl;
+
+      console.log(`Processing verified webhook payment for ${cleanCompanyUrl} (${paymentId}) at ₹${price}...`);
 
       const result = await FloorsService.claimTopFloor({
         paymentId,
         checkoutSessionId,
         companyName,
-        companyUrl,
+        companyUrl: cleanCompanyUrl,
         category,
         price,
         customerEmail,
@@ -84,6 +126,13 @@ export async function POST(req: NextRequest) {
       });
 
       console.log("Webhook transaction result:", result);
+      if (!result.success) {
+        console.error(`Webhook floor claim failed for ${cleanCompanyUrl}:`, result.error);
+        return NextResponse.json(
+          { error: result.error || "Failed to claim top floor" },
+          { status: 400 }
+        );
+      }
       return NextResponse.json({ success: result.success, rank: result.rank });
     }
 

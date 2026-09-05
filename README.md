@@ -310,7 +310,7 @@ pm2 start pnpm --name "getopfloor" -- start
 - **`FloorsService.updateFloor(input, email)`**: Update company name, URL, tagline, description, category, or logo for a floor.
 - **`FloorsService.claimTopFloor(input)`**: Atomically register a floor claim after payment confirmation with idempotent safety.
 - **`FloorsService.deleteFloor(floorId, email)`**: Vacate or release a floor back to available status.
-- **`StatsService.getLiveStats()`**: Fetch live platform statistics (online count, total views, visitor countries).
+- **`StatsService.getLiveStats()`**: Fetch real-time platform statistics (live visitor count, skyscraper altitude, total views, sales metrics, and visitor countries).
 
 ---
 

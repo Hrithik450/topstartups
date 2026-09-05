@@ -8,7 +8,7 @@
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?style=flat&logo=react)](https://react.dev/)
 [![Three.js](https://img.shields.io/badge/Three.js-WebGL-blue?style=flat&logo=three.js)](https://threejs.org/)
 [![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-PostgreSQL-C5F74F?style=flat&logo=drizzle)](https://orm.drizzle.team/)
-[![Dodo Payments](https://img.shields.io/badge/Dodo_Payments-Merchant_of_Record-FF5722?style=flat)](https://dodopayments.com/)
+[![Payments](https://img.shields.io/badge/Payments-PCI--DSS_Compliant-22c55e?style=flat)](https://getopfloor.com/terms)
 [![Zustand](https://img.shields.io/badge/State-Zustand_5-443e38?style=flat)](https://zustand.docs.pmnd.rs/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -79,7 +79,7 @@
 | **State Management**| [Zustand 5](https://zustand.docs.pmnd.rs/) | Global state for skyscraper floors, live platform metrics, and client error handling |
 | **Database & ORM** | [PostgreSQL](https://www.postgresql.org/) + [Drizzle ORM](https://orm.drizzle.team/) | Type-safe SQL queries, migrations, indexes, and connection poolers |
 | **Security & Auth** | Admin HMAC Auth + Timing-Safe Security | Zero-login frictionless founder checkout with cryptographically signed Admin Portal auth |
-| **Payments** | [Dodo Payments](https://dodopayments.com/) | Merchant of Record supporting global & domestic Cards, UPI, NetBanking, Apple Pay & Google Pay |
+| **Payments** | Authorized Payment Gateways & Aggregators | PCI-DSS compliant payment processing supporting UPI, Debit/Credit Cards, NetBanking, and Digital Wallets |
 | **Storage & CDN** | [Vercel Blob Storage](https://vercel.com/docs/storage/vercel-blob) | Permanent logo CDN caching & direct user uploads |
 | **Metadata Scraper**| [Firecrawl](https://firecrawl.dev/) + HTML Parser | Automated title, description, and high-res favicon/touch-icon extraction |
 | **Validation** | [Zod 4](https://zod.dev/) | Strict runtime input validation for actions, schemas, and API routes |

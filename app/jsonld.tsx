@@ -84,7 +84,7 @@ export function SoftwareApplicationJsonLd() {
     featureList: [
       "Interactive 3D WebGL Skyscraper supporting unlimited customizable floors",
       "Real-time outbid auction engine for Top Floor (#1) penthouse placement",
-      "Automated instant fulfillment via secure Dodo Payments integration",
+      "Automated instant fulfillment via secure payment gateway integration",
       "Self-service management portal for floor owners to edit URL, logo, and copy",
       "Categorized startup discovery across 27+ industry categories",
       "Responsive navigation optimized for mobile touch and desktop trackpads",
@@ -141,7 +141,7 @@ export function FAQJsonLd() {
         name: "How quickly is my website placed on the skyscraper after payment?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Fulfillment is instant and fully automated. As soon as your payment succeeds via Dodo Payments, your company is immediately placed on Top Floor (#1) and visible to all global visitors.",
+          text: "Fulfillment is instant and fully automated. As soon as your payment succeeds, your company is immediately placed on Top Floor (#1) and visible to all global visitors.",
         },
       },
     ],

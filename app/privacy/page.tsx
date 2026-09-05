@@ -48,7 +48,7 @@ export default function PrivacyPage() {
                 <strong>Company &amp; Listing Details:</strong> Company name, destination website URL, product category, tagline, description, and brand logo.
               </li>
               <li className="legal-list-item">
-                <strong>Transaction &amp; Order Details:</strong> Payment status, checkout session ID, transaction amount, and timestamp. All payments are securely processed by our authorized payment processing partner, <strong>Cashfree Payments</strong>. We never store raw payment cards, UPI PINs, or banking credentials.
+                <strong>Transaction &amp; Order Details:</strong> Payment status, checkout session/order ID, transaction amount, and timestamp. All transactions are securely processed by authorized, PCI-DSS compliant payment gateway and payment aggregator partners. We never store or handle raw payment card numbers, CVVs, UPI PINs, or banking credentials.
               </li>
               <li className="legal-list-item">
                 <strong>Aggregated Analytics:</strong> Privacy-preserving aggregated metrics, including visitor country of origin and total tower views.
@@ -86,9 +86,9 @@ export default function PrivacyPage() {
           </p>
           <div className="legal-grid-2">
             <div className="legal-grid-item">
-              <h3 className="legal-grid-title">Cashfree Payments</h3>
+              <h3 className="legal-grid-title">Payment Gateways &amp; Aggregators</h3>
               <p className="legal-grid-desc">
-                Authorized RBI-regulated payment gateway partner handling secure, PCI-compliant payment processing across UPI, Cards, NetBanking, and Wallets.
+                Authorized, RBI-regulated and PCI-DSS Level 1 certified payment processing partners handling secure, encrypted transactions across UPI, Debit/Credit Cards, NetBanking, and Digital Wallets.
               </p>
             </div>
             <div className="legal-grid-item">

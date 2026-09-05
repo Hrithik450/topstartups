@@ -76,10 +76,10 @@ export default function TermsPage() {
             3. Payments &amp; Refunds
           </h2>
           <p className="legal-text">
-            All payments are processed securely through our authorized payment processing partner, <strong>Cashfree Payments</strong> (supporting UPI, NetBanking, Debit/Credit Cards, and Wallets).
+            All payments are processed securely through our authorized, PCI-DSS certified payment gateway and payment aggregator partners (supporting UPI, NetBanking, Debit/Credit Cards, and Digital Wallets). We do not store or process raw credit/debit card numbers, CVVs, or banking passwords on our servers.
           </p>
           <p className="legal-text">
-            Because floor placements are fulfilled immediately in real time on the live 3D skyscraper upon successful payment, floor spot purchases are generally non-refundable once published, except in cases of billing error or technical placement failure.
+            Because virtual floor placements are fulfilled immediately in real time on the live 3D skyscraper upon successful transaction completion, floor purchases are generally non-refundable once published, except in cases of duplicate charge, billing error, or technical placement failure. In the event of a verified billing discrepancy or failed fulfillment, refunds are processed back to the original payment source within 5–7 working days.
           </p>
         </section>
 

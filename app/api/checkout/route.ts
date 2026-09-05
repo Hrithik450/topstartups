@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createDodoCheckout } from "@/lib/dodo";
 import { db } from "@/lib/db/config/client";
 import { claims } from "@/lib/db/config/schema";
-import { verifyWebsiteLive, extractRootHostname } from "@/lib/validation/domain";
+import { extractRootHostname } from "@/lib/validation/domain";
+import { verifyWebsiteLive } from "@/lib/validation/domain-server";
 import { FloorsService } from "@/actions/floors/floors.service";
 
 export const dynamic = "force-dynamic";

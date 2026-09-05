@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyWebsiteLive } from "@/lib/validation/domain";
+import { verifyWebsiteLive } from "@/lib/validation/domain-server";
 
 export const dynamic = "force-dynamic";
 

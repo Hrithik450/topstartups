@@ -3,6 +3,8 @@
  * Provides rich snippets for Google Search Console, Knowledge Graph, and AI Search Engines.
  */
 
+import type { Floor } from "@/lib/db/config/schema";
+
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://getopfloor.com";
 
 export function OrganizationJsonLd() {
@@ -84,7 +86,7 @@ export function SoftwareApplicationJsonLd() {
     featureList: [
       "Interactive 3D WebGL Skyscraper with 50 customizable floors",
       "Real-time outbid auction engine for Top Floor (#1) penthouse placement",
-      "Automated instant fulfillment via secure Cashfree Payments integration",
+      "Automated instant fulfillment via secure Dodo Payments integration",
       "Self-service management portal for floor owners to edit URL, logo, and copy",
       "Categorized startup discovery across 27+ industry categories",
       "Responsive navigation optimized for mobile touch and desktop trackpads",
@@ -141,10 +143,40 @@ export function FAQJsonLd() {
         name: "How quickly is my website placed on the skyscraper after payment?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Fulfillment is instant and fully automated. As soon as your payment succeeds via Cashfree Payments, your company is immediately placed on Top Floor (#1) and visible to all global visitors.",
+          text: "Fulfillment is instant and fully automated. As soon as your payment succeeds via Dodo Payments, your company is immediately placed on Top Floor (#1) and visible to all global visitors.",
         },
       },
     ],
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  );
+}
+
+/**
+ * ItemList JSON-LD for Search Engine Leaderboard & Directory Rich Snippets
+ */
+export function FloorsItemListJsonLd({ floors = [] }: { floors?: Floor[] }) {
+  if (!floors || floors.length === 0) return null;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "GeTopFloor 3D Skyscraper Startup Leaderboard",
+    description:
+      "Ranked directory of startups, founders, and companies claiming floors on the GeTopFloor virtual skyscraper.",
+    numberOfItems: floors.length,
+    itemListElement: floors.map((f, idx) => ({
+      "@type": "ListItem",
+      position: f.rank || idx + 1,
+      name: f.companyName,
+      url: f.companyUrl,
+      description: f.description || f.tagline || "",
+    })),
   };
 
   return (

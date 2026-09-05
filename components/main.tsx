@@ -24,8 +24,7 @@ export function Main({
 }) {
   const initializedRef = useRef(false);
 
-  const { floors, isFloorsReady, setFloors, setIsFloorsReady } = useFloorsStore();
-  const { setStats } = useStatsStore();
+  const { floors, isFloorsReady, setIsFloorsReady } = useFloorsStore();
 
   const handleRef = useRef<TowerHandle | null>(null);
   const [hoveredData, setHoveredData] = useState<HoverData | null>(null);

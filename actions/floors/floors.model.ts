@@ -36,9 +36,19 @@ export interface ClaimResultModelResponse {
 }
 
 /**
+ * Strip sensitive PII (like userEmail) before returning floor records to public endpoints
+ */
+export function toPublicFloor<T extends Record<string, any>>(floor: T): T {
+  if (!floor) return floor;
+  const { userEmail, ...safe } = floor;
+  return safe as T;
+}
+
+/**
  * Module-level cached fetcher for active floors.
  * Cached in memory / data-cache across requests with 0ms database overhead.
  * Invalidated on-demand the exact millisecond revalidateTag("floors") is called.
+ * SECURITY: Strips userEmail from all cached public records.
  */
 const getCachedActiveFloors = unstable_cache(
   async (): Promise<Floor[]> => {
@@ -52,8 +62,9 @@ const getCachedActiveFloors = unstable_cache(
           floor.companyName ||
           (companyUrl ? extractRootHostname(companyUrl) : `Floor #${idx + 1}`)
         ).toLowerCase();
+        const { userEmail, ...publicData } = floor;
         return {
-          ...floor,
+          ...publicData,
           companyName,
           companyUrl,
           rank: idx + 1,
@@ -91,7 +102,7 @@ export class FloorsModel {
       const floor = await db.query.floors.findFirst({
         where: (f, { eq }) => eq(f.id, id),
       });
-      return floor || null;
+      return floor ? toPublicFloor(floor) : null;
     } catch (err: any) {
       console.warn("Error fetching floor by id:", err?.message);
       return null;
@@ -140,13 +151,12 @@ export class FloorsModel {
         )
         .limit(10);
 
-      return (
-        candidates.find(
-          (f) =>
-            extractRootHostname(f.companyUrl || "") === cleanHost ||
-            f.companyName?.toLowerCase() === cleanHost.toLowerCase()
-        ) || null
+      const found = candidates.find(
+        (f) =>
+          extractRootHostname(f.companyUrl || "") === cleanHost ||
+          f.companyName?.toLowerCase() === cleanHost.toLowerCase()
       );
+      return found ? toPublicFloor(found) : null;
     } catch (err) {
       console.warn("Error finding floor by host:", err);
       return null;
@@ -166,7 +176,7 @@ export class FloorsModel {
 
       return result.map((f) => {
         const activeMatch = active.find((a) => a.id === f.id);
-        return activeMatch ? activeMatch : f;
+        return activeMatch ? activeMatch : toPublicFloor(f);
       });
     } catch (err: any) {
       console.warn("Error fetching floors by email:", err?.message);
@@ -176,17 +186,21 @@ export class FloorsModel {
 
   /**
    * Update a floor record in the database.
+   * SECURITY: Strictly requires authenticated founder email matching the floor record.
    */
   static async updateFloor(
     floorId: string,
-    email?: string | null,
+    email: string,
     payload: Partial<NewFloor> = {}
   ): Promise<Floor | null> {
-    const whereClause = email?.trim()
-      ? and(eq(floors.id, floorId), eq(floors.userEmail, email.toLowerCase().trim()))
-      : eq(floors.id, floorId);
+    if (!floorId?.trim() || !email?.trim()) return null;
+    const cleanEmail = email.toLowerCase().trim();
 
-    const existing = await db.select().from(floors).where(whereClause).limit(1);
+    const existing = await db
+      .select()
+      .from(floors)
+      .where(and(eq(floors.id, floorId.trim()), eq(floors.userEmail, cleanEmail)))
+      .limit(1);
 
     if (existing.length === 0) return null;
 
@@ -196,34 +210,50 @@ export class FloorsModel {
         ...payload,
         updatedAt: new Date(),
       })
-      .where(eq(floors.id, floorId));
+      .where(and(eq(floors.id, floorId.trim()), eq(floors.userEmail, cleanEmail)));
 
-    const updated = await db.select().from(floors).where(eq(floors.id, floorId)).limit(1);
-    return updated[0] || null;
+    const updated = await db
+      .select()
+      .from(floors)
+      .where(eq(floors.id, floorId.trim()))
+      .limit(1);
+
+    return updated[0] ? toPublicFloor(updated[0]) : null;
   }
 
   /**
    * Vacate a floor in the database.
+   * SECURITY: Strictly requires authenticated founder email matching the floor record.
    */
   static async deleteFloor(
     floorId: string,
-    email?: string | null
+    email: string
   ): Promise<{ success: boolean; message: string; rank?: number }> {
-    const whereClause = email?.trim()
-      ? and(eq(floors.id, floorId), eq(floors.userEmail, email.toLowerCase().trim()))
-      : eq(floors.id, floorId);
+    if (!floorId?.trim() || !email?.trim()) {
+      return {
+        success: false,
+        message: "Authentication required: founder email must be provided to vacate a floor.",
+      };
+    }
+    const cleanEmail = email.toLowerCase().trim();
 
-    const existing = await db.select().from(floors).where(whereClause).limit(1);
+    const existing = await db
+      .select()
+      .from(floors)
+      .where(and(eq(floors.id, floorId.trim()), eq(floors.userEmail, cleanEmail)))
+      .limit(1);
 
     if (existing.length === 0) {
       return {
         success: false,
-        message: "Floor not found.",
+        message: "Floor not found or you are not authorized to vacate it.",
       };
     }
 
     const current = existing[0];
-    await db.delete(floors).where(eq(floors.id, floorId));
+    await db
+      .delete(floors)
+      .where(and(eq(floors.id, floorId.trim()), eq(floors.userEmail, cleanEmail)));
 
     return {
       success: true,
@@ -392,7 +422,7 @@ export class FloorsModel {
         description: targetFloor.description,
         pricePaid: finalPrice,
         isUpdate,
-        floor: targetFloor,
+        floor: toPublicFloor(targetFloor),
         message: isUpdate
           ? `Successfully boosted floor for ${targetFloor.companyName} to ₹${finalPrice} (Floor #${assignedRank})!`
           : `Successfully claimed Floor #${assignedRank} for ${targetFloor.companyName}!`,

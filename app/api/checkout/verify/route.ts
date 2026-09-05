@@ -17,6 +17,18 @@ function isValidDodoId(id?: string | null): boolean {
   return DODO_ID_PATTERN.test(id.trim());
 }
 
+/** SECURITY: Mask email to prevent PII exposure in public verification responses */
+function maskEmail(email?: string | null): string | null {
+  if (!email || typeof email !== "string") return null;
+  const clean = email.trim();
+  const atIdx = clean.indexOf("@");
+  if (atIdx <= 0) return null;
+  const local = clean.slice(0, atIdx);
+  const domain = clean.slice(atIdx + 1);
+  const visible = local.length > 2 ? local.slice(0, 2) : local.slice(0, 1);
+  return `${visible}***@${domain}`;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const {
@@ -70,7 +82,7 @@ export async function GET(req: NextRequest) {
           category: pendingClaim.category,
           price: floor ? Number(floor.pricePaid) : Number(pendingClaim.amount),
           amountPaid: Number(pendingClaim.amount),
-          customerEmail: pendingClaim.customerEmail,
+          customerEmail: maskEmail(pendingClaim.customerEmail),
           logoUrl: floor?.logoUrl,
           tagline: floor?.tagline,
           description: floor?.description,
@@ -243,7 +255,7 @@ export async function GET(req: NextRequest) {
           description: result.description,
           price: result.pricePaid || price,
           amountPaid: price,
-          customerEmail: finalEmail,
+          customerEmail: maskEmail(finalEmail),
           isUpdate: result.isUpdate,
         },
         {

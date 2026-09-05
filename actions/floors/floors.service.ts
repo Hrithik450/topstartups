@@ -257,11 +257,18 @@ export class FloorsService {
    */
   static async updateFloor(
     data: TUpdateFloorSchema,
-    email?: string | null
+    email: string
   ): Promise<FloorResponse> {
     try {
       const validated = updateFloorSchema.parse(data);
-      const cleanEmail = email?.toLowerCase().trim() || null;
+      const cleanEmail = email?.toLowerCase().trim() || "";
+      if (!cleanEmail) {
+        return {
+          success: false,
+          data: null,
+          error: "Authorization failed: founder email is required to update floor details.",
+        };
+      }
       const setPayload: Partial<NewFloor> = {};
 
       if (validated.companyName?.trim()) {
@@ -404,7 +411,7 @@ export class FloorsService {
   /**
    * Vacate a floor.
    */
-  static async deleteFloor(floorId: string, email?: string | null): Promise<DeleteFloorResponse> {
+  static async deleteFloor(floorId: string, email: string): Promise<DeleteFloorResponse> {
     try {
       if (!floorId?.trim()) {
         return {
@@ -413,8 +420,15 @@ export class FloorsService {
         };
       }
 
+      const cleanEmail = email?.toLowerCase().trim() || "";
+      if (!cleanEmail) {
+        return {
+          success: false,
+          error: "Authorization failed: founder email is required to vacate a floor.",
+        };
+      }
+
       const cleanFloorId = floorId.trim();
-      const cleanEmail = email?.toLowerCase().trim() || null;
       const result = await FloorsModel.deleteFloor(cleanFloorId, cleanEmail);
 
       if (result.success) {

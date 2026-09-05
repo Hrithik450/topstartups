@@ -61,21 +61,29 @@ export async function getFloorByRankAction(rank: number): Promise<FloorResponse>
 
 /**
  * Server action to update a floor.
+ * SECURITY: Requires verified founder email.
  */
 export async function updateFloorAction(
   data: TUpdateFloorSchema,
-  email?: string | null
+  email: string
 ): Promise<FloorResponse> {
+  if (!email?.trim()) {
+    return { success: false, error: "Unauthorized: founder email is required." };
+  }
   return await FloorsService.updateFloor(data, email);
 }
 
 /**
  * Server action to vacate a floor.
+ * SECURITY: Requires verified founder email.
  */
 export async function deleteFloorAction(
   floorId: string,
-  email?: string | null
+  email: string
 ): Promise<DeleteFloorResponse> {
+  if (!email?.trim()) {
+    return { success: false, error: "Unauthorized: founder email is required." };
+  }
   return await FloorsService.deleteFloor(floorId, email);
 }
 

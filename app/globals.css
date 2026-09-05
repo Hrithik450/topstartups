@@ -1129,10 +1129,10 @@ button.chip:focus-visible {
     white-space: normal;
     text-align: center;
     font-size: clamp(18px, 5.2vw, 28px);
-    gap: 8px 12px;
-    line-height: 1.25;
-    padding: 12px 6px;
-    margin: 6px 0 10px;
+    gap: 6px 10px;
+    line-height: 1.2;
+    padding: 2px 4px;
+    margin: 2px 0 6px;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -1158,7 +1158,7 @@ button.chip:focus-visible {
     width: 100%;
     max-width: 440px;
     gap: 8px;
-    margin-top: 14px;
+    margin-top: 8px;
   }
 
   .form-inputs-row {
@@ -1209,9 +1209,12 @@ button.chip:focus-visible {
 
   .claim-btn {
     width: 100%;
-    height: 46px;
+    min-height: 52px;
+    height: 52px;
+    padding: 14px 24px;
     justify-content: center;
-    font-size: 14.5px;
+    font-size: 15px;
+    font-weight: 700;
   }
 
   @media (max-width: 380px) {

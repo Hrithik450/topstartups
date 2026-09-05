@@ -199,8 +199,9 @@ export function Hero({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const params = new URLSearchParams(window.location.search);
-    const { paymentId, sessionId, targetId, status } = extractDodoRedirectParams(params);
+    const { paymentId, sessionId, targetId, status } = extractDodoRedirectParams(
+      new URLSearchParams(window.location.search)
+    );
 
     // Check if returning from a real Dodo checkout session
     if (targetId && !targetId.startsWith("mock_")) {
@@ -278,8 +279,6 @@ export function Hero({
               })
             );
 
-            // Notify components to update
-            window.dispatchEvent(new CustomEvent("floors-refresh"));
             return;
           } else if (data.status === "failed") {
             setIsSubmitting(false);
@@ -317,15 +316,6 @@ export function Hero({
 
       pollVerification();
       return;
-    }
-
-    if (params.get("claimed") === "true") {
-      const company = params.get("company") || "Your company";
-      const rank = params.get("rank") ? Number(params.get("rank")) : undefined;
-      setJustClaimed({ companyName: company, rank });
-      useFloorsStore.getState().syncFloors(true);
-      window.dispatchEvent(new CustomEvent("floors-refresh"));
-      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 

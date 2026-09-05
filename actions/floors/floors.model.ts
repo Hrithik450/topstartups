@@ -1,5 +1,4 @@
 import { db } from "@/lib/db/config/client";
-import { unstable_cache } from "next/cache";
 import { eq, and, sql, or } from "drizzle-orm";
 import { extractRootHostname } from "@/lib/validation/domain";
 import { floors, claims, type Floor, type NewFloor } from "@/lib/db/config/schema";
@@ -41,63 +40,46 @@ export class FloorsModel {
    * Rank is dynamically assigned based on leaderboard position.
    */
   static async getActiveFloors(): Promise<Floor[]> {
-    const cachedFloors = unstable_cache(
-      async () => {
-        try {
-          const result = await db.query.floors.findMany({
-            orderBy: (f, { desc, asc }) => [desc(f.pricePaid), asc(f.claimedAt)],
-          });
-          return result.map((floor: any, idx) => {
-            const companyUrl = floor.companyUrl || "";
-            const companyName = (
-              floor.companyName ||
-              (companyUrl ? extractRootHostname(companyUrl) : `Floor #${idx + 1}`)
-            ).toLowerCase();
-            return {
-              ...floor,
-              companyName,
-              companyUrl,
-              rank: idx + 1,
-            };
-          });
-        } catch (err: any) {
-          console.warn("Error fetching active claimed floors:", err?.message);
-          return [];
-        }
-      },
-      ["active-claimed-floors"],
-      {
-        tags: ["floors"],
-        revalidate: 60,
-      }
-    );
-
-    return await cachedFloors();
+    try {
+      const result = await db.query.floors.findMany({
+        orderBy: (f, { desc, asc }) => [desc(f.pricePaid), asc(f.claimedAt)],
+      });
+      return result.map((floor: any, idx) => {
+        const companyUrl = floor.companyUrl || "";
+        const companyName = (
+          floor.companyName ||
+          (companyUrl ? extractRootHostname(companyUrl) : `Floor #${idx + 1}`)
+        ).toLowerCase();
+        return {
+          ...floor,
+          companyName,
+          companyUrl,
+          rank: idx + 1,
+        };
+      });
+    } catch (err: any) {
+      console.warn("Error fetching active claimed floors:", err?.message);
+      return [];
+    }
   }
 
   /**
    * Fetch a single floor by ID.
    */
   static async getFloorById(id: string): Promise<Floor | null> {
-    const cachedFloor = unstable_cache(
-      async () => {
-        const active = await FloorsModel.getActiveFloors();
-        const activeFloor = active.find((f) => f.id === id);
-        if (activeFloor) return activeFloor;
+    try {
+      const active = await FloorsModel.getActiveFloors();
+      const activeFloor = active.find((f) => f.id === id);
+      if (activeFloor) return activeFloor;
 
-        const floor = await db.query.floors.findFirst({
-          where: (f, { eq }) => eq(f.id, id),
-        });
-        return floor || null;
-      },
-      [`floor-${id}`],
-      {
-        tags: [`floor-${id}`, "floors"],
-        revalidate: 60,
-      }
-    );
-
-    return await cachedFloor();
+      const floor = await db.query.floors.findFirst({
+        where: (f, { eq }) => eq(f.id, id),
+      });
+      return floor || null;
+    } catch (err: any) {
+      console.warn("Error fetching floor by id:", err?.message);
+      return null;
+    }
   }
 
   /**
@@ -159,27 +141,21 @@ export class FloorsModel {
    * Fetch all claimed floors owned by a founder email or user ID.
    */
   static async getFloorsByEmail(email: string): Promise<Floor[]> {
-    const cachedUserFloors = unstable_cache(
-      async () => {
-        const active = await FloorsModel.getActiveFloors();
-        const result = await db.query.floors.findMany({
-          where: (f, { eq }) => eq(f.userEmail, email),
-          orderBy: (f, { desc, asc }) => [desc(f.pricePaid), asc(f.claimedAt)],
-        });
+    try {
+      const active = await FloorsModel.getActiveFloors();
+      const result = await db.query.floors.findMany({
+        where: (f, { eq }) => eq(f.userEmail, email),
+        orderBy: (f, { desc, asc }) => [desc(f.pricePaid), asc(f.claimedAt)],
+      });
 
-        return result.map((f) => {
-          const activeMatch = active.find((a) => a.id === f.id);
-          return activeMatch ? activeMatch : f;
-        });
-      },
-      [`floors-owner-${email}`],
-      {
-        tags: [`floors-owner-${email}`, "floors"],
-        revalidate: 60,
-      }
-    );
-
-    return await cachedUserFloors();
+      return result.map((f) => {
+        const activeMatch = active.find((a) => a.id === f.id);
+        return activeMatch ? activeMatch : f;
+      });
+    } catch (err: any) {
+      console.warn("Error fetching floors by email:", err?.message);
+      return [];
+    }
   }
 
   /**

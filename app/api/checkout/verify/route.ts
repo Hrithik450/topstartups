@@ -50,21 +50,28 @@ export async function GET(req: NextRequest) {
           extractRootHostname(f.companyUrl || "") === claimHost ||
           f.companyName?.toLowerCase() === pendingClaim.companyName?.toLowerCase()
       );
-      return NextResponse.json({
-        status: "succeeded",
-        id: floor?.id,
-        rank: floor?.rank,
-        companyName: floor?.companyName || pendingClaim.companyName,
-        companyUrl: pendingClaim.companyUrl,
-        category: pendingClaim.category,
-        price: floor ? Number(floor.pricePaid) : Number(pendingClaim.amount),
-        amountPaid: Number(pendingClaim.amount),
-        customerEmail: pendingClaim.customerEmail,
-        logoUrl: floor?.logoUrl,
-        tagline: floor?.tagline,
-        description: floor?.description,
-        isUpdate: Boolean(floor),
-      });
+      return NextResponse.json(
+        {
+          status: "succeeded",
+          id: floor?.id,
+          rank: floor?.rank,
+          companyName: floor?.companyName || pendingClaim.companyName,
+          companyUrl: pendingClaim.companyUrl,
+          category: pendingClaim.category,
+          price: floor ? Number(floor.pricePaid) : Number(pendingClaim.amount),
+          amountPaid: Number(pendingClaim.amount),
+          customerEmail: pendingClaim.customerEmail,
+          logoUrl: floor?.logoUrl,
+          tagline: floor?.tagline,
+          description: floor?.description,
+          isUpdate: Boolean(floor),
+        },
+        {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+          },
+        }
+      );
     }
 
     // If claim was already marked failed
@@ -206,21 +213,28 @@ export async function GET(req: NextRequest) {
         );
       }
 
-      return NextResponse.json({
-        status: "succeeded",
-        id: result.id,
-        rank: result.rank,
-        companyName: result.companyName || companyName,
-        companyUrl: result.companyUrl || companyUrl,
-        category,
-        logoUrl: result.logoUrl,
-        tagline: result.tagline,
-        description: result.description,
-        price: result.pricePaid || price,
-        amountPaid: price,
-        customerEmail: finalEmail,
-        isUpdate: result.isUpdate,
-      });
+      return NextResponse.json(
+        {
+          status: "succeeded",
+          id: result.id,
+          rank: result.rank,
+          companyName: result.companyName || companyName,
+          companyUrl: result.companyUrl || companyUrl,
+          category,
+          logoUrl: result.logoUrl,
+          tagline: result.tagline,
+          description: result.description,
+          price: result.pricePaid || price,
+          amountPaid: price,
+          customerEmail: finalEmail,
+          isUpdate: result.isUpdate,
+        },
+        {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+          },
+        }
+      );
     }
 
     return NextResponse.json({

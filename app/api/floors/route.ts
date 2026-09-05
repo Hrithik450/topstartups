@@ -20,12 +20,21 @@ export async function GET(req: NextRequest) {
     }
 
     const res = await FloorsService.getFloors();
-    return NextResponse.json({
-      success: res.success,
-      floors: res.data || [],
-      totalCount: res.totalCount || 0,
-      locks: {},
-    });
+    return NextResponse.json(
+      {
+        success: res.success,
+        floors: res.data || [],
+        totalCount: res.totalCount || 0,
+        locks: {},
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (err: any) {
     console.error("Error in /api/floors GET:", err);
     return NextResponse.json(

@@ -8,7 +8,29 @@ import type { Floor, NewFloor } from "@/lib/db/config/schema";
 import { validateWebsiteSyntax, extractRootHostname } from "@/lib/validation/domain";
 import { scrapeWebsiteMetadata } from "@/lib/crawler/metadata";
 import { persistImageToBlob } from "@/lib/storage/blob";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { StatsModel } from "@/actions/stats/stats.model";
+
+function revalidateFloorsAndStats(floorId?: string, email?: string | null) {
+  try {
+    // Invalidate live stats in-memory cache and Next.js tags
+    StatsModel.invalidateCache();
+    revalidateTag("stats");
+    revalidatePath("/api/stats");
+
+    // Invalidate floors cache and Next.js tags
+    revalidateTag("floors");
+    if (floorId) revalidateTag(`floor-${floorId}`);
+    if (email) revalidateTag(`floors-owner-${email}`);
+
+    // Invalidate page router and API routes
+    revalidatePath("/", "page");
+    revalidatePath("/");
+    revalidatePath("/api/floors");
+  } catch (e) {
+    console.warn("Revalidation warning:", e);
+  }
+}
 
 export type { Floor, NewFloor, ClaimFloorPreparedInput, ClaimResultModelResponse };
 
@@ -279,11 +301,7 @@ export class FloorsService {
         };
       }
 
-      try {
-        revalidateTag("floors");
-        revalidateTag(`floor-${validated.floorId}`);
-        revalidateTag(`floors-owner-${cleanEmail}`);
-      } catch {}
+      revalidateFloorsAndStats(validated.floorId, cleanEmail);
 
       return {
         success: true,
@@ -372,9 +390,7 @@ export class FloorsService {
 
       const result = await FloorsModel.claimTopFloorTransaction(preparedInput);
 
-      try {
-        revalidateTag("floors");
-      } catch {}
+      revalidateFloorsAndStats(result.id, cleanEmail);
 
       return result;
     } catch (error) {
@@ -402,10 +418,7 @@ export class FloorsService {
       const result = await FloorsModel.deleteFloor(cleanFloorId, cleanEmail);
 
       if (result.success) {
-        try {
-          revalidateTag("floors");
-          revalidateTag(`floor-${cleanFloorId}`);
-        } catch {}
+        revalidateFloorsAndStats(cleanFloorId, cleanEmail);
       }
 
       return result;

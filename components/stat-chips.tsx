@@ -84,10 +84,25 @@ export function useLiveStats(customHeightFt?: number | string) {
     };
     window.addEventListener("pagehide", handleLeave);
 
+    // 5. Instantly sync stats whenever a floor is claimed, outbid, or refreshed
+    const handleFloorUpdate = () => {
+      pingAndSync({
+        sessionId,
+        countryCode: countryGuess?.code,
+        countryName: countryGuess?.name,
+        isNewSession: false,
+      });
+    };
+
+    window.addEventListener("floors-refresh", handleFloorUpdate);
+    window.addEventListener("floor-claimed-success", handleFloorUpdate);
+
     return () => {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", handleLeave);
+      window.removeEventListener("floors-refresh", handleFloorUpdate);
+      window.removeEventListener("floor-claimed-success", handleFloorUpdate);
     };
   }, [pingAndSync]);
 

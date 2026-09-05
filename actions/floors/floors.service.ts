@@ -5,7 +5,7 @@ import {
   type ClaimResultModelResponse,
 } from "@/actions/floors/floors.model";
 import type { Floor, NewFloor } from "@/lib/db/config/schema";
-import { validateWebsiteSyntax, extractRootHostname } from "@/lib/validation/domain";
+import { extractRootHostname } from "@/lib/validation/domain";
 import { verifyWebsiteLive } from "@/lib/validation/domain-server";
 import { scrapeWebsiteMetadata } from "@/lib/crawler/metadata";
 import { persistImageToBlob } from "@/lib/storage/blob";

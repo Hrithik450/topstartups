@@ -38,10 +38,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || "Mock payment failed" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: result.error || "Mock payment failed" }, { status: 500 });
     }
 
     // SECURITY: Only redirect to same-origin to prevent open redirect attacks.
@@ -54,9 +51,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(target);
   } catch (err: any) {
     console.error("Failed to process mock payment claim:", err);
-    return NextResponse.json(
-      { error: "Mock payment failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Mock payment failed" }, { status: 500 });
   }
 }

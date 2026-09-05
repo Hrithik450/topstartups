@@ -1,10 +1,6 @@
 import dns from "dns";
 import tls from "tls";
-import {
-  validateWebsiteSyntax,
-  isPrivateIpAddress,
-  type ValidationResult,
-} from "./domain";
+import { validateWebsiteSyntax, isPrivateIpAddress, type ValidationResult } from "./domain";
 
 /**
  * Server-side verification: Validates syntax, SSL certificates, live reachability, and active server status.

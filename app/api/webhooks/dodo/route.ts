@@ -112,7 +112,9 @@ export async function POST(req: NextRequest) {
       }
       const cleanCompanyUrl = verification.cleanUrl;
 
-      console.log(`Processing verified webhook payment for ${cleanCompanyUrl} (${paymentId}) at ₹${price}...`);
+      console.log(
+        `Processing verified webhook payment for ${cleanCompanyUrl} (${paymentId}) at ₹${price}...`
+      );
 
       const result = await FloorsService.claimTopFloor({
         paymentId,

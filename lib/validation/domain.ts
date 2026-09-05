@@ -70,7 +70,10 @@ export function extractRootHostname(urlOrHost: string): string {
  */
 export function isPrivateIpAddress(ip: string): boolean {
   if (!ip || typeof ip !== "string") return true;
-  const clean = ip.trim().toLowerCase().replace(/^::ffff:/, "");
+  const clean = ip
+    .trim()
+    .toLowerCase()
+    .replace(/^::ffff:/, "");
 
   // IPv4
   const ipv4Match = clean.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);

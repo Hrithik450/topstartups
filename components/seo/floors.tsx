@@ -42,16 +42,17 @@ export function Seo({ floors = [], stats }: SeoProps) {
       <section className="sr-only" aria-label="GeTopFloor Skyscraper Directory & Company Listings">
         <h2>GeTopFloor — Internet&apos;s Tallest 3D Startup Skyscraper</h2>
         <p>
-          An interactive 3D virtual skyscraper and discovery directory where startups and founders claim
-          floors, showcase their products, and reach thousands of global
-          investors.
+          An interactive 3D virtual skyscraper and discovery directory where startups and founders
+          claim floors, showcase their products, and reach thousands of global investors.
         </p>
 
         {stats && (
           <div>
             <h3>Live Skyscraper Statistics</h3>
             <ul>
-              <li>Current Tower Height: {stats.heightFt} feet ({stats.claimedFloors} stories)</li>
+              <li>
+                Current Tower Height: {stats.heightFt} feet ({stats.claimedFloors} stories)
+              </li>
               <li>Claimed Floors: {stats.claimedFloors}</li>
               <li>Global Views &amp; Impressions: {stats.totalViews}</li>
               <li>Countries Represented: {stats.countriesCount}</li>

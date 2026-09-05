@@ -33,20 +33,8 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
   const apiKey = process.env.DODO_PAYMENTS_API_KEY?.trim();
   const companyUrl = input.companyUrl || input.url || "";
 
-  // If no API key or mock flag, return seamless mock checkout for local dev
-  if (!apiKey || apiKey.startsWith("mock_")) {
-    const mockSessionId = `mock_cks_${Date.now()}_${crypto.randomBytes(8).toString("hex")}`;
-    const mockCheckoutUrl = `/api/checkout/mock-success?session_id=${mockSessionId}&company_url=${encodeURIComponent(
-      companyUrl
-    )}&category=${encodeURIComponent(input.category || "")}&company_name=${encodeURIComponent(
-      input.companyName
-    )}&price=${input.price}&return_url=${encodeURIComponent(input.returnUrl)}`;
-
-    return {
-      checkoutSessionId: mockSessionId,
-      checkoutUrl: mockCheckoutUrl,
-      isMock: true,
-    };
+  if (!apiKey) {
+    throw new Error("DODO_PAYMENTS_API_KEY is not configured");
   }
 
   const productId = process.env.DODO_PAYMENTS_PRODUCT_ID?.trim();

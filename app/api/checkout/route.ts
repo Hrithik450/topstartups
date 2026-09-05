@@ -39,6 +39,7 @@ function isAllowedOrigin(origin: string): boolean {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
     const { companyUrl, url, category, companyName, price } = body;
     const targetUrl = (companyUrl || url || "").trim();
 
@@ -121,7 +122,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (!customerName && userEmail) {
-      const emailName = userEmail.split("@")[0].replace(/[^a-zA-Z0-9 ]/g, " ").trim();
+      const emailName = userEmail
+        .split("@")[0]
+        .replace(/[^a-zA-Z0-9 ]/g, " ")
+        .trim();
       customerName = emailName
         ? emailName.charAt(0).toUpperCase() + emailName.slice(1)
         : "Customer";

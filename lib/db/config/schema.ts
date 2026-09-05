@@ -1,12 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  integer,
-  varchar,
-  text,
-  timestamp,
-  index,
-} from "drizzle-orm/pg-core";
+import { pgTable, uuid, integer, varchar, text, timestamp, index } from "drizzle-orm/pg-core";
 
 /**
  * Floors table representing the claimed floors of the skyscraper.

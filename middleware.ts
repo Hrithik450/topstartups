@@ -127,10 +127,7 @@ export function middleware(req: NextRequest) {
     const maxAllowedBytes = isUploadRoute ? 5 * 1024 * 1024 : 128 * 1024; // 5MB for upload, 128KB for JSON
 
     if (bytes > maxAllowedBytes) {
-      return NextResponse.json(
-        { error: "Payload Too Large. Request rejected." },
-        { status: 413 }
-      );
+      return NextResponse.json({ error: "Payload Too Large. Request rejected." }, { status: 413 });
     }
   }
 
@@ -186,4 +183,3 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
-

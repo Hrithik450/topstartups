@@ -253,7 +253,11 @@ export async function GET(req: NextRequest) {
       // Must use actual verified payment amount from gateway in INR, never client-submitted pendingClaim.amount or metadata.price!
       const price = gatewayPaidAmount ?? (pendingClaim ? Number(pendingClaim.amount) : 50);
 
-      if (gatewayPaidAmount != null && pendingClaim?.amount && gatewayPaidAmount < Number(pendingClaim.amount)) {
+      if (
+        gatewayPaidAmount != null &&
+        pendingClaim?.amount &&
+        gatewayPaidAmount < Number(pendingClaim.amount)
+      ) {
         console.error(
           `Rejecting floor claim: gateway verified paid amount ₹${gatewayPaidAmount} is less than required ₹${pendingClaim.amount}`
         );

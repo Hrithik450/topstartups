@@ -54,10 +54,9 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
     throw new Error("DODO_PAYMENTS_PRODUCT_ID is not configured");
   }
 
-  // Ensure return URL includes {CHECKOUT_ID} placeholder so Dodo injects checkout session ID on return
-  const returnUrlWithParams = input.returnUrl.includes("{CHECKOUT_ID}")
-    ? input.returnUrl
-    : `${input.returnUrl}${input.returnUrl.includes("?") ? "&" : "?"}session_id={CHECKOUT_ID}`;
+  // Dodo Payments automatically appends ?payment_id=pay_xxx&status=succeeded&email=xxx to return_url.
+  // Dodo does NOT support template interpolation (e.g. {CHECKOUT_ID}), so pass a clean return URL.
+  const returnUrlWithParams = input.returnUrl.replace(/([?&])session_id=\{CHECKOUT_ID\}/g, "");
 
   // Real Dodo Payments REST API call
   try {

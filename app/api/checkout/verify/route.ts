@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
       )
       .limit(1);
 
-    const pendingClaim = matchingClaims[0];
+    let pendingClaim = matchingClaims[0];
 
     // If webhook already processed and succeeded, return immediately!
     if (pendingClaim && pendingClaim.status === "succeeded") {
@@ -148,6 +148,22 @@ export async function GET(req: NextRequest) {
         metadata = data.metadata || {};
         if (data.total_amount != null && !isNaN(Number(data.total_amount))) {
           gatewayPaidAmount = Math.floor(Number(data.total_amount) / 100);
+        }
+
+        // If pending claim was not matched by payment_id, match it by the checkoutSessionId from gateway
+        if (!pendingClaim && checkoutSessionId) {
+          try {
+            const claimsBySession = await db
+              .select()
+              .from(claims)
+              .where(eq(claims.checkoutSessionId, checkoutSessionId.trim()))
+              .limit(1);
+            if (claimsBySession[0]) {
+              pendingClaim = claimsBySession[0];
+            }
+          } catch (err) {
+            console.warn("Could not lookup claim by checkoutSessionId:", err);
+          }
         }
       }
     }

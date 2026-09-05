@@ -25,9 +25,6 @@ export function TowerScene({
   const onFloorHoverRef = useRef(onFloorHover);
   onFloorHoverRef.current = onFloorHover;
 
-  const floorsRef = useRef(floors);
-  floorsRef.current = floors;
-
   const prevFloorCountRef = useRef<number | null>(null);
 
   // 1. Mount or rebuild Three.js Tower when floors are available or floor count changes

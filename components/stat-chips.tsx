@@ -6,7 +6,7 @@ import { useFloorsStore } from "@/store/floors-store";
 import { useStatsStore } from "@/store/stats-store";
 import { calculateTowerHeightFt } from "@/lib/stats";
 
-function useLiveStats(customHeightFt?: number | string) {
+function useLiveStats() {
   const { stats, isStatsReady } = useStatsStore();
   const { floors } = useFloorsStore();
   const [mounted, setMounted] = useState(false);
@@ -17,9 +17,7 @@ function useLiveStats(customHeightFt?: number | string) {
 
   const activeFloorCount = floors.length > 0 ? floors.length : stats.claimedFloors;
   const dynamicHeight =
-    typeof customHeightFt === "number"
-      ? customHeightFt
-      : activeFloorCount > 0
+    activeFloorCount > 0
       ? calculateTowerHeightFt(activeFloorCount)
       : typeof stats.heightFt === "number"
       ? stats.heightFt
@@ -38,12 +36,8 @@ function useLiveStats(customHeightFt?: number | string) {
   };
 }
 
-export function StatChips({
-  heightFt,
-}: {
-  heightFt?: number | string;
-} = {}) {
-  const stats = useLiveStats(heightFt);
+export function StatChips() {
+  const stats = useLiveStats();
 
   const chips = [
     {
@@ -149,13 +143,11 @@ export function StatChips({
 export function MobileStatsSheet({
   open,
   onClose,
-  heightFt,
 }: {
   open: boolean;
   onClose: () => void;
-  heightFt?: number | string;
 }) {
-  const stats = useLiveStats(heightFt);
+  const stats = useLiveStats();
 
   if (!open) return null;
 

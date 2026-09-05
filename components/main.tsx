@@ -123,13 +123,12 @@ export function Main({
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  // Sync floors store on any claim/refresh event, periodic 45s heartbeat, and tab focus
+  // Sync floors store on claim event, periodic 45s heartbeat, and tab focus
   useEffect(() => {
     const handleRefresh = () => {
       useFloorsStore.getState().syncFloors(true);
     };
 
-    window.addEventListener("floors-refresh", handleRefresh);
     window.addEventListener("floor-claimed-success", handleRefresh);
 
     // Periodic gentle background poll (every 45s) so other users' new floors appear live
@@ -149,7 +148,6 @@ export function Main({
     return () => {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("floors-refresh", handleRefresh);
       window.removeEventListener("floor-claimed-success", handleRefresh);
     };
   }, []);

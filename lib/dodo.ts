@@ -20,11 +20,7 @@ export interface CheckoutResult {
 
 export function getDodoApiUrl(): string {
   const env = (process.env.DODO_PAYMENTS_ENVIRONMENT || "").trim().toLowerCase();
-  const isLive =
-    env === "live" ||
-    env === "live_mode" ||
-    env === "production" ||
-    env === "prod";
+  const isLive = env === "live" || env === "live_mode" || env === "production" || env === "prod";
   return isLive ? "https://live.dodopayments.com" : "https://test.dodopayments.com";
 }
 

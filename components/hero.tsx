@@ -168,20 +168,6 @@ export function Hero({
   const targetRank = 1;
   const minAllowedPrice = 50;
 
-  // Handle floor selection from 3D scene / hover card
-  useEffect(() => {
-    const handleSelectFloorPrice = (e: any) => {
-      const detail = e.detail;
-      if (detail && typeof detail.price === "number") {
-        setPrice(Math.max(50, detail.price));
-      }
-    };
-
-    window.addEventListener("select-floor-price", handleSelectFloorPrice);
-    return () => {
-      window.removeEventListener("select-floor-price", handleSelectFloorPrice);
-    };
-  }, []);
 
   // Handle browser Back / Forward navigation (bfcache restoration)
   useEffect(() => {
@@ -214,7 +200,6 @@ export function Hero({
             "Your payment was cancelled or could not be completed. Your account was not charged. You can restart checkout whenever you're ready.",
         });
         window.history.replaceState({}, "", window.location.pathname);
-        window.dispatchEvent(new CustomEvent("floors-refresh"));
         return;
       }
 
@@ -287,7 +272,6 @@ export function Hero({
               message: data.error || "Payment was not completed. You can try claiming again.",
             });
             window.history.replaceState({}, "", window.location.pathname);
-            window.dispatchEvent(new CustomEvent("floors-refresh"));
             return;
           }
 
@@ -303,14 +287,12 @@ export function Hero({
                 "Your payment was received and is confirming. Your floor will appear momentarily!",
             });
             window.history.replaceState({}, "", window.location.pathname);
-            window.dispatchEvent(new CustomEvent("floors-refresh"));
           }
         } catch (err) {
           console.warn("Could not verify payment session:", err);
           setIsSubmitting(false);
           setPaymentNotice(null);
           window.history.replaceState({}, "", window.location.pathname);
-          window.dispatchEvent(new CustomEvent("floors-refresh"));
         }
       };
 

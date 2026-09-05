@@ -1904,20 +1904,57 @@ button.chip:focus-visible {
   align-items: center;
   gap: 12px;
   background: #0f172a;
-  border: 1px solid #1e293b;
-  padding: 10px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 10px 20px;
   border-radius: 9999px;
-  color: #fff;
+  color: #ffffff;
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   animation: cardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.claimed-banner span {
+  color: #ffffff;
+}
+
 .claimed-banner strong {
-  color: #ffedd5;
+  color: #ffb020;
   text-decoration: underline;
+  font-weight: 700;
+}
+
+.claimed-banner.outbid-notice {
+  background: #0f172a;
+  border: 1px solid rgba(255, 120, 0, 0.45);
+  color: #ffffff;
+}
+
+.claimed-banner.outbid-notice span {
+  color: #ffffff;
+}
+
+.claimed-banner.outbid-notice strong {
+  color: #ffaa40;
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+.claimed-banner.celebration {
+  background: #0f172a;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  color: #ffffff;
+}
+
+.claimed-banner.celebration span {
+  color: #ffffff;
+}
+
+.claimed-banner.celebration strong {
+  color: #ffd700;
+  text-decoration: underline;
+  font-weight: 700;
 }
 
 .claimed-banner.payment-notice.error {
@@ -1958,7 +1995,7 @@ button.chip:focus-visible {
 .claimed-close-btn {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   font-size: 14px;
   padding: 2px 6px;
@@ -1970,35 +2007,67 @@ button.chip:focus-visible {
   color: #ffffff;
 }
 
-/* Light / Sunset Mode Overrides for Banner */
+/* Light / Sunset Mode Overrides for Banner - High-contrast dark pill with crisp white text */
 [data-theme="sunset"] .claimed-banner {
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  color: #0f172a;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.35);
+}
+
+[data-theme="sunset"] .claimed-banner span {
+  color: #ffffff;
 }
 
 [data-theme="sunset"] .claimed-banner strong {
-  color: #ea580c;
+  color: #ffb020;
   text-decoration: underline;
 }
 
+[data-theme="sunset"] .claimed-banner.outbid-notice {
+  background: #0f172a;
+  border: 1px solid rgba(255, 120, 0, 0.5);
+  color: #ffffff;
+}
+
+[data-theme="sunset"] .claimed-banner.outbid-notice span {
+  color: #ffffff;
+}
+
+[data-theme="sunset"] .claimed-banner.outbid-notice strong {
+  color: #ffaa40;
+}
+
+[data-theme="sunset"] .claimed-banner.celebration {
+  background: #0f172a;
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  color: #ffffff;
+}
+
+[data-theme="sunset"] .claimed-banner.celebration span {
+  color: #ffffff;
+}
+
+[data-theme="sunset"] .claimed-banner.celebration strong {
+  color: #ffd700;
+}
+
 [data-theme="sunset"] .claimed-banner.payment-notice.error {
-  background: #fef2f2;
-  border-color: #fca5a5;
-  color: #991b1b;
+  background: #7f1d1d;
+  border-color: #ef4444;
+  color: #ffffff;
 }
 
 [data-theme="sunset"] .claimed-banner.payment-notice.info {
-  background: #eff6ff;
-  border-color: #93c5fd;
-  color: #1e40af;
+  background: #1e3a8a;
+  border-color: #3b82f6;
+  color: #ffffff;
 }
 
 [data-theme="sunset"] .claimed-banner.payment-notice.success {
-  background: #ecfdf5;
-  border-color: #6ee7b7;
-  color: #065f46;
+  background: #064e3b;
+  border-color: #10b981;
+  color: #ffffff;
 }
 
 [data-theme="sunset"] .claimed-edit-btn {

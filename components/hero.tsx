@@ -509,13 +509,8 @@ export function Hero({
 
       {existingFloorOnTower && existingFloorOnTower.rank > 1 && (
         <div
-          className="claimed-banner payment-notice info"
-          style={{
-            marginBottom: "16px",
-            background: "rgba(255, 107, 0, 0.12)",
-            border: "1px solid rgba(255, 120, 0, 0.35)",
-            color: "#ff8c00",
-          }}
+          className="claimed-banner outbid-notice"
+          style={{ marginBottom: "16px" }}
           role="status"
         >
           <span>

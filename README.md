@@ -79,7 +79,7 @@
 | **State Management**| [Zustand 5](https://zustand.docs.pmnd.rs/) | Global state for skyscraper floors, live platform metrics, and client error handling |
 | **Database & ORM** | [PostgreSQL](https://www.postgresql.org/) + [Drizzle ORM](https://orm.drizzle.team/) | Type-safe SQL queries, migrations, indexes, and connection poolers |
 | **Security & Auth** | Admin HMAC Auth + Timing-Safe Security | Zero-login frictionless founder checkout with cryptographically signed Admin Portal auth |
-| **Payments** | [Cashfree Payments](https://www.cashfree.com/) | RBI-regulated Payment Gateway supporting domestic UPI, NetBanking, Debit/Credit Cards & Wallets |
+| **Payments** | [Dodo Payments](https://dodopayments.com/) | Merchant of Record supporting global & domestic Cards, UPI, NetBanking, Apple Pay & Google Pay |
 | **Storage & CDN** | [Vercel Blob Storage](https://vercel.com/docs/storage/vercel-blob) | Permanent logo CDN caching & direct user uploads |
 | **Metadata Scraper**| [Firecrawl](https://firecrawl.dev/) + HTML Parser | Automated title, description, and high-res favicon/touch-icon extraction |
 | **Validation** | [Zod 4](https://zod.dev/) | Strict runtime input validation for actions, schemas, and API routes |
@@ -91,10 +91,9 @@
 
 ```
 outbid/
-├── actions/                      # ⚡ Server Actions & Business Logic
-│   ├── floors/                   # Floors service, database model, and server actions
-│   ├── stats/                    # Real-time statistics service and database model
-│   └── index.ts                  # Centralized actions exports
+├── actions/                      # ⚡ Backend Domain Services & Database Models
+│   ├── floors/                   # Floors service (FloorsService) and database model (FloorsModel)
+│   └── stats/                    # Real-time statistics service (StatsService) and model (StatsModel)
 │
 ├── app/                          # 🌐 Next.js App Router
 │   ├── admin/                    # 📊 Protected Admin Dashboard (/admin)
@@ -111,7 +110,7 @@ outbid/
 │   ├── terms/                    # Terms of service page
 │   ├── globals.css               # Global theme styling (Dark & Sunset themes)
 │   ├── jsonld.tsx                # Structured JSON-LD schemas
-│   ├── layout-wrapper.tsx        # Client layout wrapper with store hydration & sound state
+│   ├── layout-wrapper.tsx        # Client layout wrapper with store hydration & toasts
 │   ├── layout.tsx                # Root layout with metadata, OpenGraph, and font configs
 │   ├── page.tsx                  # 3D Skyscraper landing page
 │   ├── robots.ts                 # Dynamic robots.txt
@@ -119,6 +118,7 @@ outbid/
 │
 ├── components/                   # 🧩 Client & UI Components
 │   ├── alerts/                   # Success and failure alert toast banners
+│   ├── seo/                      # 🔍 Schema.org JSON-LD & semantic crawlable directory (Seo)
 │   ├── building-loader.tsx       # 3D building initialization progress indicator
 │   ├── controls.tsx              # Three.js camera controls, sound, & theme toggles
 │   ├── floor-hover-card.tsx      # 3D raycast hover card with startup preview & visit CTA
@@ -126,6 +126,7 @@ outbid/
 │   ├── icons.tsx                 # Brand and UI icon definitions
 │   ├── main.tsx                  # Main client shell with header and controls
 │   ├── stat-chips.tsx            # Real-time live metrics (online, views, countries)
+│   ├── stats-sync.tsx            # Session presence heartbeat & real-time stats synchronizer
 │   └── tower-scene.tsx           # Dynamic Three.js canvas mount
 │
 ├── lib/                          # 🛠️ Shared Libraries & Utilities
@@ -135,16 +136,17 @@ outbid/
 │   │       ├── client.ts         # Resilient connection pooler (with pool.on('error') safety)
 │   │       ├── pool-config.ts    # Multi-tier connection pooler (:5432 & :6543)
 │   │       ├── schema.ts         # Drizzle schemas (floors, claims, sessions, stats)
-│   │       ├── ssl.ts            # Auto-detecting SSL for VPS, Docker & Cloud
-│   │       └── index.ts          # Central database exports
+│   │       └── ssl.ts            # Auto-detecting SSL for VPS, Docker & Cloud
 │   ├── drizzle/                  # Drizzle migration files and metadata snapshots
 │   ├── storage/                  # Vercel Blob Storage client & image persistence
 │   ├── three/                    # Complete Three.js 3D Skyscraper engine & models
 │   ├── types/                    # TypeScript declaration files
-│   ├── validation/               # Live domain & SSL security reachability checker
+│   ├── validation/               # Split validation engine (client-safe domain & server-only TLS socket)
+│   │   ├── domain.ts             # Client-safe syntax & domain extraction
+│   │   └── domain-server.ts      # Server-only TLS socket reachability & SSL handshake
 │   ├── admin-auth.ts             # Admin authentication & timing-safe token helpers
 │   ├── categories.ts             # Startup category definitions
-│   ├── dodo.ts                   # Dodo Payments SDK client & webhook validator
+│   ├── dodo.ts                   # Dodo Payments SDK client, webhook validator & redirect helpers
 │   └── stats.ts                  # Client-side statistics heartbeat helper
 │
 ├── store/                        # 🐻 Zustand State Stores
@@ -282,7 +284,7 @@ pm2 start pnpm --name "getopfloor" -- start
 
 ---
 
-## 📡 REST API & Server Actions Reference
+## 📡 REST API & Backend Services Reference
 
 ### REST Endpoints
 
@@ -290,25 +292,25 @@ pm2 start pnpm --name "getopfloor" -- start
 |---|---|---|---|
 | `GET` | `/api/floors` | Retrieve all active claimed skyscraper floors | Public |
 | `POST` | `/api/upload` | Upload custom startup logo to Vercel Blob Storage CDN | Public (Rate-Limited) |
-| `GET` | `/api/validate-url?url=...` | Verify website reachability and SSL security handshake | Public |
+| `GET / POST` | `/api/validate-url` | Verify website reachability and SSL security handshake | Public |
 | `GET` | `/api/stats` | Retrieve live skyscraper metrics (online, views, countries) | Public |
 | `POST` | `/api/checkout` | Create Dodo Payments checkout session with domain validation | Public |
 | `GET` | `/api/checkout/verify` | Verify payment status and dynamically register floor claim | Public |
-| `POST` | `/api/checkout/mock-success` | Mock sandbox payment success verification (dev only) | Public |
+| `GET / POST` | `/api/checkout/mock-success` | Mock sandbox payment success verification (dev only) | Public |
 | `POST` | `/api/webhooks/dodo` | Receive and process cryptographically verified payment webhooks | Dodo Signature |
 | `POST` | `/api/admin/login` | Authenticate admin against `.env` credentials | Public |
 | `POST` | `/api/admin/logout` | Clear admin authentication cookie | Admin Cookie |
 | `GET` | `/api/admin/users` | List all registered founders, contacts, and products | Admin Session |
 
-### Key Server Actions (`actions/`)
+### Key Backend Services (`actions/`)
 
 - **`FloorsService.getFloors()`**: Fetch all active skyscraper floors sorted by leaderboard rank.
-- **`FloorsService.getTopFloorPrice()`**: Calculate required bid amount to claim Top Floor (#1).
-- **`FloorsService.getOutbidPricing(cleanHost)`**: Compute outbid cost and ranking preview for any domain.
+- **`FloorsService.getFloorByDomain(domain)`**: Retrieve existing floor record matching a domain.
+- **`FloorsService.getFloorsByEmail(email)`**: Retrieve all floors claimed by a specific founder.
 - **`FloorsService.updateFloor(input, email)`**: Update company name, URL, tagline, description, category, or logo for a floor.
 - **`FloorsService.claimTopFloor(input)`**: Atomically register a floor claim after payment confirmation with idempotent safety.
 - **`FloorsService.deleteFloor(floorId, email)`**: Vacate or release a floor back to available status.
-- **`StatsService.getStats()`**: Fetch live platform statistics (online count, total views, visitor countries).
+- **`StatsService.getLiveStats()`**: Fetch live platform statistics (online count, total views, visitor countries).
 
 ---
 

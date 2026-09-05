@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Globe, Building, Arrow, Minus, Plus, Search, Close, Check, ChevronDown } from "./icons";
 import { MAIN_CATEGORIES, SPECIAL_OPTIONS, IndustryCategory } from "@/lib/categories";
-import { validateWebsiteSyntax } from "@/lib/validation/domain";
+import { validateWebsiteSyntax, extractRootHostname } from "@/lib/validation/domain";
 import { useFloorsStore } from "@/store/floors-store";
 
 async function safeFetchJson(res: Response): Promise<any> {
@@ -117,21 +117,10 @@ export function Hero({
   // Check if current URL input already exists on the skyscraper
   const existingFloorOnTower = useMemo(() => {
     if (!url || url.trim().length < 3) return null;
-    const cleanHost = url
-      .replace(/^https?:\/\//i, "")
-      .replace(/^www\./i, "")
-      .split("/")[0]
-      .toLowerCase()
-      .trim();
+    const cleanHost = extractRootHostname(url);
     if (!cleanHost || cleanHost.length < 3) return null;
     return activeFloors.find((f) => {
-      if (!f.isClaimed) return false;
-      const fHost = (f.url || "")
-        .replace(/^https?:\/\//i, "")
-        .replace(/^www\./i, "")
-        .split("/")[0]
-        .toLowerCase()
-        .trim();
+      const fHost = extractRootHostname(f.companyUrl || f.url || "");
       return fHost === cleanHost;
     });
   }, [url, activeFloors]);
@@ -148,6 +137,21 @@ export function Hero({
       setPrice(differencePrice);
     }
   }, [existingFloorOnTower, differencePrice]);
+
+  // Auto-populate category if existing floor already has one
+  useEffect(() => {
+    if (existingFloorOnTower && !selectedCategory && existingFloorOnTower.category) {
+      const catName = existingFloorOnTower.category.trim();
+      const match =
+        MAIN_CATEGORIES.find((c) => c.name.toLowerCase() === catName.toLowerCase()) ||
+        SPECIAL_OPTIONS.find((c) => c.name.toLowerCase() === catName.toLowerCase());
+      if (match) {
+        setSelectedCategory(match);
+      } else {
+        setSelectedCategory({ id: "existing-cat", name: catName, icon: "🏢" });
+      }
+    }
+  }, [existingFloorOnTower, selectedCategory]);
 
   // Normal bidding: all new bids and reclaims can enter any price >= ₹50 (minimum cutoff)
   const targetRank = 1;
@@ -498,7 +502,7 @@ export function Hero({
         <div className="claimed-banner celebration" style={{ marginBottom: "16px" }} role="status">
           <span>
             👑 <strong>{existingFloorOnTower.companyName || url}</strong> is currently featured at
-            Top Penthouse Floor #1!
+            Top Penthouse Floor #1 (₹{existingFloorOnTower.pricePaid} paid). You can boost your lead to defend your rank!
           </span>
         </div>
       )}
@@ -529,14 +533,13 @@ export function Hero({
             ? "Outbid & reclaim top floor for"
             : "Boost your floor for"
           : existingFloorOnTower && existingFloorOnTower.rank === 1
-            ? "Featured at Top Penthouse Floor #1"
+            ? "Defend & boost Top Floor #1 for"
             : price >= topFloorPrice
               ? topFloorClaimed
                 ? "Outbid top floor for"
                 : "Claim top floor for"
               : "Claim a floor for"}
-        {(!existingFloorOnTower || existingFloorOnTower.rank > 1) && (
-          <span className="price-stepper">
+        <span className="price-stepper">
             <button
               type="button"
               className="step-btn"
@@ -589,7 +592,6 @@ export function Hero({
               <Plus />
             </button>
           </span>
-        )}
       </h1>
 
       <form className="form" onSubmit={handleSubmit}>
@@ -757,20 +759,15 @@ export function Hero({
 
         <button
           type="submit"
-          className={`claim-btn ${existingFloorOnTower && existingFloorOnTower.rank === 1 ? "claim-btn-locked" : ""}`}
-          disabled={
-            isSubmitting || Boolean(existingFloorOnTower && existingFloorOnTower.rank === 1)
-          }
-          title={
-            existingFloorOnTower && existingFloorOnTower.rank === 1
-              ? "This startup is already at Top Penthouse Floor #1"
-              : undefined
-          }
+          className="claim-btn"
+          disabled={isSubmitting}
         >
           {isSubmitting ? (
             "Verifying..."
           ) : existingFloorOnTower && existingFloorOnTower.rank === 1 ? (
-            <>👑 Already Top Floor #1</>
+            <>
+              👑 Defend & Boost Top Floor #1 for ₹{price} <Arrow />
+            </>
           ) : existingFloorOnTower && existingFloorOnTower.rank > 1 ? (
             price >= differencePrice ? (
               <>

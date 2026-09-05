@@ -9,6 +9,14 @@ import { getDodoApiUrl, extractDodoRedirectParams } from "@/lib/dodo";
 
 export const dynamic = "force-dynamic";
 
+// Whitelist pattern: Dodo Payment and Checkout IDs are strictly alphanumeric with prefixes (pay_, cks_, mock_cks_)
+const DODO_ID_PATTERN = /^(pay|cks|mock_cks)_[a-zA-Z0-9_-]{6,120}$/;
+
+function isValidDodoId(id?: string | null): boolean {
+  if (!id || typeof id !== "string") return false;
+  return DODO_ID_PATTERN.test(id.trim());
+}
+
 export async function GET(req: NextRequest) {
   try {
     const {
@@ -17,12 +25,14 @@ export async function GET(req: NextRequest) {
       targetId,
     } = extractDodoRedirectParams(new URL(req.url).searchParams);
 
-    if (!targetId) {
+    if (!targetId || !isValidDodoId(targetId)) {
       return NextResponse.json(
-        { error: "payment_id or session_id parameter is required" },
+        { error: "A valid payment_id or session_id parameter is required" },
         { status: 400 }
       );
     }
+
+    const safeTargetId = encodeURIComponent(targetId.trim());
 
     // ─────────────────────────────────────────────────────────────
     // STEP 1: CHECK DATABASE FIRST (AUTOMATIC CONFIRMATION VIA WEBHOOK)
@@ -32,9 +42,9 @@ export async function GET(req: NextRequest) {
       .from(claims)
       .where(
         or(
-          ...(paymentIdParam ? [eq(claims.paymentId, paymentIdParam)] : []),
-          ...(sessionIdParam ? [eq(claims.checkoutSessionId, sessionIdParam)] : []),
-          eq(claims.checkoutSessionId, targetId)
+          ...(paymentIdParam && isValidDodoId(paymentIdParam) ? [eq(claims.paymentId, paymentIdParam.trim())] : []),
+          ...(sessionIdParam && isValidDodoId(sessionIdParam) ? [eq(claims.checkoutSessionId, sessionIdParam.trim())] : []),
+          eq(claims.checkoutSessionId, targetId.trim())
         )
       )
       .limit(1);
@@ -94,8 +104,8 @@ export async function GET(req: NextRequest) {
     }
 
     let paymentStatus = "unknown";
-    let paymentId = paymentIdParam || null;
-    let checkoutSessionId = sessionIdParam || null;
+    let paymentId = paymentIdParam && isValidDodoId(paymentIdParam) ? paymentIdParam.trim() : null;
+    let checkoutSessionId = sessionIdParam && isValidDodoId(sessionIdParam) ? sessionIdParam.trim() : null;
     let customerName: string | null = null;
     let customerEmail: string | null = null;
     let customerPhone: string | null = null;
@@ -103,8 +113,9 @@ export async function GET(req: NextRequest) {
 
     // If targetId starts with "pay_", query the /payments endpoint
     if (targetId.startsWith("pay_")) {
-      const res = await fetch(`${getDodoApiUrl()}/payments/${targetId}`, {
+      const res = await fetch(`${getDodoApiUrl()}/payments/${safeTargetId}`, {
         headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(6000),
       });
 
       if (res.ok) {
@@ -125,26 +136,32 @@ export async function GET(req: NextRequest) {
       (targetId.startsWith("cks_") || !targetId.startsWith("pay_"))
     ) {
       const checkId = checkoutSessionId || targetId;
-      const res = await fetch(`${getDodoApiUrl()}/checkouts/${checkId}`, {
-        headers: { Authorization: `Bearer ${apiKey}` },
-      });
+      if (isValidDodoId(checkId)) {
+        const safeCheckId = encodeURIComponent(checkId.trim());
+        const res = await fetch(`${getDodoApiUrl()}/checkouts/${safeCheckId}`, {
+          headers: { Authorization: `Bearer ${apiKey}` },
+          signal: AbortSignal.timeout(6000),
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        paymentId = data.payment_id || paymentId;
-        checkoutSessionId = data.id || checkId;
-        paymentStatus = data.payment_status || data.status;
-        customerName = data.customer_name || data.customer?.name || customerName;
-        customerEmail = data.customer_email || data.customer?.email || customerEmail;
-        customerPhone = data.customer?.phone_number || customerPhone;
-        metadata = data.metadata || metadata;
+        if (res.ok) {
+          const data = await res.json();
+          paymentId = data.payment_id || paymentId;
+          checkoutSessionId = data.id || checkId;
+          paymentStatus = data.payment_status || data.status;
+          customerName = data.customer_name || data.customer?.name || customerName;
+          customerEmail = data.customer_email || data.customer?.email || customerEmail;
+          customerPhone = data.customer?.phone_number || customerPhone;
+          metadata = data.metadata || metadata;
+        }
       }
     }
 
     // Fallback: query /payments if we only had cks_ and Dodo returned payment_id
-    if (paymentId && paymentStatus === "unknown") {
-      const res = await fetch(`${getDodoApiUrl()}/payments/${paymentId}`, {
+    if (paymentId && isValidDodoId(paymentId) && paymentStatus === "unknown") {
+      const safePaymentId = encodeURIComponent(paymentId.trim());
+      const res = await fetch(`${getDodoApiUrl()}/payments/${safePaymentId}`, {
         headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(6000),
       });
       if (res.ok) {
         const data = await res.json();

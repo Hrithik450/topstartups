@@ -7,10 +7,11 @@ import { FloorsService } from "@/actions/floors/floors.service";
 
 export const dynamic = "force-dynamic";
 
-/** SECURITY: Strip HTML/script tags and limit length */
+/** SECURITY: Strip HTML brackets, control characters, and quotes to prevent HTML/script injection without regex backtracking */
 function sanitizeText(input: string, maxLength = 255): string {
+  if (!input || typeof input !== "string") return "";
   return input
-    .replace(/<[^>]*>/g, "")
+    .replace(/[<>"'&`\x00-\x1F\x7F]/g, "")
     .trim()
     .slice(0, maxLength);
 }

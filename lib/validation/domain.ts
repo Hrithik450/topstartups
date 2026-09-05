@@ -65,6 +65,50 @@ export function extractRootHostname(urlOrHost: string): string {
 }
 
 /**
+ * Checks whether an IP address belongs to private, loopback, link-local, carrier-grade NAT, or cloud metadata ranges.
+ * Protects against Server-Side Request Forgery (SSRF).
+ */
+export function isPrivateIpAddress(ip: string): boolean {
+  if (!ip || typeof ip !== "string") return true;
+  const clean = ip.trim().toLowerCase().replace(/^::ffff:/, "");
+
+  // IPv4
+  const ipv4Match = clean.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4Match) {
+    const p = ipv4Match.slice(1, 5).map(Number);
+    if (p.some((n) => n > 255)) return true;
+    if (p[0] === 0 || p[0] === 10 || p[0] === 127) return true; // 0.0.0.0/8, 10.0.0.0/8, 127.0.0.0/8
+    if (p[0] === 169 && p[1] === 254) return true; // 169.254.0.0/16 Link-Local & Cloud Metadata (AWS/GCP)
+    if (p[0] === 172 && p[1] >= 16 && p[1] <= 31) return true; // 172.16.0.0/12
+    if (p[0] === 192 && p[1] === 168) return true; // 192.168.0.0/16
+    if (p[0] === 100 && p[1] >= 64 && p[1] <= 127) return true; // 100.64.0.0/10 Carrier-grade NAT
+    if (p[0] === 192 && p[1] === 0 && p[2] === 2) return true; // 192.0.2.0/24 TEST-NET-1
+    if (p[0] === 198 && p[1] === 51 && p[2] === 100) return true; // 198.51.100.0/24 TEST-NET-2
+    if (p[0] === 203 && p[1] === 0 && p[2] === 113) return true; // 203.0.113.0/24 TEST-NET-3
+    if (p[0] >= 224) return true; // Multicast & Reserved
+    return false;
+  }
+
+  // IPv6
+  if (
+    clean === "::1" ||
+    clean === "::" ||
+    clean === "0:0:0:0:0:0:0:1" ||
+    clean === "0:0:0:0:0:0:0:0" ||
+    clean.startsWith("fc") ||
+    clean.startsWith("fd") ||
+    clean.startsWith("fe8") ||
+    clean.startsWith("fe9") ||
+    clean.startsWith("fea") ||
+    clean.startsWith("feb")
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Validate syntax, secure protocol (HTTPS), and hostname structure for a website URL.
  * Works both on client and server.
  */
@@ -77,35 +121,18 @@ export function validateWebsiteSyntax(inputUrl: string): ValidationResult {
   }
 
   let trimmed = inputUrl.trim();
-
-  // Reject dangerous or non-web protocols
   const lower = trimmed.toLowerCase();
-  if (
-    lower.startsWith("javascript:") ||
-    lower.startsWith("data:") ||
-    lower.startsWith("file:") ||
-    lower.startsWith("ftp:") ||
-    lower.startsWith("ws:") ||
-    lower.startsWith("wss:") ||
-    lower.startsWith("mailto:")
-  ) {
-    return {
-      valid: false,
-      error: "Invalid protocol. Only secure web addresses (HTTPS) are permitted.",
-    };
-  }
 
-  // Reject plain insecure HTTP
-  if (lower.startsWith("http://")) {
-    return {
-      valid: false,
-      error:
-        "Insecure website: Plain HTTP is not permitted. Please use a secure HTTPS website (https://...).",
-    };
-  }
-
-  // Prepend https:// if protocol was omitted
-  if (!lower.startsWith("https://")) {
+  // If a URL scheme is provided, strictly enforce https:// (resolves CodeQL js/incomplete-url-scheme-check)
+  if (/^[a-z0-9+.-]+:/i.test(trimmed)) {
+    if (!lower.startsWith("https://")) {
+      return {
+        valid: false,
+        error: "Only secure HTTPS websites (https://...) are accepted.",
+      };
+    }
+  } else {
+    // Protocol omitted: default to https://
     trimmed = `https://${trimmed}`;
   }
 
@@ -136,8 +163,12 @@ export function validateWebsiteSyntax(inputUrl: string): ValidationResult {
   }
 
   // 2. Block Raw IP Addresses
-  const isIpv4 = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(hostname);
-  if (isIpv4 || hostname.startsWith("[") || hostname.includes(":")) {
+  if (
+    /^[0-9.]+$/.test(hostname) ||
+    hostname.startsWith("[") ||
+    hostname.includes(":") ||
+    isPrivateIpAddress(hostname)
+  ) {
     return {
       valid: false,
       error: "Raw IP addresses are not permitted. Please enter a valid domain name.",
@@ -210,12 +241,48 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
   const requestedDomain = syntaxCheck.domain || "";
 
   try {
+    const parsedTarget = new URL(targetUrl);
+    const targetHost = parsedTarget.hostname.toLowerCase();
+
+    // 1. Pre-resolve DNS to block SSRF attempts targeting private/internal network addresses
+    if (typeof window === "undefined") {
+      try {
+        const dns = await import("dns");
+        const records = await dns.promises.lookup(targetHost, { all: true });
+        if (!records || records.length === 0) {
+          return {
+            valid: false,
+            error: "Website unreachable: Domain does not exist or DNS lookup failed.",
+          };
+        }
+        for (const rec of records) {
+          if (isPrivateIpAddress(rec.address)) {
+            return {
+              valid: false,
+              error: "Security error: Domain resolves to a private or restricted network address.",
+            };
+          }
+        }
+      } catch (dnsErr: any) {
+        return {
+          valid: false,
+          error: "Website unreachable: Domain DNS lookup failed. Please check the website URL.",
+        };
+      }
+    }
+
+    // Reconstruct safe URL strictly bounded to HTTPS and validated public hostname
+    const safeTargetUrl = new URL(
+      `${parsedTarget.pathname || ""}${parsedTarget.search || ""}`,
+      `https://${targetHost}`
+    ).toString();
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4500); // 4.5-second timeout
 
     let response: Response;
     try {
-      response = await fetch(targetUrl, {
+      response = await fetch(safeTargetUrl, {
         method: "GET",
         signal: controller.signal,
         redirect: "follow",
@@ -265,13 +332,27 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
     try {
       const finalParsed = new URL(finalUrl);
       const finalHost = finalParsed.hostname.toLowerCase();
+      if (isPrivateIpAddress(finalHost)) {
+        return {
+          valid: false,
+          error: "Security error: Redirected to a private or restricted network address.",
+        };
+      }
       const requestedRoot = requestedDomain.split(".").slice(-2).join(".");
       const finalRoot = finalHost.split(".").slice(-2).join(".");
+      const reqName = requestedDomain.replace(/^www\./, "").split(".")[0];
+      const finName = finalHost.replace(/^www\./, "").split(".")[0];
+      const isSameBrand =
+        reqName === finName ||
+        finalHost.includes(reqName) ||
+        requestedDomain.includes(finName);
+
       if (
         requestedRoot &&
         finalRoot &&
         requestedRoot !== finalRoot &&
-        !finalHost.includes(requestedRoot)
+        !finalHost.includes(requestedRoot) &&
+        !isSameBrand
       ) {
         return {
           valid: false,

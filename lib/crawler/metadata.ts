@@ -28,6 +28,13 @@ export interface WebsiteMetadata {
  * e.g. "Linear – A better way to build software" -> "Linear"
  */
 function cleanTitle(title: string, hostname: string): string {
+  if (title) {
+    const parts = title.split(/[-–—|:•·]/);
+    const candidate = parts[0]?.trim();
+    if (candidate && candidate.length >= 2 && candidate.length <= 40 && !candidate.includes("<")) {
+      return candidate.toLowerCase();
+    }
+  }
   const cleanHost = hostname.replace(/^www\./, "").toLowerCase();
   return cleanHost;
 }

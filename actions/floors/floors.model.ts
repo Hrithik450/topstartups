@@ -241,39 +241,7 @@ export class FloorsModel {
       const cleanHost = extractRootHostname(input.companyUrl).toLowerCase();
       const companyName = (input.companyName?.trim() || cleanHost).toLowerCase();
 
-      // 1. Check if claim already succeeded
-      const existingClaims = await tx
-        .select()
-        .from(claims)
-        .where(
-          sql`${claims.checkoutSessionId} = ${input.checkoutSessionId} OR (${
-            input.paymentId ? sql`${claims.paymentId} = ${input.paymentId}` : sql`false`
-          })`
-        )
-        .limit(1);
-
-      const existingClaim = existingClaims[0];
-      if (existingClaim && existingClaim.status === "succeeded") {
-        const higherCount = await tx
-          .select({ count: sql<number>`count(*)` })
-          .from(floors)
-          .where(
-            sql`${floors.pricePaid} > (SELECT price_paid FROM floors WHERE company_url = ${input.companyUrl} LIMIT 1)`
-          );
-        const rank = Number(higherCount[0]?.count || 0) + 1;
-        return {
-          success: true,
-          rank,
-          companyName: existingClaim.companyName || companyName,
-          companyUrl: existingClaim.companyUrl || input.companyUrl,
-          logoUrl: input.logoUrl,
-          tagline: input.tagline,
-          description: input.description,
-          message: "Payment already successfully processed.",
-        };
-      }
-
-      // 2. Check if website already claimed on the skyscraper (targeted domain query)
+      // 1. Check if website already claimed on the skyscraper (targeted domain query)
       const candidateFloors = await tx
         .select()
         .from(floors)
@@ -289,6 +257,45 @@ export class FloorsModel {
           extractRootHostname(f.companyUrl || "") === cleanHost ||
           f.companyName?.toLowerCase() === cleanHost.toLowerCase()
       );
+
+      // 2. Check if claim already succeeded (idempotent replay)
+      const existingClaims = await tx
+        .select()
+        .from(claims)
+        .where(
+          sql`${claims.checkoutSessionId} = ${input.checkoutSessionId} OR (${
+            input.paymentId ? sql`${claims.paymentId} = ${input.paymentId}` : sql`false`
+          })`
+        )
+        .limit(1);
+
+      const existingClaim = existingClaims[0];
+      if (existingClaim && existingClaim.status === "succeeded") {
+        let rank = 1;
+        if (existingFloor) {
+          const higherCount = await tx
+            .select({ count: sql<number>`count(*)` })
+            .from(floors)
+            .where(
+              sql`${floors.pricePaid} > ${existingFloor.pricePaid} OR (${floors.pricePaid} = ${existingFloor.pricePaid} AND ${floors.claimedAt} < ${existingFloor.claimedAt})`
+            );
+          rank = Number(higherCount[0]?.count || 0) + 1;
+        }
+        return {
+          success: true,
+          rank,
+          id: existingFloor?.id,
+          companyName: existingClaim.companyName || companyName,
+          companyUrl: existingClaim.companyUrl || input.companyUrl,
+          logoUrl: existingFloor?.logoUrl || input.logoUrl,
+          tagline: existingFloor?.tagline || input.tagline,
+          description: existingFloor?.description || input.description,
+          pricePaid: existingFloor ? Number(existingFloor.pricePaid) : input.price,
+          isUpdate: Boolean(existingFloor),
+          floor: existingFloor,
+          message: "Payment already successfully processed.",
+        };
+      }
 
       let finalPrice = input.price;
       let targetFloor: Floor;

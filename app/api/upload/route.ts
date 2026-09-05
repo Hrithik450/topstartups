@@ -13,8 +13,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No image file provided." }, { status: 400 });
     }
 
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "File must be an image (PNG, JPG, SVG, WebP, ICO)." }, { status: 400 });
+    const ALLOWED_MIME_TYPES = new Set([
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
+      "image/svg+xml",
+      "image/x-icon",
+      "image/vnd.microsoft.icon",
+      "image/gif",
+    ]);
+
+    if (!ALLOWED_MIME_TYPES.has(file.type.toLowerCase())) {
+      return NextResponse.json(
+        { error: "File must be a supported image format (PNG, JPG, SVG, WebP, ICO, GIF)." },
+        { status: 400 }
+      );
     }
 
     if (file.size > 4 * 1024 * 1024) {

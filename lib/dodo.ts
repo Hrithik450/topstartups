@@ -39,7 +39,7 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
 
   // If no API key or mock flag, return seamless mock checkout for local dev
   if (!apiKey || apiKey.startsWith("mock_")) {
-    const mockSessionId = `mock_cks_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const mockSessionId = `mock_cks_${Date.now()}_${crypto.randomBytes(8).toString("hex")}`;
     const mockCheckoutUrl = `/api/checkout/mock-success?session_id=${mockSessionId}&company_url=${encodeURIComponent(
       companyUrl
     )}&category=${encodeURIComponent(input.category || "")}&company_name=${encodeURIComponent(
@@ -71,6 +71,7 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
+      signal: AbortSignal.timeout(8000),
       body: JSON.stringify({
         ...(input.customerEmail?.trim()
           ? {

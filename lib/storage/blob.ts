@@ -47,12 +47,36 @@ export async function uploadToBlob(
  * Prevents hotlink blocking, broken external images, and CORS issues in Three.js WebGL.
  * Falls back to the original URL if Vercel Blob is not configured.
  */
+/**
+ * Validates whether a URL strictly belongs to Vercel Blob Storage hostname.
+ * Prevents URL substring bypass vulnerabilities (CodeQL js/incomplete-url-substring-sanitization).
+ */
+export function isVercelBlobUrl(urlStr: string): boolean {
+  if (!urlStr || typeof urlStr !== "string") return false;
+  try {
+    const parsed = new URL(urlStr);
+    return (
+      parsed.protocol === "https:" &&
+      (parsed.hostname === "vercel-storage.com" ||
+        parsed.hostname.endsWith(".vercel-storage.com") ||
+        parsed.hostname.endsWith(".blob.vercel-storage.com"))
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Fetch an external logo/favicon URL and persist it to Vercel Blob Storage.
+ * Prevents hotlink blocking, broken external images, and CORS issues in Three.js WebGL.
+ * Falls back to the original URL if Vercel Blob is not configured.
+ */
 export async function persistImageToBlob(
   externalUrl: string,
   prefixName: string
 ): Promise<string> {
   const token = process.env.BLOB_READ_WRITE_TOKEN?.trim() || undefined;
-  if ((!token && !isBlobConfigured()) || !externalUrl || externalUrl.includes("vercel-storage.com")) {
+  if ((!token && !isBlobConfigured()) || !externalUrl || isVercelBlobUrl(externalUrl)) {
     return externalUrl;
   }
 
@@ -97,7 +121,7 @@ export async function persistImageToBlob(
  */
 export async function deleteFromBlob(url: string): Promise<void> {
   const token = process.env.BLOB_READ_WRITE_TOKEN?.trim() || undefined;
-  if (!url || !url.includes("vercel-storage.com")) return;
+  if (!url || !isVercelBlobUrl(url)) return;
 
   try {
     await del(url, { token });

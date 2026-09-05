@@ -18,15 +18,19 @@ export function useLiveStats(customHeightFt?: number | string) {
     try {
       sessionId = sessionStorage.getItem("gtf_visitor_session") || "";
       if (!sessionId) {
-        sessionId =
-          "sess_" +
-          (typeof crypto !== "undefined" && crypto.randomUUID
-            ? crypto.randomUUID().replace(/-/g, "")
-            : Math.random().toString(36).substring(2) + Date.now().toString(36));
+        if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+          sessionId = "sess_" + crypto.randomUUID().replace(/-/g, "");
+        } else if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+          const bytes = new Uint8Array(16);
+          crypto.getRandomValues(bytes);
+          sessionId = "sess_" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+        } else {
+          sessionId = "sess_" + Date.now().toString(16);
+        }
         sessionStorage.setItem("gtf_visitor_session", sessionId);
       }
     } catch {
-      sessionId = "sess_fallback_" + Date.now().toString(36);
+      sessionId = "sess_fallback_" + Date.now().toString(16);
     }
 
     const countryGuess = getClientCountryGuess();

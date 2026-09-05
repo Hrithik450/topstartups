@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyDodoWebhookSignature } from "@/lib/dodo";
 import { FloorsService } from "@/actions/floors/floors.service";
+import { db } from "@/lib/db/config/client";
+import { claims } from "@/lib/db/config/schema";
+import { eq, or } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +95,27 @@ export async function POST(req: NextRequest) {
       eventType === "checkout.cancelled"
     ) {
       console.log(`Payment failed/expired webhook event (${eventType})`);
+      const data = payload.data || payload;
+      const paymentId = data.payment_id || data.id || payload.id;
+      const checkoutSessionId =
+        data.checkout_session_id || data.checkout_id || payload.checkout_session_id || paymentId;
+
+      if (checkoutSessionId || paymentId) {
+        try {
+          await db
+            .update(claims)
+            .set({ status: "failed", updatedAt: new Date() })
+            .where(
+              or(
+                ...(checkoutSessionId ? [eq(claims.checkoutSessionId, checkoutSessionId)] : []),
+                ...(paymentId ? [eq(claims.paymentId, paymentId)] : [])
+              )
+            );
+        } catch (dbErr) {
+          console.warn("Could not mark claim failed in DB:", dbErr);
+        }
+      }
+
       return NextResponse.json({ success: true, message: "Handled failure/expiry" });
     }
 

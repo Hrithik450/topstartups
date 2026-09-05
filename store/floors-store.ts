@@ -11,14 +11,51 @@ export interface FloorStore {
   setFloors: (floors: Floor[]) => void;
   setIsFloorsReady: (isReady: boolean) => void;
 
-  // Mutations
+  // Mutations & Network Sync
   addNewFloor: (newFloor: NewFloor) => void;
+  syncFloors: (force?: boolean) => Promise<Floor[] | null>;
 }
+
+let inFlightFloorsSync: Promise<Floor[] | null> | null = null;
+let lastFloorsSyncTime = 0;
+const MIN_FLOORS_SYNC_INTERVAL_MS = 3000;
 
 export const useFloorsStore = create<FloorStore>()(
   devtools((set, get) => ({
     floors: [],
     isFloorsReady: false,
+
+    syncFloors: async (force = false) => {
+      const now = Date.now();
+      if (!force && now - lastFloorsSyncTime < MIN_FLOORS_SYNC_INTERVAL_MS) {
+        return get().floors;
+      }
+
+      if (inFlightFloorsSync) {
+        return inFlightFloorsSync;
+      }
+
+      inFlightFloorsSync = (async () => {
+        try {
+          lastFloorsSyncTime = Date.now();
+          const res = await fetch("/api/floors", { cache: "no-store" });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.floors && Array.isArray(data.floors)) {
+              get().setFloors(data.floors);
+              return data.floors;
+            }
+          }
+        } catch (err) {
+          console.warn("Failed to sync floors:", err);
+        } finally {
+          inFlightFloorsSync = null;
+        }
+        return null;
+      })();
+
+      return inFlightFloorsSync;
+    },
 
     setFloors: (input) => {
       if (!Array.isArray(input)) return;

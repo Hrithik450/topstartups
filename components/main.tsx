@@ -124,25 +124,32 @@ export function Main({
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  // Sync floors store on any claim or refresh custom event
+  // Sync floors store on any claim/refresh event, periodic 45s heartbeat, and tab focus
   useEffect(() => {
-    const handleRefresh = async () => {
-      try {
-        const res = await fetch("/api/floors", { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.floors && Array.isArray(data.floors)) {
-            useFloorsStore.getState().setFloors(data.floors);
-          }
-        }
-      } catch (err) {
-        console.warn("Failed to refresh floors:", err);
-      }
+    const handleRefresh = () => {
+      useFloorsStore.getState().syncFloors(true);
     };
 
     window.addEventListener("floors-refresh", handleRefresh);
     window.addEventListener("floor-claimed-success", handleRefresh);
+
+    // Periodic gentle background poll (every 45s) so other users' new floors appear live
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        useFloorsStore.getState().syncFloors(false);
+      }
+    }, 45000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        useFloorsStore.getState().syncFloors(false);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("floors-refresh", handleRefresh);
       window.removeEventListener("floor-claimed-success", handleRefresh);
     };

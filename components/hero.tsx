@@ -109,10 +109,20 @@ export function Hero({
     message: string;
   } | null>(null);
 
-  const [minPrice, setMinPrice] = useState(50);
-  const [topFloorPrice, setTopFloorPrice] = useState(initialTopPrice);
-  const [topFloorClaimed, setTopFloorClaimed] = useState(initialFloors.length > 0);
-  const [activeFloors, setActiveFloors] = useState<any[]>(initialFloors);
+  const storeFloors = useFloorsStore((s) => s.floors);
+  const activeFloors = storeFloors.length > 0 ? storeFloors : initialFloors;
+
+  const maxClaimedPrice = useMemo(
+    () => activeFloors.reduce((max: number, f: any) => Math.max(max, Number(f.pricePaid || 0)), 0),
+    [activeFloors]
+  );
+  const topFloorClaimed = activeFloors.length > 0;
+  const topFloorPrice = topFloorClaimed ? maxClaimedPrice + 1 : 99;
+
+  // Auto-adjust default price when top floor changes
+  useEffect(() => {
+    setPrice((prev) => (prev === 0 || prev === 99 || prev < topFloorPrice ? topFloorPrice : prev));
+  }, [topFloorPrice]);
 
   // Check if current URL input already exists on the skyscraper
   const existingFloorOnTower = useMemo(() => {
@@ -157,39 +167,6 @@ export function Hero({
   const targetRank = 1;
   const minAllowedPrice = 50;
 
-  // Sync current floors across hero state and global floors store
-  const fetchFloors = () => {
-    fetch("/api/floors", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.floors && Array.isArray(data.floors)) {
-          useFloorsStore.getState().setFloors(data.floors);
-          setActiveFloors(data.floors);
-          const maxClaimedPrice = data.floors.reduce(
-            (max: number, f: any) => Math.max(max, Number(f.pricePaid || 0)),
-            0
-          );
-          const hasClaimed = data.floors.length > 0;
-          const requiredTopPrice = hasClaimed ? maxClaimedPrice + 1 : 99;
-          setTopFloorClaimed(hasClaimed);
-          setTopFloorPrice(requiredTopPrice);
-          setPrice((prev) => (prev === 0 || prev === 99 ? requiredTopPrice : prev));
-        }
-      })
-      .catch(() => {});
-  };
-
-  useEffect(() => {
-    fetchFloors();
-
-    window.addEventListener("floors-refresh", fetchFloors);
-    window.addEventListener("floor-claimed-success", fetchFloors);
-    return () => {
-      window.removeEventListener("floors-refresh", fetchFloors);
-      window.removeEventListener("floor-claimed-success", fetchFloors);
-    };
-  }, []);
-
   // Handle floor selection from 3D scene / hover card
   useEffect(() => {
     const handleSelectFloorPrice = (e: any) => {
@@ -209,14 +186,14 @@ export function Hero({
   useEffect(() => {
     const handlePageShow = () => {
       setIsSubmitting(false);
-      fetchFloors();
+      useFloorsStore.getState().syncFloors(true);
     };
 
     window.addEventListener("pageshow", handlePageShow);
     return () => {
       window.removeEventListener("pageshow", handlePageShow);
     };
-  }, [targetRank]);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -288,8 +265,8 @@ export function Hero({
               claimedAt: new Date(),
             });
 
-            // Re-fetch authoritative floor rankings from backend
-            fetchFloors();
+            // Re-fetch authoritative floor rankings from backend (deduplicated)
+            useFloorsStore.getState().syncFloors(true);
 
             // Broadcast floor claim event for the owner
             window.dispatchEvent(
@@ -307,16 +284,8 @@ export function Hero({
               })
             );
 
-            // Immediate multi-stage floor refresh to guarantee 3D tower and listings update
+            // Notify components to update
             window.dispatchEvent(new CustomEvent("floors-refresh"));
-            setTimeout(() => {
-              fetchFloors();
-              window.dispatchEvent(new CustomEvent("floors-refresh"));
-            }, 600);
-            setTimeout(() => {
-              fetchFloors();
-              window.dispatchEvent(new CustomEvent("floors-refresh"));
-            }, 1800);
             return;
           } else if (data.status === "failed") {
             setIsSubmitting(false);
@@ -360,7 +329,7 @@ export function Hero({
       const company = params.get("company") || "Your company";
       const rank = params.get("rank") ? Number(params.get("rank")) : undefined;
       setJustClaimed({ companyName: company, rank });
-      fetchFloors();
+      useFloorsStore.getState().syncFloors(true);
       window.dispatchEvent(new CustomEvent("floors-refresh"));
       window.history.replaceState({}, "", window.location.pathname);
     }

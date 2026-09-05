@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { Globe, Building, Arrow, Minus, Plus, Search, Check, ChevronDown } from "./icons";
 import { MAIN_CATEGORIES, SPECIAL_OPTIONS, IndustryCategory } from "@/lib/categories";
 import { validateWebsiteSyntax, extractRootHostname } from "@/lib/validation/domain";
+import { extractDodoRedirectParams } from "@/lib/dodo";
 import { useFloorsStore } from "@/store/floors-store";
 
 async function safeFetchJson(res: Response): Promise<any> {
@@ -199,15 +200,11 @@ export function Hero({
     if (typeof window === "undefined") return;
 
     const params = new URLSearchParams(window.location.search);
-    const paymentId = params.get("payment_id");
-    const rawSessionId =
-      params.get("session_id") || params.get("checkout_session_id") || params.get("checkout_id");
-    const sessionId = rawSessionId && rawSessionId !== "{CHECKOUT_ID}" ? rawSessionId : null;
-    const targetId = paymentId || sessionId;
+    const { paymentId, sessionId, targetId, status } = extractDodoRedirectParams(params);
 
     // Check if returning from a real Dodo checkout session
     if (targetId && !targetId.startsWith("mock_")) {
-      const statusParam = params.get("status")?.toLowerCase();
+      const statusParam = status?.toLowerCase();
       if (statusParam === "failed" || statusParam === "cancelled") {
         setIsSubmitting(false);
         setPaymentNotice({
@@ -365,32 +362,13 @@ export function Hero({
     setPaymentNotice(null);
 
     try {
-      // Live reachability & SSL security pre-verification
-      const valRes = await fetch("/api/validate-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: syntaxCheck.cleanUrl || url.trim() }),
-      });
-
-      const valData = await safeFetchJson(valRes);
-      if (!valRes.ok || !valData.valid) {
-        setPaymentNotice({
-          type: "error",
-          message:
-            valData.error ||
-            "This website could not be reached or is not secure. Please enter an active HTTPS website.",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      const verifiedUrl = valData.cleanUrl || syntaxCheck.cleanUrl || url.trim();
+      const targetUrl = syntaxCheck.cleanUrl || url.trim();
 
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          url: verifiedUrl,
+          url: targetUrl,
           category: selectedCategory.name,
           price: Math.max(50, price),
           targetRank,

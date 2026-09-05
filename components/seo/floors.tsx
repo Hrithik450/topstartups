@@ -1,7 +1,9 @@
 import type { Floor } from "@/lib/db/config/schema";
+import type { LiveStatsData } from "@/lib/stats";
 
-interface FloorsDirectorySeoProps {
+interface SeoProps {
   floors: Floor[];
+  stats?: LiveStatsData | null;
 }
 
 /**
@@ -10,15 +12,16 @@ interface FloorsDirectorySeoProps {
  * index all startup floors, categories, descriptions, and direct backlinks.
  * Invisible to sighted users via .sr-only.
  */
-export function FloorsDirectorySeo({ floors = [] }: FloorsDirectorySeoProps) {
+export function Seo({ floors = [], stats }: SeoProps) {
   if (!floors || floors.length === 0) return null;
 
   const itemListJsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: "GeTopFloor 3D Skyscraper Startup Leaderboard",
-    description:
-      "Ranked directory of startups, founders, and companies claiming floors on the GeTopFloor virtual skyscraper.",
+    description: stats
+      ? `Ranked directory of startups, founders, and companies claiming floors on the GeTopFloor virtual skyscraper (${stats.claimedFloors || floors.length} floors claimed, ${stats.heightFt || 0} ft tall, reaching visitors across ${stats.countriesCount || 0} countries).`
+      : "Ranked directory of startups, founders, and companies claiming floors on the GeTopFloor virtual skyscraper.",
     numberOfItems: floors.length,
     itemListElement: floors.map((f, idx) => ({
       "@type": "ListItem",
@@ -43,6 +46,19 @@ export function FloorsDirectorySeo({ floors = [] }: FloorsDirectorySeoProps) {
           floors to outbid competitors, showcase their products, and reach thousands of global
           investors.
         </p>
+
+        {stats && (
+          <div>
+            <h3>Live Skyscraper Statistics</h3>
+            <ul>
+              <li>Current Tower Height: {stats.heightFt} feet ({stats.claimedFloors} stories)</li>
+              <li>Claimed Floors: {stats.claimedFloors}</li>
+              <li>Global Views &amp; Impressions: {stats.totalViews}</li>
+              <li>Countries Represented: {stats.countriesCount}</li>
+              {stats.online > 0 && <li>Live Active Visitors: {stats.online}</li>}
+            </ul>
+          </div>
+        )}
 
         <ol>
           {floors.map((floor, idx) => {

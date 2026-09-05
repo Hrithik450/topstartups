@@ -1,7 +1,7 @@
 import { Main } from "@/components/main";
 import { FloorsService } from "@/actions/floors/floors.service";
 import { StatsService } from "@/actions/stats/stats.service";
-import { FloorsDirectorySeo } from "@/components/seo/floors";
+import { Seo } from "@/components/seo/floors";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,7 @@ export default async function Page() {
   return (
     <>
       <Main initialFloors={initialFloors} initialStats={initialStats} />
-      <FloorsDirectorySeo floors={initialFloors} />
+      <Seo floors={initialFloors} stats={initialStats} />
     </>
   );
 }

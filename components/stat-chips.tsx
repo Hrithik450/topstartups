@@ -4,111 +4,16 @@ import { useEffect, useState } from "react";
 import { RulerTall, Stack, Eye, Globe, Close, BarChart, Money } from "./icons";
 import { useFloorsStore } from "@/store/floors-store";
 import { useStatsStore } from "@/store/stats-store";
-import { calculateTowerHeightFt, getClientCountryGuess } from "@/lib/stats";
+import { calculateTowerHeightFt } from "@/lib/stats";
 
 export function useLiveStats(customHeightFt?: number | string) {
-  const { stats, isStatsReady, pingAndSync } = useStatsStore();
+  const { stats, isStatsReady } = useStatsStore();
   const { floors } = useFloorsStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-
-    let sessionId = "";
-    try {
-      sessionId = sessionStorage.getItem("gtf_visitor_session") || "";
-      if (!sessionId) {
-        if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-          sessionId = "sess_" + crypto.randomUUID().replace(/-/g, "");
-        } else if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
-          const bytes = new Uint8Array(16);
-          crypto.getRandomValues(bytes);
-          sessionId = "sess_" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-        } else {
-          sessionId = "sess_" + Date.now().toString(16);
-        }
-        sessionStorage.setItem("gtf_visitor_session", sessionId);
-      }
-    } catch {
-      sessionId = "sess_fallback_" + Date.now().toString(16);
-    }
-
-    const countryGuess = getClientCountryGuess();
-
-    // Record 1 visit per visitor session (prevents duplicate increments on reloads)
-    let isNewSession = false;
-    try {
-      if (!sessionStorage.getItem("gtf_visit_recorded")) {
-        isNewSession = true;
-        sessionStorage.setItem("gtf_visit_recorded", "true");
-      }
-    } catch {
-      isNewSession = true;
-    }
-
-    // 1. Initial heartbeat ping
-    pingAndSync({
-      sessionId,
-      countryCode: countryGuess?.code,
-      countryName: countryGuess?.name,
-      isNewSession,
-    });
-
-    // 2. Re-ping every 25 seconds to maintain real online presence
-    const interval = setInterval(() => {
-      pingAndSync({
-        sessionId,
-        countryCode: countryGuess?.code,
-        countryName: countryGuess?.name,
-        isNewSession: false,
-      });
-    }, 25000);
-
-    // 3. Immediately ping on tab refocus if window was inactive
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        pingAndSync({
-          sessionId,
-          countryCode: countryGuess?.code,
-          countryName: countryGuess?.name,
-          isNewSession: false,
-        });
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    // 4. Send leave beacon when user closes tab or navigates away
-    const handleLeave = () => {
-      if (typeof navigator !== "undefined" && navigator.sendBeacon && sessionId) {
-        const blob = new Blob([JSON.stringify({ sessionId, action: "leave" })], {
-          type: "application/json",
-        });
-        navigator.sendBeacon("/api/stats", blob);
-      }
-    };
-    window.addEventListener("pagehide", handleLeave);
-
-    // 5. Instantly sync stats whenever a floor is claimed, outbid, or refreshed
-    const handleFloorUpdate = () => {
-      pingAndSync({
-        sessionId,
-        countryCode: countryGuess?.code,
-        countryName: countryGuess?.name,
-        isNewSession: false,
-      });
-    };
-
-    window.addEventListener("floors-refresh", handleFloorUpdate);
-    window.addEventListener("floor-claimed-success", handleFloorUpdate);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("pagehide", handleLeave);
-      window.removeEventListener("floors-refresh", handleFloorUpdate);
-      window.removeEventListener("floor-claimed-success", handleFloorUpdate);
-    };
-  }, [pingAndSync]);
+  }, []);
 
   const activeFloorCount = floors.length > 0 ? floors.length : stats.claimedFloors;
   const dynamicHeight =

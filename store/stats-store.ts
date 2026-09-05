@@ -15,6 +15,7 @@ export interface StatsStore {
     countryCode?: string;
     countryName?: string;
     isNewSession?: boolean;
+    force?: boolean;
   }) => Promise<void>;
 }
 
@@ -27,6 +28,10 @@ export const DEFAULT_STATS: LiveStatsData = {
   countriesCount: 1,
   totalSales: 0,
 };
+
+let inFlightPing: Promise<void> | null = null;
+let lastPingTime = 0;
+const MIN_PING_INTERVAL_MS = 15000; // 15 seconds minimum between unforced pings
 
 export const useStatsStore = create<StatsStore>()(
   devtools((set, get) => ({
@@ -50,26 +55,51 @@ export const useStatsStore = create<StatsStore>()(
       });
     },
 
-    pingAndSync: async ({ sessionId, countryCode, countryName, isNewSession = false }) => {
-      try {
-        const res = await fetch("/api/stats", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId,
-            countryCode,
-            countryName,
-            isNewSession,
-          }),
-        });
+    pingAndSync: async ({
+      sessionId,
+      countryCode,
+      countryName,
+      isNewSession = false,
+      force = false,
+    }) => {
+      const now = Date.now();
 
-        const data = await res.json();
-        if (data.success && data.stats) {
-          get().setStats(data.stats);
-        }
-      } catch (err) {
-        console.warn("Could not sync live stats heartbeat:", err);
+      // Skip redundant pings within cooldown unless it's a new session or forced (e.g. post-payment)
+      if (!force && !isNewSession && now - lastPingTime < MIN_PING_INTERVAL_MS) {
+        return;
       }
+
+      // Reuse ongoing in-flight request to deduplicate concurrent calls
+      if (inFlightPing) {
+        return inFlightPing;
+      }
+
+      inFlightPing = (async () => {
+        try {
+          lastPingTime = Date.now();
+          const res = await fetch("/api/stats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sessionId,
+              countryCode,
+              countryName,
+              isNewSession,
+            }),
+          });
+
+          const data = await res.json();
+          if (data.success && data.stats) {
+            get().setStats(data.stats);
+          }
+        } catch (err) {
+          console.warn("Could not sync live stats heartbeat:", err);
+        } finally {
+          inFlightPing = null;
+        }
+      })();
+
+      return inFlightPing;
     },
   }))
 );

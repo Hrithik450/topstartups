@@ -17,7 +17,7 @@ export interface RecordVisitAndPingData {
 }
 
 export class StatsModel {
-  // Ultra-fast in-memory cache to absorb high-traffic read bursts (3s TTL)
+  // Ultra-fast in-memory cache to absorb high-traffic read bursts (6s TTL)
   private static memoryCache: { data: LiveStatsData; expiresAt: number } | null = null;
 
   static invalidateCache(): void {
@@ -61,7 +61,7 @@ export class StatsModel {
 
       StatsModel.memoryCache = {
         data: stats,
-        expiresAt: now + 3000,
+        expiresAt: now + 6000,
       };
 
       return stats;
@@ -108,47 +108,27 @@ export class StatsModel {
         StatsModel.invalidateCache();
       }
 
-      // 2. Canonicalize country code & name via Intl.DisplayNames
+      // 2. Canonicalize country code & name via Intl.DisplayNames (recorded once per visitor session)
       const canonical = getCanonicalCountry(data.countryCode);
-      if (canonical) {
-        if (data.isNewSession) {
-          // Increment visitCount strictly for new session visits
-          await db
-            .insert(visitorCountries)
-            .values({
-              countryCode: canonical.code,
+      if (canonical && data.isNewSession) {
+        await db
+          .insert(visitorCountries)
+          .values({
+            countryCode: canonical.code,
+            countryName: canonical.name,
+            visitCount: 1,
+            lastVisitedAt: now,
+          })
+          .onConflictDoUpdate({
+            target: visitorCountries.countryCode,
+            set: {
               countryName: canonical.name,
-              visitCount: 1,
+              visitCount: sql`${visitorCountries.visitCount} + 1`,
               lastVisitedAt: now,
-            })
-            .onConflictDoUpdate({
-              target: visitorCountries.countryCode,
-              set: {
-                countryName: canonical.name,
-                visitCount: sql`${visitorCountries.visitCount} + 1`,
-                lastVisitedAt: now,
-              },
-            });
+            },
+          });
 
-          StatsModel.invalidateCache();
-        } else {
-          // Heartbeat only: refresh lastVisitedAt and guarantee canonical name without bumping visitCount
-          await db
-            .insert(visitorCountries)
-            .values({
-              countryCode: canonical.code,
-              countryName: canonical.name,
-              visitCount: 1,
-              lastVisitedAt: now,
-            })
-            .onConflictDoUpdate({
-              target: visitorCountries.countryCode,
-              set: {
-                countryName: canonical.name,
-                lastVisitedAt: now,
-              },
-            });
-        }
+        StatsModel.invalidateCache();
       }
 
       // 3. Update session heartbeat

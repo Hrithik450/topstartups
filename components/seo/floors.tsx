@@ -1,5 +1,4 @@
 import type { Floor } from "@/lib/db/config/schema";
-import { FloorsItemListJsonLd } from "@/app/jsonld";
 
 interface FloorsDirectorySeoProps {
   floors: Floor[];
@@ -14,9 +13,28 @@ interface FloorsDirectorySeoProps {
 export function FloorsDirectorySeo({ floors = [] }: FloorsDirectorySeoProps) {
   if (!floors || floors.length === 0) return null;
 
+  const itemListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "GeTopFloor 3D Skyscraper Startup Leaderboard",
+    description:
+      "Ranked directory of startups, founders, and companies claiming floors on the GeTopFloor virtual skyscraper.",
+    numberOfItems: floors.length,
+    itemListElement: floors.map((f, idx) => ({
+      "@type": "ListItem",
+      position: f.rank || idx + 1,
+      name: f.companyName,
+      url: f.companyUrl,
+      description: f.description || f.tagline || "",
+    })),
+  };
+
   return (
     <>
-      <FloorsItemListJsonLd floors={floors} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+      />
 
       <section className="sr-only" aria-label="GeTopFloor Skyscraper Directory & Company Listings">
         <h2>GeTopFloor — Internet&apos;s Tallest 3D Startup Skyscraper</h2>

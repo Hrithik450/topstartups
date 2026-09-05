@@ -3,8 +3,6 @@
  * Provides rich snippets for Google Search Console, Knowledge Graph, and AI Search Engines.
  */
 
-import type { Floor } from "@/lib/db/config/schema";
-
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://getopfloor.com";
 
 export function OrganizationJsonLd() {
@@ -147,36 +145,6 @@ export function FAQJsonLd() {
         },
       },
     ],
-  };
-
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-    />
-  );
-}
-
-/**
- * ItemList JSON-LD for Search Engine Leaderboard & Directory Rich Snippets
- */
-export function FloorsItemListJsonLd({ floors = [] }: { floors?: Floor[] }) {
-  if (!floors || floors.length === 0) return null;
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: "GeTopFloor 3D Skyscraper Startup Leaderboard",
-    description:
-      "Ranked directory of startups, founders, and companies claiming floors on the GeTopFloor virtual skyscraper.",
-    numberOfItems: floors.length,
-    itemListElement: floors.map((f, idx) => ({
-      "@type": "ListItem",
-      position: f.rank || idx + 1,
-      name: f.companyName,
-      url: f.companyUrl,
-      description: f.description || f.tagline || "",
-    })),
   };
 
   return (

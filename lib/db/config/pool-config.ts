@@ -14,7 +14,7 @@ import type { PoolConfig } from "pg";
 const TRANSACTION_POOLER_PORT = "6543";
 
 /** Strip Prisma-style / non-libpq query flags that confuse `pg`. */
-export function sanitizeDatabaseUrl(connectionString: string): string {
+function sanitizeDatabaseUrl(connectionString: string): string {
   try {
     const url = new URL(connectionString);
     url.searchParams.delete("pgbouncer");
@@ -26,7 +26,7 @@ export function sanitizeDatabaseUrl(connectionString: string): string {
   }
 }
 
-export function isTransactionPoolerUrl(connectionString: string): boolean {
+function isTransactionPoolerUrl(connectionString: string): boolean {
   try {
     const url = new URL(connectionString);
     if (url.port === TRANSACTION_POOLER_PORT) return true;
@@ -72,13 +72,4 @@ export function getRuntimeDatabaseUrl(): string {
     return "postgresql://postgres:postgres@127.0.0.1:5432/outbid";
   }
   return url;
-}
-
-/** Direct URL for migrations / seeding / schema pushes. */
-export function getDirectDatabaseUrl(): string {
-  return (
-    process.env.DATABASE_DIRECT_URL?.trim() ||
-    process.env.DIRECT_URL?.trim() ||
-    getRuntimeDatabaseUrl()
-  );
 }

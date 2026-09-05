@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Globe, Building, Arrow, Minus, Plus, Search, Close, Check, ChevronDown } from "./icons";
+import { Globe, Building, Arrow, Minus, Plus, Search, Check, ChevronDown } from "./icons";
 import { MAIN_CATEGORIES, SPECIAL_OPTIONS, IndustryCategory } from "@/lib/categories";
 import { validateWebsiteSyntax, extractRootHostname } from "@/lib/validation/domain";
 import { useFloorsStore } from "@/store/floors-store";

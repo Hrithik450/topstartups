@@ -39,5 +39,3 @@ export const SPECIAL_OPTIONS: IndustryCategory[] = [
   { id: "other", name: "Other", icon: "💡", isSpecial: true },
   { id: "help-later", name: "I don’t know, help me out later", icon: "🤝", isSpecial: true },
 ];
-
-export const ALL_CATEGORIES: IndustryCategory[] = [...MAIN_CATEGORIES, ...SPECIAL_OPTIONS];

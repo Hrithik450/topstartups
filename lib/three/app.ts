@@ -21,7 +21,6 @@ export type TowerHandle = {
 };
 
 // Color constants
-const DEFAULT_GLASS_TINT = { h: 26, s: 68, l: 54 };
 const HELIPAD_DECK_HEX = "#ffaa00";
 const HELIPAD_MARK_HEX = "#000000";
 
@@ -205,8 +204,7 @@ function drawAvatar(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement | null,
   title: string,
-  id?: string | number,
-  listing?: Floor
+  id?: string | number
 ) {
   ctx.save();
   ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
@@ -253,7 +251,7 @@ function paintFloorTexture(
   const displayName = getFloorDisplayName(listing);
 
   drawGlassBackground(ctx, floorIndex, theme);
-  drawAvatar(ctx, logoImg, displayName, listing.id, listing);
+  drawAvatar(ctx, logoImg, displayName, listing.id);
 
   // Company Name (Primary Heading)
   ctx.textAlign = "left";
@@ -2773,11 +2771,9 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   // Playground Momentum & Physics State
   let cameraAzimuth = initialAzimuth;
   let angularVelocity = 0; // radians per second (smooth butter rotational fling)
-  let verticalVelocity = 0; // units per second
   let isPointerDragging = false;
   let pointerDownPos = { x: 0, y: 0, time: 0 };
   let lastPointerPos = { x: 0, y: 0 };
-  let lastPointerTime = 0;
   let idleTime = 0;
   let autoRotateEnabled = true;
   const AUTO_ROTATE_SPEED = 0.22; // radians per second
@@ -2908,11 +2904,9 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     const now = performance.now();
     pointerDownPos = { x: e.clientX, y: e.clientY, time: now };
     lastPointerPos = { x: e.clientX, y: e.clientY };
-    lastPointerTime = now;
     moveHistory = [{ x: e.clientX, y: e.clientY, time: now }];
     isPointerDragging = false;
     angularVelocity = 0;
-    verticalVelocity = 0;
     idleTime = 0;
     renderer.domElement.style.cursor = "grabbing";
     if (typeof document !== "undefined") document.body.classList.add("is-dragging");
@@ -2960,7 +2954,6 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
       }
 
       lastPointerPos = { x: e.clientX, y: e.clientY };
-      lastPointerTime = now;
       if (isPointerDragging) return;
     }
 
@@ -3366,7 +3359,6 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
       travelYTarget = calculateRestingTargetY();
       cameraAzimuth = initialAzimuth;
       angularVelocity = 0;
-      verticalVelocity = 0;
       idleTime = 0;
       inIntro = false;
     },

@@ -7,8 +7,6 @@ import {
   type LiveStatsData,
 } from "@/lib/stats";
 
-export type { LiveStatsData };
-
 export interface RecordVisitAndPingData {
   sessionId: string;
   countryCode: string | null;

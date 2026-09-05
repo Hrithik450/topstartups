@@ -1,9 +1,6 @@
 import { z } from "zod";
-import { StatsModel, type RecordVisitAndPingData } from "./stats.model";
-import { calculateTowerHeightFt, type LiveStatsData } from "@/lib/stats";
-
-export { calculateTowerHeightFt };
-export type { LiveStatsData };
+import { StatsModel } from "./stats.model";
+import type { LiveStatsData } from "@/lib/stats";
 
 export interface StatsResponse {
   success: boolean;
@@ -11,14 +8,14 @@ export interface StatsResponse {
   error?: string;
 }
 
-export const recordPingSchema = z.object({
+const recordPingSchema = z.object({
   sessionId: z.string().min(1, "Session ID is required"),
   countryCode: z.string().optional(),
   countryName: z.string().optional(),
   isNewSession: z.boolean().optional(),
 });
 
-export type TRecordPingSchema = z.input<typeof recordPingSchema>;
+type TRecordPingSchema = z.input<typeof recordPingSchema>;
 
 export class StatsService {
   /**

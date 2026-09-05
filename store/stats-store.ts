@@ -19,7 +19,7 @@ export interface StatsStore {
   }) => Promise<void>;
 }
 
-export const DEFAULT_STATS: LiveStatsData = {
+const DEFAULT_STATS: LiveStatsData = {
   online: 1,
   heightFt: calculateTowerHeightFt(0),
   claimedFloors: 0,

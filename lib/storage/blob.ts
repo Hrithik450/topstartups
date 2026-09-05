@@ -1,4 +1,4 @@
-import { put, del } from "@vercel/blob";
+import { put } from "@vercel/blob";
 
 /**
  * Checks if Vercel Blob Storage environment is active.
@@ -51,7 +51,7 @@ export async function uploadToBlob(
  * Validates whether a URL strictly belongs to Vercel Blob Storage hostname.
  * Prevents URL substring bypass vulnerabilities (CodeQL js/incomplete-url-substring-sanitization).
  */
-export function isVercelBlobUrl(urlStr: string): boolean {
+function isVercelBlobUrl(urlStr: string): boolean {
   if (!urlStr || typeof urlStr !== "string") return false;
   try {
     const parsed = new URL(urlStr);
@@ -113,19 +113,5 @@ export async function persistImageToBlob(
   } catch (err) {
     console.warn(`Failed to persist external image (${externalUrl}) to Vercel Blob:`, err);
     return externalUrl;
-  }
-}
-
-/**
- * Delete a file from Vercel Blob Storage.
- */
-export async function deleteFromBlob(url: string): Promise<void> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim() || undefined;
-  if (!url || !isVercelBlobUrl(url)) return;
-
-  try {
-    await del(url, { token });
-  } catch (err) {
-    console.warn("Failed to delete from Vercel Blob:", err);
   }
 }

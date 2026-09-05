@@ -38,7 +38,7 @@ export interface ClaimResultModelResponse {
 /**
  * Strip sensitive PII (like userEmail) before returning floor records to public endpoints
  */
-export function toPublicFloor<T extends Record<string, any>>(floor: T): T {
+function toPublicFloor<T extends Record<string, any>>(floor: T): T {
   if (!floor) return floor;
   const { userEmail, ...safe } = floor;
   return safe as T;

@@ -22,7 +22,8 @@ function isAllowedOrigin(origin: string): boolean {
   try {
     const parsed = new URL(origin);
     if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") return true;
-    if (parsed.hostname === "getopfloor.com" || parsed.hostname.endsWith(".getopfloor.com")) return true;
+    if (parsed.hostname === "getopfloor.com" || parsed.hostname.endsWith(".getopfloor.com"))
+      return true;
     if (parsed.hostname.endsWith(".vercel.app")) return true;
     if (process.env.NEXT_PUBLIC_BASE_URL) {
       try {
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
     const candidateOrigin = `${protoHeader}://${hostHeader}`;
     const origin = isAllowedOrigin(candidateOrigin)
       ? candidateOrigin
-      : (process.env.NEXT_PUBLIC_BASE_URL || "https://getopfloor.com");
+      : process.env.NEXT_PUBLIC_BASE_URL || "https://getopfloor.com";
 
     // Determine customer personal name for billing invoice:
     let customerName: string | undefined = undefined;

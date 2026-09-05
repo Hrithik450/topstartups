@@ -54,8 +54,12 @@ export async function GET(req: NextRequest) {
       .from(claims)
       .where(
         or(
-          ...(paymentIdParam && isValidDodoId(paymentIdParam) ? [eq(claims.paymentId, paymentIdParam.trim())] : []),
-          ...(sessionIdParam && isValidDodoId(sessionIdParam) ? [eq(claims.checkoutSessionId, sessionIdParam.trim())] : []),
+          ...(paymentIdParam && isValidDodoId(paymentIdParam)
+            ? [eq(claims.paymentId, paymentIdParam.trim())]
+            : []),
+          ...(sessionIdParam && isValidDodoId(sessionIdParam)
+            ? [eq(claims.checkoutSessionId, sessionIdParam.trim())]
+            : []),
           eq(claims.checkoutSessionId, targetId.trim())
         )
       )
@@ -117,7 +121,8 @@ export async function GET(req: NextRequest) {
 
     let paymentStatus = "unknown";
     let paymentId = paymentIdParam && isValidDodoId(paymentIdParam) ? paymentIdParam.trim() : null;
-    let checkoutSessionId = sessionIdParam && isValidDodoId(sessionIdParam) ? sessionIdParam.trim() : null;
+    let checkoutSessionId =
+      sessionIdParam && isValidDodoId(sessionIdParam) ? sessionIdParam.trim() : null;
     let customerName: string | null = null;
     let customerEmail: string | null = null;
     let customerPhone: string | null = null;
@@ -217,11 +222,18 @@ export async function GET(req: NextRequest) {
         metadata.company_name || pendingClaim?.companyName || customerName || "New Startup";
 
       const companyUrl =
-        pendingClaim?.companyUrl || metadata.company_url || metadata.url || "https://getopfloor.com";
+        pendingClaim?.companyUrl ||
+        metadata.company_url ||
+        metadata.url ||
+        "https://getopfloor.com";
       const category = pendingClaim?.category || metadata.category || "Startup";
       const price = pendingClaim?.amount || Number(metadata.price) || 50;
-      const finalCheckoutSessionId = checkoutSessionId || pendingClaim?.checkoutSessionId || targetId;
-      const finalPaymentId = paymentId || pendingClaim?.paymentId || (targetId.startsWith("pay_") ? targetId : undefined);
+      const finalCheckoutSessionId =
+        checkoutSessionId || pendingClaim?.checkoutSessionId || targetId;
+      const finalPaymentId =
+        paymentId ||
+        pendingClaim?.paymentId ||
+        (targetId.startsWith("pay_") ? targetId : undefined);
 
       // Claim floor atomically based on pricePaid via FloorsService
       const result = await FloorsService.claimTopFloor({

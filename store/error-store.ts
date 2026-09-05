@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-export function toUserFriendlyError(
+function toUserFriendlyError(
   err: unknown,
   fallback = "An unexpected error occurred. Please try again."
 ): string {

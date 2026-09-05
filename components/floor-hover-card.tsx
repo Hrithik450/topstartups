@@ -31,7 +31,7 @@ export interface HoverData {
   pinned?: boolean;
 }
 
-export function ExternalLink() {
+function ExternalLink() {
   return (
     <svg
       viewBox="0 0 24 24"

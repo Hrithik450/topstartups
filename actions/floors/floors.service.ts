@@ -32,9 +32,9 @@ function revalidateFloorsAndStats(floorId?: string, email?: string | null) {
   }
 }
 
-export type { Floor, NewFloor, ClaimFloorPreparedInput, ClaimResultModelResponse };
+export type { Floor };
 
-export const updateFloorSchema = z.object({
+const updateFloorSchema = z.object({
   floorId: z.string().min(1, "Floor ID is required"),
   companyName: z.string().min(1, "Company name is required").optional(),
   companyUrl: z.string().min(3, "Valid website URL is required").optional(),
@@ -44,10 +44,9 @@ export const updateFloorSchema = z.object({
   logoUrl: z.string().nullable().optional(),
 });
 
-export type TUpdateFloorSchema = z.input<typeof updateFloorSchema>;
-export type UpdateFloorInput = z.infer<typeof updateFloorSchema>;
+type TUpdateFloorSchema = z.input<typeof updateFloorSchema>;
 
-export const claimFloorSchema = z.object({
+const claimFloorSchema = z.object({
   checkoutSessionId: z.string().min(1, "Checkout Session ID is required"),
   paymentId: z.string().nullable().optional(),
   companyName: z.string().min(1, "Company name is required").optional(),
@@ -62,8 +61,7 @@ export const claimFloorSchema = z.object({
   customerPhone: z.string().nullable().optional(),
 });
 
-export type TClaimFloorSchema = z.input<typeof claimFloorSchema>;
-export type ClaimFloorInput = z.infer<typeof claimFloorSchema>;
+type TClaimFloorSchema = z.input<typeof claimFloorSchema>;
 
 export interface FloorResponse {
   success: boolean;

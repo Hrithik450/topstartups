@@ -18,5 +18,3 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
     </>
   );
 }
-
-export default LayoutWrapper;

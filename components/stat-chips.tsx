@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RulerTall, Stack, Eye, Globe, Close, BarChart, Money } from "./icons";
+import { RulerTall, Stack, Eye, Globe, BarChart, Money } from "./icons";
 import { useFloorsStore } from "@/store/floors-store";
 import { useStatsStore } from "@/store/stats-store";
 import { calculateTowerHeightFt } from "@/lib/stats";
 
-export function useLiveStats(customHeightFt?: number | string) {
+function useLiveStats(customHeightFt?: number | string) {
   const { stats, isStatsReady } = useStatsStore();
   const { floors } = useFloorsStore();
   const [mounted, setMounted] = useState(false);

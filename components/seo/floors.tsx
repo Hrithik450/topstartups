@@ -23,9 +23,9 @@ export function FloorsDirectorySeo({ floors = [] }: FloorsDirectorySeoProps) {
     itemListElement: floors.map((f, idx) => ({
       "@type": "ListItem",
       position: f.rank || idx + 1,
-      name: f.companyName,
+      name: `${f.companyName || f.companyUrl} (Floor #${f.rank || idx + 1} · ₹${f.pricePaid || 0})`,
       url: f.companyUrl,
-      description: f.description || f.tagline || "",
+      description: `${f.description || f.tagline || `Claimed floor #${f.rank || idx + 1} on GeTopFloor skyscraper.`} Winning bid: ₹${f.pricePaid || 0} INR.`,
     })),
   };
 
@@ -51,8 +51,9 @@ export function FloorsDirectorySeo({ floors = [] }: FloorsDirectorySeoProps) {
             return (
               <li key={floor.id || idx}>
                 <h3>
-                  Floor #{rank}: {displayName}
+                  Floor #{rank}: {displayName} — Claimed for ₹{floor.pricePaid || 0}
                 </h3>
+                <p>Winning Bid: ₹{floor.pricePaid || 0} INR</p>
                 {floor.category && <p>Category: {floor.category}</p>}
                 {floor.tagline && <p>Tagline: {floor.tagline}</p>}
                 {floor.description && <p>Description: {floor.description}</p>}

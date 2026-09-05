@@ -41,24 +41,8 @@ export const SuccessAlert = ({
         animation: "fadeIn 0.2s ease-out",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          backgroundColor: "#0d2818",
-          color: "#86efac",
-          border: "1px solid rgba(74, 222, 128, 0.4)",
-          borderRadius: "12px",
-          padding: "12px 18px",
-          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
-          backdropFilter: "blur(8px)",
-          fontWeight: 600,
-          fontSize: "14px",
-          lineHeight: "1.4",
-        }}
-      >
-        <CircleCheck style={{ width: "20px", height: "20px", color: "#4ade80", flexShrink: 0 }} />
+      <div className="global-toast-alert success" role="status">
+        <CircleCheck />
         <span>{message}</span>
       </div>
     </div>

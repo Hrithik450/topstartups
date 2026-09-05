@@ -382,12 +382,12 @@ export function Hero({
       {justClaimed && (
         <div className="claimed-banner celebration" role="status">
           <span>
-            🏆 Congratulations! <strong>{justClaimed.companyName}</strong> has claimed{" "}
+            🏆 <strong>{justClaimed.companyName}</strong> claimed{" "}
             {justClaimed.rank === 1
-              ? "Top Floor (#1)"
+              ? "Top Floor #1"
               : justClaimed.rank
                 ? `Floor #${justClaimed.rank}`
-                : "a floor on the skyscraper"}
+                : "a floor"}
             !
           </span>
           <button
@@ -405,9 +405,7 @@ export function Hero({
       {existingFloorOnTower && existingFloorOnTower.rank === 1 && (
         <div className="claimed-banner celebration" style={{ marginBottom: "16px" }} role="status">
           <span>
-            👑 <strong>{existingFloorOnTower.companyName || url}</strong> is currently featured at
-            Top Penthouse Floor #1 (₹{existingFloorOnTower.pricePaid} paid). You can boost your lead
-            to defend your rank!
+            👑 <strong>{existingFloorOnTower.companyName || url}</strong> holds Top Floor #1 (₹{existingFloorOnTower.pricePaid}). Boost your bid to defend your spot!
           </span>
         </div>
       )}
@@ -420,9 +418,9 @@ export function Hero({
         >
           <span>
             ⚡ <strong>{existingFloorOnTower.companyName || url}</strong> is on Floor #
-            {existingFloorOnTower.rank} (₹{existingFloorOnTower.pricePaid} paid). Enter any bid
-            starting at ₹50 to climb higher, or outbid for <strong>₹{differencePrice}</strong> to
-            take <strong>Top Floor #1</strong>!
+            {existingFloorOnTower.rank} (₹{existingFloorOnTower.pricePaid}). Bid{" "}
+            <strong>₹50+</strong> to climb, or <strong>₹{differencePrice}</strong> for{" "}
+            <strong>Top Floor #1</strong>!
           </span>
         </div>
       )}

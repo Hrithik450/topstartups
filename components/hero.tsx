@@ -265,10 +265,7 @@ export function Hero({
               claimedAt: new Date(),
             });
 
-            // Re-fetch authoritative floor rankings from backend (deduplicated)
-            useFloorsStore.getState().syncFloors(true);
-
-            // Broadcast floor claim event for the owner
+            // Broadcast floor claim event for the owner (triggers syncFloors in main.tsx)
             window.dispatchEvent(
               new CustomEvent("floor-claimed-success", {
                 detail: {
@@ -389,18 +386,6 @@ export function Hero({
 
       const verifiedUrl = valData.cleanUrl || syntaxCheck.cleanUrl || url.trim();
 
-      // Save pending claim intent in session storage for return verification
-      try {
-        sessionStorage.setItem(
-          "pending_claim_intent",
-          JSON.stringify({
-            url: verifiedUrl,
-            category: selectedCategory.name,
-            price: Math.max(50, price),
-          })
-        );
-      } catch (e) {}
-
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -471,7 +456,8 @@ export function Hero({
         <div className="claimed-banner celebration" style={{ marginBottom: "16px" }} role="status">
           <span>
             👑 <strong>{existingFloorOnTower.companyName || url}</strong> is currently featured at
-            Top Penthouse Floor #1 (₹{existingFloorOnTower.pricePaid} paid). You can boost your lead to defend your rank!
+            Top Penthouse Floor #1 (₹{existingFloorOnTower.pricePaid} paid). You can boost your lead
+            to defend your rank!
           </span>
         </div>
       )}
@@ -504,58 +490,58 @@ export function Hero({
                 : "Claim top floor for"
               : "Claim a floor for"}
         <span className="price-stepper">
-            <button
-              type="button"
-              className="step-btn"
-              onClick={() => setPrice((p) => Math.max(minAllowedPrice, (p || minAllowedPrice) - 1))}
-              aria-label="Lower bid"
-              disabled={price <= minAllowedPrice}
-            >
-              <Minus />
-            </button>
-            <span
-              className="price-editable-wrap"
-              title="Click or tap to type any custom bid amount (min ₹50)"
-            >
-              <span className="price-currency">₹</span>
-              <input
-                type="number"
-                className="price-input"
-                value={price === 0 ? "" : price}
-                min={minAllowedPrice}
-                placeholder={String(minAllowedPrice)}
-                onFocus={(e) => e.target.select()}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (raw === "") {
-                    setPrice(0);
-                    return;
-                  }
-                  const val = parseInt(raw, 10);
-                  if (!isNaN(val)) {
-                    setPrice(val);
-                  }
-                }}
-                onBlur={() => {
-                  setPrice((p) => Math.max(minAllowedPrice, p || minAllowedPrice));
-                }}
-                style={{
-                  width: `${Math.max(2, String(price || minAllowedPrice).length + 0.5)}ch`,
-                  minWidth: "2ch",
-                  cursor: "text",
-                }}
-                aria-label="Custom Bid Price in INR"
-              />
-            </span>
-            <button
-              type="button"
-              className="step-btn"
-              onClick={() => setPrice((p) => (p === 0 ? minAllowedPrice : p + 1))}
-              aria-label="Raise bid"
-            >
-              <Plus />
-            </button>
+          <button
+            type="button"
+            className="step-btn"
+            onClick={() => setPrice((p) => Math.max(minAllowedPrice, (p || minAllowedPrice) - 1))}
+            aria-label="Lower bid"
+            disabled={price <= minAllowedPrice}
+          >
+            <Minus />
+          </button>
+          <span
+            className="price-editable-wrap"
+            title="Click or tap to type any custom bid amount (min ₹50)"
+          >
+            <span className="price-currency">₹</span>
+            <input
+              type="number"
+              className="price-input"
+              value={price === 0 ? "" : price}
+              min={minAllowedPrice}
+              placeholder={String(minAllowedPrice)}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === "") {
+                  setPrice(0);
+                  return;
+                }
+                const val = parseInt(raw, 10);
+                if (!isNaN(val)) {
+                  setPrice(val);
+                }
+              }}
+              onBlur={() => {
+                setPrice((p) => Math.max(minAllowedPrice, p || minAllowedPrice));
+              }}
+              style={{
+                width: `${Math.max(2, String(price || minAllowedPrice).length + 0.5)}ch`,
+                minWidth: "2ch",
+                cursor: "text",
+              }}
+              aria-label="Custom Bid Price in INR"
+            />
           </span>
+          <button
+            type="button"
+            className="step-btn"
+            onClick={() => setPrice((p) => (p === 0 ? minAllowedPrice : p + 1))}
+            aria-label="Raise bid"
+          >
+            <Plus />
+          </button>
+        </span>
       </h1>
 
       <form className="form" onSubmit={handleSubmit}>
@@ -721,11 +707,7 @@ export function Hero({
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="claim-btn"
-          disabled={isSubmitting}
-        >
+        <button type="submit" className="claim-btn" disabled={isSubmitting}>
           {isSubmitting ? (
             "Verifying..."
           ) : existingFloorOnTower && existingFloorOnTower.rank === 1 ? (

@@ -82,7 +82,7 @@ export function SoftwareApplicationJsonLd() {
     description:
       "A real-time attention market and 3D virtual skyscraper allowing startups to claim floors, display branding, and drive high-intent visitor traffic.",
     featureList: [
-      "Interactive 3D WebGL Skyscraper with 50 customizable floors",
+      "Interactive 3D WebGL Skyscraper supporting unlimited customizable floors",
       "Real-time outbid auction engine for Top Floor (#1) penthouse placement",
       "Automated instant fulfillment via secure Dodo Payments integration",
       "Self-service management portal for floor owners to edit URL, logo, and copy",
@@ -117,7 +117,7 @@ export function FAQJsonLd() {
         name: "How does the outbid system work?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "The skyscraper holds 50 active floors. Anyone can place a bid starting from ₹50 INR to claim the Penthouse Top Floor (#1). When a new company claims Floor #1, all existing claimed floors automatically shift down one level, maintaining a live, competitive attention market.",
+          text: "The skyscraper dynamically scales to hold unlimited active floors. Anyone can place a bid to claim the Penthouse Top Floor (#1). When a new company claims Floor #1, all existing claimed floors automatically shift down one level, maintaining a live, competitive attention market.",
         },
       },
       {

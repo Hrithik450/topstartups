@@ -11,11 +11,11 @@
 
 ## Core Concepts
 
-### 1. The 50-Floor Skyscraper
-GeTopFloor features exactly 50 visible floors rendered in high-performance Three.js 3D WebGL.
+### 1. The Unlimited 3D Skyscraper
+GeTopFloor features a dynamically growing virtual skyscraper supporting unlimited claimed floors rendered in high-performance Three.js 3D WebGL.
 - **Penthouse Floor #1**: The summit of the skyscraper, commanding maximum visibility, attention, and traffic.
 - **Dynamic Outbid Hierarchy**: Any founder can outbid the current price to claim Floor #1. When a new company claims Floor #1, all existing floors shift down one rank atomically in PostgreSQL.
-- **Floor Discard**: When all 50 floors are filled, claiming Top Floor #1 gently pushes the bottom-most floor out of the active skyscraper.
+- **Permanent Claim Placement**: Every claimed floor remains preserved on the skyscraper and accessible as the building grows infinitely.
 
 ### 2. Startup Categories (27 Main Industries)
 1. Agencies, Studios & Services

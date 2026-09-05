@@ -37,10 +37,10 @@ export default function RulesPage() {
             1. Overview &amp; Objective
           </h2>
           <p className="legal-text">
-            <strong>GeTopFloor</strong> is a global, interactive 3D digital discovery and advertising platform for technology startups, SaaS products, open-source projects, and indie founders. Founders claim virtual floors on an interactive 3D skyscraper to showcase their company name, URL, description, and brand logo.
+            <strong>GeTopFloor</strong> is a global, interactive 3D digital discovery and advertising directory for technology startups, SaaS tools, open-source projects, and digital founders. Placements are managed through a <strong>zero-login, frictionless architecture</strong> where listings are claimed and ranked directly by verified company website domains without requiring founders to register or maintain user accounts.
           </p>
           <p className="legal-text">
-            To maintain a trustworthy, safe, and professional ecosystem for all visitors, founders, and payment partners, all floor submissions and listings must comply strictly with these guidelines.
+            To maintain a trustworthy, safe, and professional ecosystem for all visitors, founders, and payment aggregator partners, all floor submissions and listings must comply strictly with these guidelines.
           </p>
         </section>
 
@@ -107,28 +107,31 @@ export default function RulesPage() {
         {/* Section 4 */}
         <section className="legal-section">
           <h2 className="legal-section-title">
-            4. Content Moderation &amp; Automated Safeguards
+            4. Content Moderation &amp; Multi-Tier Safeguards
           </h2>
           <p className="legal-text">
-            GeTopFloor implements a multi-layered moderation pipeline combining real-time automated screening and continuous human review:
+            GeTopFloor implements a multi-layered moderation pipeline combining real-time automated pre-checkout screening and continuous administrative oversight:
           </p>
 
           <div className="legal-card">
             <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", margin: "0 0 8px 0" }}>
-              A. Real-Time Pre-Payment Automated Verification
+              A. Real-Time Pre-Checkout Automated Verification
             </h3>
             <p className="legal-text" style={{ fontSize: "14px", marginBottom: "10px" }}>
               Before any checkout session or floor reservation can be initiated:
             </p>
             <ul className="legal-list">
               <li className="legal-list-item">
-                <strong>Live HTTPS &amp; SSL Probe:</strong> Automated verification tests that the destination URL is active, reachable over HTTPS, and possesses a trusted SSL certificate.
+                <strong>Strict HTTPS Enforcement:</strong> Insecure <code>http://</code> URLs and raw IP addresses are blocked immediately.
               </li>
               <li className="legal-list-item">
-                <strong>DNS Resolution Check:</strong> Confirms active DNS records and blocks private, unroutable, or reserved IP addresses.
+                <strong>Live TLS Socket &amp; DNS Probe:</strong> Automated server-side network checks confirm that the submitted domain has active DNS routing and completes a trusted TLS/SSL handshake.
               </li>
               <li className="legal-list-item">
-                <strong>Domain Parked &amp; Broker Filter:</strong> Automated heuristic scanner analyzes response headers and body content to reject known parked brokers and dummy domains.
+                <strong>Anti-Spam, Demo &amp; Parked Domain Filter:</strong> Automated heuristic filters detect and reject dummy domains (e.g. <code>test.com</code>, <code>example.com</code>, <code>dummy.com</code>, <code>localhost</code>) and parked domain sales brokers.
+              </li>
+              <li className="legal-list-item">
+                <strong>Asset Quality Inspection:</strong> Brand logos (SVGs, Apple touch icons, 512px PWA icons) are extracted and cached to Vercel Blob CDN to ensure high visual standards across the 3D tower.
               </li>
             </ul>
           </div>
@@ -138,17 +141,17 @@ export default function RulesPage() {
               B. Post-Placement Continuous Monitoring &amp; Admin Takedown
             </h3>
             <p className="legal-text" style={{ fontSize: "14px", marginBottom: "10px" }}>
-              Our internal administrative team continuously monitors live tower listings via an administrative dashboard:
+              Our operations team continuously monitors live tower listings via our protected administrative portal (<code>/admin</code>):
             </p>
             <ul className="legal-list">
               <li className="legal-list-item">
-                <strong>Instant Takedown Authority:</strong> Any listing discovered to violate prohibited content policies is immediately removed from the skyscraper without notice.
+                <strong>Instant Takedown Authority:</strong> Any listing discovered to violate prohibited content policies is immediately removed from the skyscraper without refund.
               </li>
               <li className="legal-list-item">
-                <strong>User Reporting Mechanism:</strong> Platform visitors can report suspicious listings directly to <span style={{ color: "#ea580c", fontWeight: 600 }}>support@getopfloor.com</span> for review within 24 hours.
+                <strong>Community &amp; Founder Reporting:</strong> Visitors can report suspicious or infringing listings directly to <span style={{ color: "#ea580c", fontWeight: 600 }}>support@getopfloor.com</span> for review within 24 hours.
               </li>
               <li className="legal-list-item">
-                <strong>Account &amp; Domain Blacklisting:</strong> Violators and associated customer emails are permanently banned from placing future claims.
+                <strong>Domain &amp; Customer Blacklisting:</strong> Violating domains and associated billing emails are permanently barred from participating on the platform.
               </li>
             </ul>
           </div>

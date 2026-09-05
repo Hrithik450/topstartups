@@ -34,24 +34,27 @@ export default function PrivacyPage() {
         {/* Section 1 */}
         <section className="legal-section">
           <h2 className="legal-section-title">
-            1. Information We Collect
+            1. Information We Collect (Zero-Login Architecture)
           </h2>
           <p className="legal-text">
-            When you visit GeTopFloor, authenticate an account, or claim a virtual floor on the skyscraper, we collect only the essential information needed to fulfill our digital advertising and discovery services:
+            <strong>GeTopFloor</strong> operates on a <strong>zero-login, frictionless architecture</strong>. We do not require visitors or founders to register user accounts, choose passwords, or create customer profiles. We collect only the essential information necessary to verify domains, process secure transactions, and render your digital placement on the 3D skyscraper:
           </p>
           <div className="legal-card">
             <ul className="legal-list">
               <li className="legal-list-item">
-                <strong>Account &amp; Contact Data:</strong> Email address provided during checkout or through authentication to deliver claim receipts and enable floor management.
+                <strong>Order &amp; Billing Contact Data:</strong> Contact email address provided during checkout strictly to deliver digital payment receipts, claim confirmations, and critical transaction notifications.
               </li>
               <li className="legal-list-item">
-                <strong>Company &amp; Listing Details:</strong> Company name, destination website URL, product category, tagline, description, and brand logo.
+                <strong>Public Company &amp; Listing Details:</strong> Company name, destination website URL, category, tagline, description, and brand logo submitted for display on the 3D tower and interactive directory.
               </li>
               <li className="legal-list-item">
-                <strong>Transaction &amp; Order Details:</strong> Payment status, checkout session/order ID, transaction amount, and timestamp. All transactions are securely processed by authorized, PCI-DSS compliant payment gateway and payment aggregator partners. We never store or handle raw payment card numbers, CVVs, UPI PINs, or banking credentials.
+                <strong>Transaction &amp; Fulfillment Details:</strong> Payment status, checkout session/order ID, transaction amount, and timestamp. All payments are processed securely by authorized, PCI-DSS certified payment gateway and payment aggregator partners. We never handle, store, or have access to raw debit/credit card numbers, CVVs, UPI PINs, or net-banking credentials.
               </li>
               <li className="legal-list-item">
-                <strong>Aggregated Analytics:</strong> Privacy-preserving aggregated metrics, including visitor country of origin and total tower views.
+                <strong>Automated Domain &amp; Asset Data:</strong> Technical verification metadata including live HTTPS status, DNS resolution, and brand assets (SVGs, touch icons) scraped from the public destination URL and cached on Vercel Blob CDN.
+              </li>
+              <li className="legal-list-item">
+                <strong>Privacy-Preserving Live Analytics:</strong> Aggregated, non-identifying telemetry including active tab sessions, real-time live visitor counters, and country codes derived from network edge headers (without storing raw IP addresses).
               </li>
             </ul>
           </div>
@@ -63,16 +66,16 @@ export default function PrivacyPage() {
             2. How We Use Your Information
           </h2>
           <p className="legal-text">
-            We use your collected information strictly to:
+            We use collected listing and order information strictly to:
           </p>
           <ul className="legal-list" style={{ marginBottom: "16px" }}>
-            <li className="legal-list-item">Publish and showcase your startup on your claimed skyscraper floor.</li>
-            <li className="legal-list-item">Verify floor ownership and allow you to manage or update your floor listing.</li>
-            <li className="legal-list-item">Deliver automated payment receipts and claim confirmation notifications.</li>
-            <li className="legal-list-item">Protect platform integrity, prevent fraudulent submissions, and enforce our moderation rules.</li>
+            <li className="legal-list-item">Render and publish your company&apos;s verified floor spot on the live 3D skyscraper and interactive search directory.</li>
+            <li className="legal-list-item">Deliver automated payment receipts and digital fulfillment confirmations to your billing email.</li>
+            <li className="legal-list-item">Process founder-requested listing modifications, logo updates, or voluntary floor deletions via verified email support.</li>
+            <li className="legal-list-item">Screen submitted domains for security, prevent malicious links or phishing, and maintain platform integrity.</li>
           </ul>
           <p className="legal-text" style={{ fontWeight: 600 }}>
-            We never sell, rent, or monetize your personal information with third-party advertisers.
+            We do not engage in behavioral user tracking, cross-site advertising profiling, or the sale or renting of personal data to third parties.
           </p>
         </section>
 
@@ -82,7 +85,7 @@ export default function PrivacyPage() {
             3. Third-Party Service Providers
           </h2>
           <p className="legal-text">
-            We partner with vetted, industry-leading infrastructure and payment partners:
+            We rely on trusted, industry-standard infrastructure and service providers to operate the platform:
           </p>
           <div className="legal-grid-2">
             <div className="legal-grid-item">
@@ -92,9 +95,9 @@ export default function PrivacyPage() {
               </p>
             </div>
             <div className="legal-grid-item">
-              <h3 className="legal-grid-title">Vercel &amp; Vercel Blob</h3>
+              <h3 className="legal-grid-title">Vercel &amp; Vercel Blob CDN</h3>
               <p className="legal-grid-desc">
-                High-performance global serverless hosting and secure CDN storage for high-resolution brand logos and 3D assets.
+                Global serverless cloud hosting and secure asset CDN storage for high-resolution company logos, 3D assets, and WebGL textures.
               </p>
             </div>
           </div>
@@ -103,13 +106,13 @@ export default function PrivacyPage() {
         {/* Section 4 */}
         <section className="legal-section">
           <h2 className="legal-section-title">
-            4. Data Retention &amp; Your Rights
+            4. Data Retention, Updates &amp; Deletion Rights
           </h2>
           <p className="legal-text">
-            You have the right to access, update, or request permanent deletion of your listing and associated personal data at any time.
+            Because GeTopFloor does not maintain user accounts or passwords, you do not need to navigate an account settings dashboard to manage your data.
           </p>
           <p className="legal-text">
-            To submit a data access or deletion request, please email our team at <a href="mailto:support@getopfloor.com" style={{ color: "#ea580c", fontWeight: 600, textDecoration: "underline" }}>support@getopfloor.com</a>. Requests are processed within 48 hours.
+            Founders retain full control over their public listings. To request an update to your company information, upload a revised logo, or request permanent deletion of your listing and associated contact data, email our compliance team at <a href="mailto:support@getopfloor.com" style={{ color: "#ea580c", fontWeight: 600, textDecoration: "underline" }}>support@getopfloor.com</a> from an authorized email address at your listed company domain. All requests are verified and processed within <strong>24–48 hours</strong>.
           </p>
         </section>
 

@@ -128,12 +128,16 @@ export function Hero({
   // Check if current URL input already exists on the skyscraper
   const existingFloorOnTower = useMemo(() => {
     if (!url || url.trim().length < 3) return null;
-    const cleanHost = extractRootHostname(url);
+    const cleanHost = extractRootHostname(url).toLowerCase();
     if (!cleanHost || cleanHost.length < 3) return null;
-    return activeFloors.find((f) => {
-      const fHost = extractRootHostname(f.companyUrl || f.url || "");
-      return fHost === cleanHost;
-    });
+    return (
+      activeFloors.find((f) => {
+        const floorUrl = f.companyUrl || f.url || "";
+        const fHost = extractRootHostname(floorUrl).toLowerCase();
+        const fName = (f.companyName || "").toLowerCase();
+        return fHost === cleanHost || fName === cleanHost;
+      }) || null
+    );
   }, [url, activeFloors]);
 
   // Difference price required to reclaim top floor #1 (gateway minimum ₹50)
@@ -167,7 +171,6 @@ export function Hero({
   // Normal bidding: all new bids and reclaims can enter any price >= ₹50 (minimum cutoff)
   const targetRank = 1;
   const minAllowedPrice = 50;
-
 
   // Handle browser Back / Forward navigation (bfcache restoration)
   useEffect(() => {

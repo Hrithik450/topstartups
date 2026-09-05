@@ -51,6 +51,8 @@ const ROUTE_LIMITS: { pattern: string; method?: string; max: number; windowMs: n
   { pattern: "/api/floors", max: 120, windowMs: 60_000 },
   // Webhooks: high throughput for verified payment provider
   { pattern: "/api/webhooks", max: 100, windowMs: 60_000 },
+  // Real-time visitor heartbeats and stats: max 120 pings per minute
+  { pattern: "/api/stats", max: 120, windowMs: 60_000 },
   // General POST / mutation endpoints: max 25 requests per minute
   { pattern: "/api/", method: "POST", max: 25, windowMs: 60_000 },
   // General GET / read endpoints: max 120 requests per minute

@@ -6,21 +6,21 @@ GeTopFloor is a modern, high-performance web platform combining WebGL 3D visuali
 - **Framework**: Next.js 14 App Router with React 18, TypeScript, and Tailwind/Vanilla CSS.
 - **3D Graphics**: Three.js WebGL rendering with custom procedural shaders, bloom post-processing, smooth orbital camera controls, and dynamic 2D canvas textures.
 - **Database**: PostgreSQL with Drizzle ORM and `pg` connection pooler, fully compatible with Supabase transaction pooler (port 6543) and serverless isolation.
-- **Payments**: Dodo Payments integration supporting international credit cards, debit cards, UPI, and instant webhooks.
+- **Payments**: Authorized, PCI-DSS compliant payment gateways supporting credit/debit cards, UPI, and instant webhooks.
 - **Deployment**: Multi-stage standalone Dockerfile with Alpine Linux runtime (~120MB image) suitable for VPS, Railway, Render, or Vercel.
 
 ## The Attention Economy & Floor Mechanics
 1. **Dynamic Skyscraper**: Unlimited startup floors ranked dynamically by cumulative price paid (`price_paid DESC, claimed_at ASC`).
-2. **Penthouse Floor #1**: Highest visibility position on top of the tower awarded to the startup with the highest cumulative bid.
-3. **Outbid & Reclaim**: Startups outbid other companies or boost their existing floor lead in real time.
-4. **CRUD Management**: Floor owners sign in via Google OAuth to update their logo, category, tagline, description, and website URL.
+2. **Penthouse Floor #1**: Highest visibility position on top of the tower awarded to the startup with the highest cumulative placement contribution.
+3. **Boost & Reclaim**: Startups boost their placement or advance their floor lead in real time.
+4. **Zero-Login Updates**: Founders request listing updates or voluntary removal by emailing support@getopfloor.com from their company domain.
 
 ## Frequently Asked Questions
 - **Q: How much does it cost?**
-  A: Outbidding to claim Top Floor #1 starts at the current highest floor price + ₹1 (or booster minimum ₹50).
+  A: Claiming Top Floor #1 starts at the current highest floor price + ₹1 (or booster minimum ₹50).
 - **Q: How long does my company stay on the tower?**
-  A: Your company remains on the skyscraper permanently, moving up or down based on cumulative bids.
+  A: Your company remains on the skyscraper permanently, moving up or down based on cumulative placement tiers.
 - **Q: Can I change my link or logo later?**
-  A: Yes, via the Manage Floor modal after signing in.
+  A: Yes, by emailing support@getopfloor.com from your company domain.
 - **Q: Is fulfillment automated?**
   A: Yes, webhook events update the live database and 3D skyscraper within milliseconds of payment.

@@ -164,7 +164,7 @@ export function Hero({
     }
   }, [existingFloorOnTower, selectedCategory]);
 
-  // Normal bidding: all new bids and reclaims can enter any price >= ₹50 (minimum cutoff)
+  // Normal placement: all new claims and boosts can enter any price >= ₹50 (minimum cutoff)
   const targetRank = 1;
   const minAllowedPrice = 50;
 
@@ -405,7 +405,7 @@ export function Hero({
       {existingFloorOnTower && existingFloorOnTower.rank === 1 && (
         <div className="claimed-banner celebration" style={{ marginBottom: "16px" }} role="status">
           <span>
-            👑 <strong>{existingFloorOnTower.companyName || url}</strong> holds Top Floor #1 (₹{existingFloorOnTower.pricePaid}). Boost your bid to defend your spot!
+            👑 <strong>{existingFloorOnTower.companyName || url}</strong> holds Top Floor #1 (₹{existingFloorOnTower.pricePaid}). Boost your placement to defend your spot!
           </span>
         </div>
       )}
@@ -418,7 +418,7 @@ export function Hero({
         >
           <span>
             ⚡ <strong>{existingFloorOnTower.companyName || url}</strong> is on Floor #
-            {existingFloorOnTower.rank} (₹{existingFloorOnTower.pricePaid}). Bid{" "}
+            {existingFloorOnTower.rank} (₹{existingFloorOnTower.pricePaid}). Contribute{" "}
             <strong>₹50+</strong> to climb, or <strong>₹{differencePrice}</strong> for{" "}
             <strong>Top Floor #1</strong>!
           </span>
@@ -428,28 +428,28 @@ export function Hero({
       <h1 className="headline">
         {existingFloorOnTower && existingFloorOnTower.rank > 1
           ? price >= differencePrice
-            ? "Outbid & reclaim top floor for"
+            ? "Upgrade & reclaim Top Floor #1 for"
             : "Boost your floor for"
           : existingFloorOnTower && existingFloorOnTower.rank === 1
             ? "Defend & boost Top Floor #1 for"
             : price >= topFloorPrice
               ? topFloorClaimed
-                ? "Outbid top floor for"
-                : "Claim top floor for"
+                ? "Claim Top Floor #1 for"
+                : "Claim Top Floor #1 for"
               : "Claim a floor for"}
         <span className="price-stepper">
           <button
             type="button"
             className="step-btn"
             onClick={() => setPrice((p) => Math.max(minAllowedPrice, (p || minAllowedPrice) - 1))}
-            aria-label="Lower bid"
+            aria-label="Decrease price"
             disabled={price <= minAllowedPrice}
           >
             <Minus />
           </button>
           <span
             className="price-editable-wrap"
-            title="Click or tap to type any custom bid amount (min ₹50)"
+            title="Click or tap to type any custom amount (min ₹50)"
           >
             <span className="price-currency">₹</span>
             <input
@@ -478,14 +478,14 @@ export function Hero({
                 minWidth: "2ch",
                 cursor: "text",
               }}
-              aria-label="Custom Bid Price in INR"
+              aria-label="Custom Amount in INR"
             />
           </span>
           <button
             type="button"
             className="step-btn"
             onClick={() => setPrice((p) => (p === 0 ? minAllowedPrice : p + 1))}
-            aria-label="Raise bid"
+            aria-label="Increase price"
           >
             <Plus />
           </button>
@@ -665,7 +665,7 @@ export function Hero({
           ) : existingFloorOnTower && existingFloorOnTower.rank > 1 ? (
             price >= differencePrice ? (
               <>
-                ⚡ Outbid & Reclaim Top Floor #1 for ₹{price} <Arrow />
+                ⚡ Upgrade & Reclaim Top Floor #1 for ₹{price} <Arrow />
               </>
             ) : (
               <>
@@ -675,7 +675,7 @@ export function Hero({
           ) : price >= topFloorPrice ? (
             topFloorClaimed ? (
               <>
-                ⚡ Outbid Top Floor #1 for ₹{price} <Arrow />
+                ⚡ Claim Top Floor #1 for ₹{price} <Arrow />
               </>
             ) : (
               <>
@@ -691,7 +691,7 @@ export function Hero({
       </form>
 
       <p className="subtitle">
-        Claim your startup&apos;s floor on the digital skyscraper. Outbid competitors to take Top
+        Claim your startup&apos;s floor on the digital skyscraper. Boost your placement to take Top
         Floor #1.
       </p>
 

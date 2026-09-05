@@ -40,7 +40,7 @@ export function WebsiteJsonLd() {
     name: "GeTopFloor",
     url: BASE_URL,
     description:
-      "Claim the top floor of the internet's tallest virtual tower. Outbid competitors and put your company in front of global founders and investors.",
+      "Claim a floor on the internet's tallest interactive 3D virtual tower. Showcase your company to global founders, builders, and investors.",
     potentialAction: {
       "@type": "SearchAction",
       target: `${BASE_URL}/?search={search_term_string}`,
@@ -69,7 +69,7 @@ export function SoftwareApplicationJsonLd() {
       "@type": "Offer",
       price: "50",
       priceCurrency: "INR",
-      description: "Minimum starting bid to claim a floor on the skyscraper",
+      description: "Starting placement tier to claim a floor on the skyscraper",
       availability: "https://schema.org/InStock",
     },
     aggregateRating: {
@@ -80,12 +80,12 @@ export function SoftwareApplicationJsonLd() {
       worstRating: "1",
     },
     description:
-      "A real-time attention market and 3D virtual skyscraper allowing startups to claim floors, display branding, and drive high-intent visitor traffic.",
+      "A real-time 3D virtual skyscraper and directory allowing startups to claim floors, display branding, and drive high-intent visitor traffic.",
     featureList: [
       "Interactive 3D WebGL Skyscraper supporting unlimited customizable floors",
-      "Real-time outbid auction engine for Top Floor (#1) penthouse placement",
+      "Dynamic priority ranking engine for Top Floor (#1) penthouse placement",
       "Automated instant fulfillment via secure payment gateway integration",
-      "Self-service management portal for floor owners to edit URL, logo, and copy",
+      "Zero-login verified placement tied directly to company domain",
       "Categorized startup discovery across 27+ industry categories",
       "Responsive navigation optimized for mobile touch and desktop trackpads",
     ],
@@ -109,15 +109,15 @@ export function FAQJsonLd() {
         name: "What is GeTopFloor?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "GeTopFloor is an interactive 3D virtual skyscraper and digital advertising platform. Companies and founders claim floors on the tower to gain visibility, backlinks, and exposure to thousands of founders, investors, and tech enthusiasts worldwide.",
+          text: "GeTopFloor is an interactive 3D virtual skyscraper and digital discovery platform. Companies and founders claim floors on the tower to gain visibility, backlinks, and exposure to thousands of founders, investors, and tech enthusiasts worldwide.",
         },
       },
       {
         "@type": "Question",
-        name: "How does the outbid system work?",
+        name: "How does the floor ranking system work?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "The skyscraper dynamically scales to hold unlimited active floors. Anyone can place a bid to claim the Penthouse Top Floor (#1). When a new company claims Floor #1, all existing claimed floors automatically shift down one level, maintaining a live, competitive attention market.",
+          text: "The skyscraper dynamically scales to hold active floors. Floor rankings are calculated in real time ordered by total contribution amount, with the leading company featured at the Penthouse Top Floor (#1).",
         },
       },
       {
@@ -125,7 +125,7 @@ export function FAQJsonLd() {
         name: "What is the minimum amount to claim a floor?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "The minimum bid amount starts at ₹50 INR. Founders can outbid the current price by adjusting the price stepper before proceeding to secure checkout.",
+          text: "The minimum entry amount starts at ₹50 INR. Founders can customize their placement amount before proceeding to secure checkout.",
         },
       },
       {
@@ -133,7 +133,7 @@ export function FAQJsonLd() {
         name: "Can I update or delete my website details after claiming a floor?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Yes! Every claim generates a secure, private management token. You can click 'Manage' on your floor card to edit your company name, website URL, industry category, tagline, description, or logo, or choose to vacate the floor anytime.",
+          text: "Yes! Founders can request listing updates or voluntary removal anytime by emailing support@getopfloor.com from their company domain email, processed within 24–48 hours.",
         },
       },
       {
@@ -141,7 +141,7 @@ export function FAQJsonLd() {
         name: "How quickly is my website placed on the skyscraper after payment?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Fulfillment is instant and fully automated. As soon as your payment succeeds, your company is immediately placed on Top Floor (#1) and visible to all global visitors.",
+          text: "Fulfillment is instant and fully automated. As soon as your payment succeeds, your company is immediately placed on the skyscraper and visible to all global visitors.",
         },
       },
     ],

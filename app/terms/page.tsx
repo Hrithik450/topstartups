@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export const metadata = {
   title: "Terms of Service & Acceptable Use — GeTopFloor",
-  description: "Terms and conditions governing the zero-login claiming, outbidding, and display of startup floor spots on GeTopFloor.",
+  description: "Terms and conditions governing the zero-login claiming, promotional rank upgrades, and display of startup floor spots on GeTopFloor.",
 };
 
 export default function TermsPage() {
@@ -40,17 +40,17 @@ export default function TermsPage() {
             <strong>GeTopFloor</strong> operates an interactive, real-time 3D digital skyscraper and discovery directory for technology startups, indie builders, and software businesses.
           </p>
           <p className="legal-text">
-            Our platform operates on a <strong>frictionless, zero-login architecture</strong>. Founders and participants are not required to create user accounts, set passwords, or complete account sign-in procedures. Placements and rankings are directly associated with the company&apos;s verified public website domain. By claiming a floor spot or outbidding on the skyscraper, you purchase a prominent digital placement that showcases your company name, destination website URL, category, tagline, description, and brand logo rendered directly into our interactive 3D WebGL tower and search directory.
+            Our platform operates on a <strong>frictionless, zero-login architecture</strong>. Founders and participants are not required to create user accounts, set passwords, or complete account sign-in procedures. Placements and rankings are directly associated with the company&apos;s verified public website domain. By claiming a floor spot or boosting your placement on the skyscraper, you purchase a prominent digital placement that showcases your company name, destination website URL, category, tagline, description, and brand logo rendered directly into our interactive 3D WebGL tower and search directory.
           </p>
         </section>
 
         {/* Section 2 */}
         <section className="legal-section">
           <h2 className="legal-section-title">
-            2. Floor Claiming &amp; Outbidding Mechanics
+            2. Floor Claiming &amp; Priority Placement Mechanics
           </h2>
           <p className="legal-text">
-            The skyscraper operates on a transparent, competitive outbidding leaderboard governed by deterministic sorting rules:
+            The skyscraper operates on a transparent, dynamic priority placement leaderboard governed by deterministic sorting rules:
           </p>
           <div className="legal-card">
             <ul className="legal-list">
@@ -58,13 +58,13 @@ export default function TermsPage() {
                 <strong>Dynamic Leaderboard Ranking:</strong> Floor rankings are computed dynamically across all active placements ordered by <code>price_paid DESC, claimed_at ASC</code>. Every floor&apos;s height and position updates immediately without race conditions.
               </li>
               <li className="legal-list-item">
-                <strong>Penthouse Top Floor (#1):</strong> The company with the highest cumulative bid occupies the prestigious Penthouse Floor #1 at the pinnacle of the 3D skyscraper.
+                <strong>Penthouse Top Floor (#1):</strong> The company with the highest cumulative placement tier occupies the prestigious Penthouse Floor #1 at the pinnacle of the 3D skyscraper.
               </li>
               <li className="legal-list-item">
-                <strong>Entry Bid Starting at ₹50:</strong> Any eligible startup or tech product can claim a verified floor spot on the tower with an entry bid starting from ₹50.
+                <strong>Entry Floor Placement Starting at ₹50:</strong> Any eligible startup or tech product can claim a verified floor spot on the tower with an entry placement starting from ₹50.
               </li>
               <li className="legal-list-item">
-                <strong>Climbing Ranks &amp; Outbidding:</strong> Existing startups can place incremental bids starting at ₹50 at any time to climb higher up the tower, or bid the calculated difference to outbid and reclaim Top Floor (#1).
+                <strong>Climbing Ranks &amp; Floor Boosts:</strong> Existing startups can boost their placement starting at ₹50 at any time to climb higher up the tower, or contribute the calculated difference to reach and claim Top Floor (#1).
               </li>
               <li className="legal-list-item">
                 <strong>Instant Client-Side Placement (0ms Latency):</strong> Upon verified payment confirmation, placements are published directly into the live Zustand state and Three.js 3D canvas without requiring manual review delays.

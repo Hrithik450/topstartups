@@ -7,14 +7,14 @@
 - **Type**: Interactive 3D WebGL Platform / Startup Discovery / Digital Sponsorship
 - **Pricing**: Dynamic starting from ₹50 INR (one-time placement fee)
 - **Fulfillment**: 100% instant, automated digital delivery upon checkout
-- **Payment Provider**: Dodo Payments (Cards, UPI, International Payments)
+- **Payment Provider**: Authorized PCI-DSS Compliant Payment Gateways (Cards, UPI, NetBanking)
 
 ## Core Concepts
 
 ### 1. The Unlimited 3D Skyscraper
 GeTopFloor features a dynamically growing virtual skyscraper supporting unlimited claimed floors rendered in high-performance Three.js 3D WebGL.
 - **Penthouse Floor #1**: The summit of the skyscraper, commanding maximum visibility, attention, and traffic.
-- **Dynamic Outbid Hierarchy**: Any founder can outbid the current price to claim Floor #1. When a new company claims Floor #1, all existing floors shift down one rank atomically in PostgreSQL.
+- **Dynamic Floor Placement Hierarchy**: Any founder can boost their placement to claim Floor #1. When a new company claims Floor #1, all existing floors shift down one rank atomically in PostgreSQL.
 - **Permanent Claim Placement**: Every claimed floor remains preserved on the skyscraper and accessible as the building grows infinitely.
 
 ### 2. Startup Categories (27 Main Industries)
@@ -46,11 +46,11 @@ GeTopFloor features a dynamically growing virtual skyscraper supporting unlimite
 26. Travel, Local & Lifestyle
 27. Writing & Content
 
-### 3. Self-Service Management (CRUD)
-Every claim generates a secret `manage_token` stored in the user's browser:
+### 3. Zero-Login Support & Updates
+GeTopFloor operates without accounts or passwords:
 - **View Floor**: Retrieve live floor rank, price paid, and click impressions.
-- **Update Details**: Update company title, website destination URL, tagline, category, description, and logo.
-- **Vacate Floor**: Reset floor back to an available premium slot at any time.
+- **Update Details**: Request company title, website destination URL, tagline, category, description, and logo updates via verified email support.
+- **Vacate Floor**: Request floor reset or voluntary removal anytime.
 
 ## API Endpoints
 - `POST /api/checkout`: Initiates Dodo Payments checkout session with custom amount and return URL.

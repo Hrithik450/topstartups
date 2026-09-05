@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: "%s | GeTopFloor",
   },
   description:
-    "Claim the top floor of the internet's tallest interactive 3D tower. Outbid the last owner, promote your startup to thousands of global founders and investors, and own the digital skyline.",
+    "Claim the top floor of the internet's tallest interactive 3D tower. Boost your startup placement, reach thousands of global founders and investors, and own the digital skyline.",
   applicationName: "GeTopFloor",
   keywords: [
     "GeTopFloor",
@@ -22,9 +22,9 @@ export const metadata: Metadata = {
     "promote startup",
     "startup directory",
     "digital advertising",
-    "attention market",
+    "sponsored listing",
     "3D directory",
-    "outbid",
+    "startup ranking",
     "tech startup launch",
     "SaaS showcase",
   ],
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     siteName: "GeTopFloor",
     title: "GeTopFloor — Claim the Top Floor of the Internet's Tallest Tower",
     description:
-      "Interactive 3D skyscraper where ambitious startups outbid each other to claim the top floor. Showcase your product to founders and investors worldwide.",
+      "Interactive 3D skyscraper where ambitious startups claim and boost their floors to reach Top Floor #1. Showcase your product to founders and investors worldwide.",
     images: [
       {
         url: "/og-image.png",
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "GeTopFloor — Claim the Top Floor of the Internet's Tallest Tower",
     description:
-      "Interactive 3D skyscraper where ambitious startups outbid each other to claim the top floor. Showcase your product to thousands of founders.",
+      "Interactive 3D skyscraper where ambitious startups claim and boost their floors to reach Top Floor #1. Showcase your product to thousands of founders.",
     images: ["/og-image.png"],
     creator: "@GeTopFloor",
   },

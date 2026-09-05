@@ -28,7 +28,7 @@ export function Seo({ floors = [], stats }: SeoProps) {
       position: f.rank || idx + 1,
       name: `${f.companyName || f.companyUrl} (Floor #${f.rank || idx + 1} · ₹${f.pricePaid || 0})`,
       url: f.companyUrl,
-      description: `${f.description || f.tagline || `Claimed floor #${f.rank || idx + 1} on GeTopFloor skyscraper.`} Winning bid: ₹${f.pricePaid || 0} INR.`,
+      description: `${f.description || f.tagline || `Claimed floor #${f.rank || idx + 1} on GeTopFloor skyscraper.`} Placement tier: ₹${f.pricePaid || 0} INR.`,
     })),
   };
 
@@ -42,8 +42,8 @@ export function Seo({ floors = [], stats }: SeoProps) {
       <section className="sr-only" aria-label="GeTopFloor Skyscraper Directory & Company Listings">
         <h2>GeTopFloor — Internet&apos;s Tallest 3D Startup Skyscraper</h2>
         <p>
-          A real-time attention market and virtual skyscraper where startups and founders claim
-          floors to outbid competitors, showcase their products, and reach thousands of global
+          An interactive 3D virtual skyscraper and discovery directory where startups and founders claim
+          floors, showcase their products, and reach thousands of global
           investors.
         </p>
 
@@ -69,7 +69,7 @@ export function Seo({ floors = [], stats }: SeoProps) {
                 <h3>
                   Floor #{rank}: {displayName} — Claimed for ₹{floor.pricePaid || 0}
                 </h3>
-                <p>Winning Bid: ₹{floor.pricePaid || 0} INR</p>
+                <p>Placement Tier: ₹{floor.pricePaid || 0} INR</p>
                 {floor.category && <p>Category: {floor.category}</p>}
                 {floor.tagline && <p>Tagline: {floor.tagline}</p>}
                 {floor.description && <p>Description: {floor.description}</p>}

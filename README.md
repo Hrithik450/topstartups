@@ -26,8 +26,8 @@
 - **Dual Lighting Themes**: Switch seamlessly between **Cyber Dark** and **Sunset Light** modes with dynamic Three.js lighting and matching UI styling.
 - **Sound & Audio Ambiance**: Custom sound toggle for ambient rooftop and elevator audio feedback.
 
-### 💰 2. Atomic Outbidding & Dynamic Leaderboard Engine
-- **Rank 1 Penthouse Claiming**: Startups bid to take the prestigious Penthouse Top Floor (#1) or enter any bid starting from ₹50 to climb into the skyscraper.
+### 💰 2. Priority Ranking & Dynamic Leaderboard Engine
+- **Rank 1 Penthouse Claiming**: Startups claim the prestigious Penthouse Top Floor (#1) or enter any placement tier starting from ₹50 to climb into the skyscraper.
 - **Instant Client-Side Synchronization (0ms Latency)**: Floor purchases immediately push directly to the live Zustand state and Three.js 3D canvas upon payment confirmation without requiring a page reload.
 - **Dynamic Rank Celebration**: Real-time celebration banner announces the startup's verified assigned floor rank (e.g. `Top Floor (#1)` vs `Floor #5`).
 - **Dynamic Leaderboard Sorting**: Floor ranks are computed dynamically (`ORDER BY price_paid DESC, claimed_at ASC`), guaranteeing real-time positioning without race conditions.

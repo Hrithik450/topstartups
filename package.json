@@ -9,7 +9,6 @@
     "start": "next start",
     "lint": "next lint",
     "db:push": "drizzle-kit push",
-    "db:snapshot": "tsx scripts/export-snapshot.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

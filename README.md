@@ -152,13 +152,6 @@ outbid/
 │   ├── floors-store.ts           # Skyscraper floors & active selection state
 │   └── stats-store.ts            # Live visitor count, view count, and countries state
 │
-├── scripts/                      # 📜 Database Management & Utility Scripts
-│   ├── create-snapshot.ts        # Create local JSON snapshot of database tables
-│   ├── drop-legacy-columns.ts    # Clean up legacy database columns safely
-│   ├── export-snapshot.ts        # Export database schema and table rows snapshot
-│   ├── migrate-safe.ts           # Safe schema migration runner
-│   └── remove-auth-tables.ts     # Safe migration dropping legacy NextAuth tables
-│
 ├── public/models/                # Optimized GLB 3D models (Chopper, Spider-Man, Office, Cars)
 ├── public/sounds/                # Ambient audio clips (Helicopter, Birds, Sky, Spider)
 ├── drizzle.config.ts             # Drizzle Kit migration configuration
@@ -240,7 +233,6 @@ Open [http://localhost:3000/admin](http://localhost:3000/admin) to access the Ad
 | `pnpm run lint` | Run ESLint across the codebase |
 | `pnpm run db:push` | Push Drizzle ORM schema changes directly to PostgreSQL |
 | `pnpm run db:studio` | Launch Drizzle Studio web GUI for database inspection |
-| `pnpm run db:snapshot`| Run script to inspect and snapshot current tables and columns |
 
 ---
 

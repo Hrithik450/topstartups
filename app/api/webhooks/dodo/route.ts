@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyDodoWebhookSignature } from "@/lib/dodo";
 import { FloorsService } from "@/actions/floors/floors.service";
 import { verifyWebsiteLive } from "@/lib/validation/domain-server";
+import { extractRootHostname } from "@/lib/validation/domain";
 import { db } from "@/lib/db/config/client";
 import { claims } from "@/lib/db/config/schema";
-import { eq, or } from "drizzle-orm";
+import { eq, or, and, sql, desc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -58,8 +59,14 @@ export async function POST(req: NextRequest) {
       const data = payload.data || payload;
       const metadata = data.metadata || {};
       const paymentId = data.payment_id || data.id || payload.id;
-      const checkoutSessionId =
-        data.checkout_session_id || data.checkout_id || payload.checkout_session_id || paymentId;
+      let checkoutSessionId =
+        data.checkout_session_id ||
+        data.checkout_id ||
+        data.session_id ||
+        payload.checkout_session_id ||
+        payload.checkout_id ||
+        payload.session_id ||
+        null;
 
       const companyUrl = metadata.company_url || metadata.url || "https://getopfloor.com";
       const companyName = metadata.company_name;
@@ -96,7 +103,7 @@ export async function POST(req: NextRequest) {
       }
 
       const price = actualPaidInr;
-      const customerEmail = data.customer?.email || metadata.customer_email;
+      const customerEmail = data.customer?.email || metadata.customer_email || metadata.email;
       const customerPhone =
         data.customer?.phone_number || data.customer_phone || data.billing?.phone;
 
@@ -112,18 +119,55 @@ export async function POST(req: NextRequest) {
       }
       const cleanCompanyUrl = verification.cleanUrl;
 
+      // Match existing pending claim in DB if present
+      const matchingClaims = await db
+        .select()
+        .from(claims)
+        .where(
+          or(
+            ...(checkoutSessionId ? [eq(claims.checkoutSessionId, checkoutSessionId)] : []),
+            ...(paymentId ? [eq(claims.paymentId, paymentId)] : [])
+          )
+        )
+        .limit(1);
+
+      let matchedClaim = matchingClaims[0];
+
+      if (!matchedClaim && cleanCompanyUrl) {
+        const cleanHost = extractRootHostname(cleanCompanyUrl);
+        const pendingCandidate = await db
+          .select()
+          .from(claims)
+          .where(
+            and(
+              eq(claims.status, "pending"),
+              sql`${claims.companyUrl} ILIKE ${"%" + cleanHost + "%"}`
+            )
+          )
+          .orderBy(desc(claims.updatedAt))
+          .limit(1);
+
+        if (pendingCandidate[0]) {
+          matchedClaim = pendingCandidate[0];
+        }
+      }
+
+      const finalCheckoutSessionId =
+        matchedClaim?.checkoutSessionId || checkoutSessionId || paymentId;
+      const finalCustomerEmail = customerEmail || matchedClaim?.customerEmail;
+
       console.log(
         `Processing verified webhook payment for ${cleanCompanyUrl} (${paymentId}) at ₹${price}...`
       );
 
       const result = await FloorsService.claimTopFloor({
         paymentId,
-        checkoutSessionId,
-        companyName,
+        checkoutSessionId: finalCheckoutSessionId,
+        companyName: companyName || matchedClaim?.companyName,
         companyUrl: cleanCompanyUrl,
-        category,
+        category: category || matchedClaim?.category,
         price,
-        customerEmail,
+        customerEmail: finalCustomerEmail,
         customerPhone,
       });
 
@@ -135,6 +179,33 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+
+      // Explicitly mark claim record status as succeeded in claims table
+      try {
+        await db
+          .update(claims)
+          .set({
+            status: "succeeded",
+            paymentId: paymentId || undefined,
+            customerEmail: finalCustomerEmail || undefined,
+            updatedAt: new Date(),
+          })
+          .where(
+            or(
+              ...(matchedClaim?.id ? [eq(claims.id, matchedClaim.id)] : []),
+              ...(finalCheckoutSessionId
+                ? [eq(claims.checkoutSessionId, finalCheckoutSessionId)]
+                : []),
+              ...(paymentId ? [eq(claims.paymentId, paymentId)] : [])
+            )
+          );
+      } catch (claimUpdateErr) {
+        console.warn(
+          "Could not explicitly mark claim as succeeded in webhook:",
+          claimUpdateErr
+        );
+      }
+
       return NextResponse.json({ success: result.success, rank: result.rank });
     }
 

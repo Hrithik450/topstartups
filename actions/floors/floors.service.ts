@@ -348,16 +348,15 @@ export class FloorsService {
       }
       const cleanUrl = verification.cleanUrl;
 
-      // Verify founder email deliverability via live SMTP
+      // Verify founder email deliverability via live SMTP (soft check so paid fulfillment is never rejected)
       if (validated.customerEmail) {
-        const emailCheck = await verifyFounderEmail(validated.customerEmail);
-        if (!emailCheck.valid) {
-          return {
-            success: false,
-            error:
-              emailCheck.error ||
-              "Invalid, unreachable, or disposable founder email address.",
-          };
+        try {
+          const emailCheck = await verifyFounderEmail(validated.customerEmail);
+          if (!emailCheck.valid) {
+            console.warn(`Warning on claim email verification: ${emailCheck.error}`);
+          }
+        } catch (emailErr) {
+          console.warn("Founder email verification check threw error:", emailErr);
         }
       }
 

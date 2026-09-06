@@ -384,33 +384,48 @@ export class FloorsModel {
       const assignedRank = Number(higherCount[0]?.count || 0) + 1;
 
       // 5. Upsert claim record
-      await tx
-        .insert(claims)
-        .values({
-          paymentId: input.paymentId || null,
-          checkoutSessionId: input.checkoutSessionId,
-          status: "succeeded",
-          companyName: companyName || cleanHost,
-          companyUrl: input.companyUrl,
-          category: input.category,
-          amount: input.price,
-          currency: "INR",
-          customerEmail: input.customerEmail || undefined,
-          customerPhone: input.customerPhone || undefined,
-          updatedAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: claims.checkoutSessionId,
-          set: {
-            paymentId: input.paymentId || undefined,
+      if (existingClaim) {
+        await tx
+          .update(claims)
+          .set({
+            paymentId: input.paymentId || existingClaim.paymentId || undefined,
             status: "succeeded",
             companyName: companyName || cleanHost,
             amount: input.price,
+            customerEmail: input.customerEmail || existingClaim.customerEmail || undefined,
+            customerPhone: input.customerPhone || existingClaim.customerPhone || undefined,
+            updatedAt: new Date(),
+          })
+          .where(eq(claims.id, existingClaim.id));
+      } else {
+        await tx
+          .insert(claims)
+          .values({
+            paymentId: input.paymentId || null,
+            checkoutSessionId: input.checkoutSessionId,
+            status: "succeeded",
+            companyName: companyName || cleanHost,
+            companyUrl: input.companyUrl,
+            category: input.category,
+            amount: input.price,
+            currency: "INR",
             customerEmail: input.customerEmail || undefined,
             customerPhone: input.customerPhone || undefined,
             updatedAt: new Date(),
-          },
-        });
+          })
+          .onConflictDoUpdate({
+            target: claims.checkoutSessionId,
+            set: {
+              paymentId: input.paymentId || undefined,
+              status: "succeeded",
+              companyName: companyName || cleanHost,
+              amount: input.price,
+              customerEmail: input.customerEmail || undefined,
+              customerPhone: input.customerPhone || undefined,
+              updatedAt: new Date(),
+            },
+          });
+      }
 
       return {
         success: true,

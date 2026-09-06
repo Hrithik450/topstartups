@@ -41,9 +41,8 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
     throw new Error("DODO_PAYMENTS_PRODUCT_ID is not configured");
   }
 
-  // Dodo Payments automatically appends ?payment_id=pay_xxx&status=succeeded&email=xxx to return_url.
-  // Dodo does NOT support template interpolation (e.g. {CHECKOUT_ID}), so pass a clean return URL.
-  const returnUrlWithParams = input.returnUrl.replace(/([?&])session_id=\{CHECKOUT_ID\}/g, "");
+  // Dodo Payments automatically appends ?payment_id=pay_xxx&status=succeeded to return_url.
+  const returnUrl = input.returnUrl;
 
   // Real Dodo Payments REST API call
   try {
@@ -83,7 +82,7 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
             quantity: 1,
           },
         ],
-        return_url: returnUrlWithParams,
+        return_url: returnUrl,
         metadata: {
           url: targetUrl,
           company_url: targetUrl,
@@ -198,24 +197,17 @@ export function verifyDodoWebhookSignature(
 }
 
 /**
- * Extracts payment_id, session_id, and status according to the official Dodo Payments redirect specification:
+ * Extracts payment_id, status, and email according to the official Dodo Payments redirect specification:
  * Dodo redirects with: ?payment_id=pay_xxx&status=succeeded&email=customer@example.com
  */
 export function extractDodoRedirectParams(searchParams: URLSearchParams): {
   paymentId: string | null;
-  sessionId: string | null;
-  targetId: string | null;
   status: string | null;
+  email: string | null;
 } {
   const paymentId = searchParams.get("payment_id")?.trim() || null;
-  const rawSessionId =
-    searchParams.get("session_id")?.trim() ||
-    searchParams.get("checkout_session_id")?.trim() ||
-    searchParams.get("checkout_id")?.trim() ||
-    null;
-  const sessionId = rawSessionId && rawSessionId !== "{CHECKOUT_ID}" ? rawSessionId : null;
   const status = searchParams.get("status")?.trim() || null;
-  const targetId = paymentId || sessionId;
+  const email = searchParams.get("email")?.trim().toLowerCase() || null;
 
-  return { paymentId, sessionId, targetId, status };
+  return { paymentId, status, email };
 }

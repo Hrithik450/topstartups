@@ -5,17 +5,16 @@ import { eq, or } from "drizzle-orm";
 import { FloorsService } from "@/actions/floors/floors.service";
 import { FloorsModel } from "@/actions/floors/floors.model";
 import { extractRootHostname } from "@/lib/validation/domain";
-import { verifyWebsiteLive } from "@/lib/validation/domain-server";
-import { getDodoApiUrl, extractDodoRedirectParams } from "@/lib/dodo";
+import { getDodoApiUrl } from "@/lib/dodo";
 
 export const dynamic = "force-dynamic";
 
-// Whitelist pattern: Dodo Payment and Checkout IDs are strictly alphanumeric with prefixes (pay_, cks_, mock_cks_)
-const DODO_ID_PATTERN = /^(pay|cks|mock_cks)_[a-zA-Z0-9_-]{6,120}$/;
+// Dodo Payment IDs start with pay_ (or mock_ for local testing)
+const DODO_PAYMENT_ID_PATTERN = /^(pay|mock)_[a-zA-Z0-9_-]{4,120}$/;
 
-function isValidDodoId(id?: string | null): boolean {
+function isValidPaymentId(id?: string | null): boolean {
   if (!id || typeof id !== "string") return false;
-  return DODO_ID_PATTERN.test(id.trim());
+  return DODO_PAYMENT_ID_PATTERN.test(id.trim());
 }
 
 /** SECURITY: Mask email to prevent PII exposure in public verification responses */
@@ -32,20 +31,16 @@ function maskEmail(email?: string | null): string | null {
 
 export async function GET(req: NextRequest) {
   try {
-    const {
-      paymentId: paymentIdParam,
-      sessionId: sessionIdParam,
-      targetId,
-    } = extractDodoRedirectParams(new URL(req.url).searchParams);
+    const paymentId = req.nextUrl.searchParams.get("payment_id")?.trim();
 
-    if (!targetId || !isValidDodoId(targetId)) {
+    if (!paymentId || !isValidPaymentId(paymentId)) {
       return NextResponse.json(
-        { error: "A valid payment_id or session_id parameter is required" },
+        { error: "A valid payment_id parameter is required." },
         { status: 400 }
       );
     }
 
-    const safeTargetId = encodeURIComponent(targetId.trim());
+    const safePaymentId = encodeURIComponent(paymentId);
 
     // ─────────────────────────────────────────────────────────────
     // STEP 1: CHECK DATABASE FIRST (AUTOMATIC CONFIRMATION VIA WEBHOOK)
@@ -53,17 +48,7 @@ export async function GET(req: NextRequest) {
     const matchingClaims = await db
       .select()
       .from(claims)
-      .where(
-        or(
-          ...(paymentIdParam && isValidDodoId(paymentIdParam)
-            ? [eq(claims.paymentId, paymentIdParam.trim())]
-            : []),
-          ...(sessionIdParam && isValidDodoId(sessionIdParam)
-            ? [eq(claims.checkoutSessionId, sessionIdParam.trim())]
-            : []),
-          eq(claims.checkoutSessionId, targetId.trim())
-        )
-      )
+      .where(eq(claims.paymentId, paymentId))
       .limit(1);
 
     let pendingClaim = matchingClaims[0];
@@ -120,94 +105,36 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    let paymentStatus = "unknown";
-    let paymentId = paymentIdParam && isValidDodoId(paymentIdParam) ? paymentIdParam.trim() : null;
-    let checkoutSessionId =
-      sessionIdParam && isValidDodoId(sessionIdParam) ? sessionIdParam.trim() : null;
-    let customerName: string | null = null;
-    let customerEmail: string | null = null;
-    let customerPhone: string | null = null;
-    let metadata: any = {};
-    let gatewayPaidAmount: number | null = null;
+    const res = await fetch(`${getDodoApiUrl()}/payments/${safePaymentId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(6000),
+    });
 
-    // If targetId starts with "pay_", query the /payments endpoint
-    if (targetId.startsWith("pay_")) {
-      const res = await fetch(`${getDodoApiUrl()}/payments/${safeTargetId}`, {
-        headers: { Authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(6000),
+    if (!res.ok) {
+      return NextResponse.json({
+        status: pendingClaim?.status || "pending",
+        message: "Payment is being processed.",
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        paymentId = data.payment_id || targetId;
-        checkoutSessionId = data.checkout_session_id || checkoutSessionId;
-        paymentStatus = data.status; // "succeeded", "failed", "pending"
-        customerName = data.customer?.name || null;
-        customerEmail = data.customer?.email || null;
-        customerPhone = data.customer?.phone_number || null;
-        metadata = data.metadata || {};
-        if (data.total_amount != null && !isNaN(Number(data.total_amount))) {
-          gatewayPaidAmount = Math.floor(Number(data.total_amount) / 100);
-        }
-
-        // If pending claim was not matched by payment_id, match it by the checkoutSessionId from gateway
-        if (!pendingClaim && checkoutSessionId) {
-          try {
-            const claimsBySession = await db
-              .select()
-              .from(claims)
-              .where(eq(claims.checkoutSessionId, checkoutSessionId.trim()))
-              .limit(1);
-            if (claimsBySession[0]) {
-              pendingClaim = claimsBySession[0];
-            }
-          } catch (err) {
-            console.warn("Could not lookup claim by checkoutSessionId:", err);
-          }
-        }
-      }
     }
 
-    // If targetId starts with "cks_" or status is still unknown, query /checkouts endpoint
-    if (
-      paymentStatus === "unknown" &&
-      (targetId.startsWith("cks_") || !targetId.startsWith("pay_"))
-    ) {
-      const checkId = checkoutSessionId || targetId;
-      if (isValidDodoId(checkId)) {
-        const safeCheckId = encodeURIComponent(checkId.trim());
-        const res = await fetch(`${getDodoApiUrl()}/checkouts/${safeCheckId}`, {
-          headers: { Authorization: `Bearer ${apiKey}` },
-          signal: AbortSignal.timeout(6000),
-        });
+    const data = await res.json();
+    const paymentStatus = data.status; // "succeeded", "failed", "cancelled", "pending"
+    const checkoutSessionId = data.checkout_session_id || null;
+    const metadata = data.metadata || {};
 
-        if (res.ok) {
-          const data = await res.json();
-          paymentId = data.payment_id || paymentId;
-          checkoutSessionId = data.id || checkId;
-          paymentStatus = data.payment_status || data.status;
-          customerName = data.customer_name || data.customer?.name || customerName;
-          customerEmail = data.customer_email || data.customer?.email || customerEmail;
-          customerPhone = data.customer?.phone_number || customerPhone;
-          metadata = data.metadata || metadata;
+    // If pending claim was not matched by paymentId, lookup by checkout_session_id from gateway
+    if (!pendingClaim && checkoutSessionId) {
+      try {
+        const claimsBySession = await db
+          .select()
+          .from(claims)
+          .where(eq(claims.checkoutSessionId, checkoutSessionId.trim()))
+          .limit(1);
+        if (claimsBySession[0]) {
+          pendingClaim = claimsBySession[0];
         }
-      }
-    }
-
-    // Fallback: query /payments if we only had cks_ and Dodo returned payment_id
-    if (paymentId && isValidDodoId(paymentId) && paymentStatus === "unknown") {
-      const safePaymentId = encodeURIComponent(paymentId.trim());
-      const res = await fetch(`${getDodoApiUrl()}/payments/${safePaymentId}`, {
-        headers: { Authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(6000),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        paymentStatus = data.status;
-        customerName = data.customer?.name || customerName;
-        customerEmail = data.customer?.email || customerEmail;
-        customerPhone = data.customer?.phone_number || customerPhone;
-        metadata = data.metadata || metadata;
+      } catch (err) {
+        console.warn("Could not lookup claim by checkoutSessionId:", err);
       }
     }
 
@@ -232,25 +159,19 @@ export async function GET(req: NextRequest) {
     // If Dodo says succeeded (manual fallback succeeded)
     if (paymentStatus === "succeeded") {
       const finalEmail =
-        (pendingClaim?.customerEmail || customerEmail || metadata.customer_email)
+        (pendingClaim?.customerEmail || data.customer?.email || metadata.customer_email)
           ?.toLowerCase()
           .trim() || null;
 
       const finalPhone =
-        (pendingClaim?.customerPhone || customerPhone || metadata.customer_phone)?.trim() || null;
+        (pendingClaim?.customerPhone || data.customer?.phone_number || metadata.customer_phone)?.trim() || null;
 
-      const companyName =
-        metadata.company_name || pendingClaim?.companyName || customerName || "New Startup";
+      const rawAmount = data.total_amount ?? data.amount;
+      const gatewayPaidAmount =
+        rawAmount != null && !isNaN(Number(rawAmount))
+          ? Math.floor(Number(rawAmount) / 100)
+          : null;
 
-      const companyUrl =
-        pendingClaim?.companyUrl ||
-        metadata.company_url ||
-        metadata.url ||
-        "https://getopfloor.com";
-      const category = pendingClaim?.category || metadata.category || "Startup";
-
-      // SECURITY: Authoritative amount verification.
-      // Must use actual verified payment amount from gateway in INR, never client-submitted pendingClaim.amount or metadata.price!
       const price = gatewayPaidAmount ?? (pendingClaim ? Number(pendingClaim.amount) : 50);
 
       if (
@@ -266,17 +187,25 @@ export async function GET(req: NextRequest) {
           { status: 400 }
         );
       }
+
+      const companyUrl =
+        pendingClaim?.companyUrl ||
+        metadata.url ||
+        metadata.company_url ||
+        "https://getopfloor.com";
+      const companyName =
+        pendingClaim?.companyName ||
+        metadata.company_name ||
+        extractRootHostname(companyUrl);
+      const category = pendingClaim?.category || metadata.category || "Startup";
+
       const finalCheckoutSessionId =
-        checkoutSessionId || pendingClaim?.checkoutSessionId || targetId;
-      const finalPaymentId =
-        paymentId ||
-        pendingClaim?.paymentId ||
-        (targetId.startsWith("pay_") ? targetId : undefined);
+        checkoutSessionId || pendingClaim?.checkoutSessionId || paymentId;
 
       // Claim floor atomically based on pricePaid via FloorsService
       const result = await FloorsService.claimTopFloor({
         checkoutSessionId: finalCheckoutSessionId,
-        paymentId: finalPaymentId,
+        paymentId,
         companyName,
         companyUrl,
         category,
@@ -298,7 +227,7 @@ export async function GET(req: NextRequest) {
           .update(claims)
           .set({
             status: "succeeded",
-            paymentId: finalPaymentId || pendingClaim?.paymentId,
+            paymentId,
             customerEmail: finalEmail || pendingClaim?.customerEmail,
             customerPhone: finalPhone || pendingClaim?.customerPhone,
             updatedAt: new Date(),
@@ -306,10 +235,8 @@ export async function GET(req: NextRequest) {
           .where(
             or(
               ...(pendingClaim?.id ? [eq(claims.id, pendingClaim.id)] : []),
-              ...(finalCheckoutSessionId
-                ? [eq(claims.checkoutSessionId, finalCheckoutSessionId)]
-                : []),
-              ...(finalPaymentId ? [eq(claims.paymentId, finalPaymentId)] : [])
+              eq(claims.paymentId, paymentId),
+              ...(checkoutSessionId ? [eq(claims.checkoutSessionId, checkoutSessionId)] : [])
             )
           );
       } catch (claimDbErr) {

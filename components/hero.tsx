@@ -11,6 +11,7 @@ import { ClaimModal } from "./claim-modal";
 import {
   getValidatedFounderCredentials,
   clearStoredFounderCredentials,
+  saveFounderCredentials,
 } from "@/lib/validation/founder";
 
 async function safeFetchJson(res: Response): Promise<any> {
@@ -207,12 +208,12 @@ export function Hero({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const { paymentId, sessionId, targetId, status } = extractDodoRedirectParams(
+    const { paymentId, status, email } = extractDodoRedirectParams(
       new URLSearchParams(window.location.search)
     );
 
     // Check if returning from a real Dodo checkout session
-    if (targetId && !targetId.startsWith("mock_")) {
+    if (paymentId && !paymentId.startsWith("mock_")) {
       const statusParam = status?.toLowerCase();
       if (statusParam === "failed" || statusParam === "cancelled") {
         setIsSubmitting(false);
@@ -225,11 +226,6 @@ export function Hero({
         return;
       }
 
-      const queryParts: string[] = [];
-      if (paymentId) queryParts.push(`payment_id=${encodeURIComponent(paymentId)}`);
-      if (sessionId) queryParts.push(`session_id=${encodeURIComponent(sessionId)}`);
-      const targetQuery = queryParts.join("&");
-
       setPaymentNotice({
         type: "info",
         message: "Verifying payment confirmation...",
@@ -240,7 +236,10 @@ export function Hero({
 
       const pollVerification = async () => {
         try {
-          const res = await fetch(`/api/checkout/verify?${targetQuery}`, { cache: "no-store" });
+          const res = await fetch(
+            `/api/checkout/verify?payment_id=${encodeURIComponent(paymentId)}`,
+            { cache: "no-store" }
+          );
           const data = await safeFetchJson(res);
 
           if (data.status === "succeeded") {
@@ -272,6 +271,12 @@ export function Hero({
               totalSales: (useStatsStore.getState().stats.totalSales || 0) + paidAmount,
               claimedFloors: (useStatsStore.getState().stats.claimedFloors || 0) + 1,
             });
+
+            // 3. Persist verified founder credentials if provided via Dodo redirect
+            if (email && !email.includes("*")) {
+              saveFounderCredentials(data.companyName || email.split("@")[0], email);
+              setExistingFounderEmail(email);
+            }
 
             return;
           } else if (data.status === "failed") {

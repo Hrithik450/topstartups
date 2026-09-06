@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      return NextResponse.json({ success: result.success, rank: result.rank });
+      return NextResponse.json({ success: result.success });
     }
 
     // Process payment.failed or checkout.expired / cancelled events

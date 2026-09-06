@@ -113,7 +113,6 @@ export function Hero({
   const [existingFounderEmail, setExistingFounderEmail] = useState<string | null>(null);
   const [justClaimed, setJustClaimed] = useState<{
     companyName: string;
-    rank?: number;
   } | null>(null);
   const [paymentNotice, setPaymentNotice] = useState<{
     type: "error" | "success" | "info";
@@ -243,10 +242,8 @@ export function Hero({
           const data = await safeFetchJson(res);
 
           if (data.status === "succeeded") {
-            const assignedRank = typeof data.rank === "number" ? data.rank : undefined;
             setJustClaimed({
               companyName: data.companyName || "Your company",
-              rank: assignedRank,
             });
             setPaymentNotice(null);
             setIsSubmitting(false);
@@ -379,7 +376,8 @@ export function Hero({
         setExistingFounderEmail(null);
         setPaymentNotice({
           type: "error",
-          message: "Previously saved details were corrupted and have been reset. Please enter your contact details.",
+          message:
+            "Previously saved details were corrupted and have been reset. Please enter your contact details.",
         });
         setIsSubmitting(false);
         setSubmittingMessage(null);
@@ -411,7 +409,9 @@ export function Hero({
         setExistingFounderEmail(null);
         setPaymentNotice({
           type: "error",
-          message: emailData.error || "Stored founder email could not be verified. Please enter your contact details.",
+          message:
+            emailData.error ||
+            "Stored founder email could not be verified. Please enter your contact details.",
         });
         setIsSubmitting(false);
         setSubmittingMessage(null);
@@ -477,13 +477,7 @@ export function Hero({
       {justClaimed && (
         <div className="claimed-banner celebration" role="status">
           <span>
-            🏆 <strong>{justClaimed.companyName}</strong> claimed{" "}
-            {justClaimed.rank === 1
-              ? "Top Floor #1"
-              : justClaimed.rank
-                ? `Floor #${justClaimed.rank}`
-                : "a floor"}
-            !
+            🏆 <strong>{justClaimed.companyName}</strong> successfully claimed a floor!
           </span>
           <button
             type="button"
@@ -795,7 +789,9 @@ export function Hero({
               marginTop: "10px",
             }}
           >
-            <span>Verified Founder: <strong>{existingFounderEmail}</strong></span>
+            <span>
+              Verified Founder: <strong>{existingFounderEmail}</strong>
+            </span>
             <span>•</span>
             <button
               type="button"

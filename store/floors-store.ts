@@ -77,7 +77,6 @@ export const useFloorsStore = create<FloorStore>()(
       } else {
         upsertedFloor = {
           id: String(newFloor.id || "temp-" + Date.now()),
-          rank: 1,
           companyName: newFloor.companyName,
           companyUrl: newFloor.companyUrl,
           category: newFloor.category || "Startup",

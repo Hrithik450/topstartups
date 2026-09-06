@@ -55,18 +55,12 @@ export async function GET(req: NextRequest) {
 
     // If webhook already processed and succeeded, return immediately!
     if (pendingClaim && pendingClaim.status === "succeeded") {
-      const activeFloors = await FloorsModel.getActiveFloors();
       const claimHost = extractRootHostname(pendingClaim.companyUrl || "");
-      const floor = activeFloors.find(
-        (f) =>
-          extractRootHostname(f.companyUrl || "") === claimHost ||
-          f.companyName?.toLowerCase() === pendingClaim.companyName?.toLowerCase()
-      );
+      const floor = await FloorsModel.findFloorByHost(claimHost);
       return NextResponse.json(
         {
           status: "succeeded",
           id: floor?.id,
-          rank: floor?.rank,
           companyName: floor?.companyName || pendingClaim.companyName,
           companyUrl: pendingClaim.companyUrl,
           category: pendingClaim.category,
@@ -164,13 +158,15 @@ export async function GET(req: NextRequest) {
           .trim() || null;
 
       const finalPhone =
-        (pendingClaim?.customerPhone || data.customer?.phone_number || metadata.customer_phone)?.trim() || null;
+        (
+          pendingClaim?.customerPhone ||
+          data.customer?.phone_number ||
+          metadata.customer_phone
+        )?.trim() || null;
 
       const rawAmount = data.total_amount ?? data.amount;
       const gatewayPaidAmount =
-        rawAmount != null && !isNaN(Number(rawAmount))
-          ? Math.floor(Number(rawAmount) / 100)
-          : null;
+        rawAmount != null && !isNaN(Number(rawAmount)) ? Math.floor(Number(rawAmount) / 100) : null;
 
       const price = gatewayPaidAmount ?? (pendingClaim ? Number(pendingClaim.amount) : 50);
 
@@ -194,9 +190,7 @@ export async function GET(req: NextRequest) {
         metadata.company_url ||
         "https://getopfloor.com";
       const companyName =
-        pendingClaim?.companyName ||
-        metadata.company_name ||
-        extractRootHostname(companyUrl);
+        pendingClaim?.companyName || metadata.company_name || extractRootHostname(companyUrl);
       const category = pendingClaim?.category || metadata.category || "Startup";
 
       const finalCheckoutSessionId =
@@ -247,7 +241,6 @@ export async function GET(req: NextRequest) {
         {
           status: "succeeded",
           id: result.id,
-          rank: result.rank,
           companyName: result.companyName || companyName,
           companyUrl: result.companyUrl || companyUrl,
           category,

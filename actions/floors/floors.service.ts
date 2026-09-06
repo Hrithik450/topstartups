@@ -225,32 +225,7 @@ export class FloorsService {
     }
   }
 
-  /**
-   * Get a single floor by rank.
-   */
-  static async getFloorByRank(rank: number): Promise<FloorResponse> {
-    try {
-      if (!rank || rank < 1) {
-        return {
-          success: false,
-          data: null,
-          error: "Valid rank is required",
-        };
-      }
 
-      const floor = await FloorsModel.getFloorByRank(rank);
-      return {
-        success: true,
-        data: floor,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        data: null,
-        error: error instanceof Error ? error.message : "Failed to fetch floor by rank",
-      };
-    }
-  }
 
   /**
    * Update floor details.

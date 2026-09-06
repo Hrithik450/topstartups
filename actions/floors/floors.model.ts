@@ -59,8 +59,7 @@ const getCachedActiveFloors = unstable_cache(
       return result.map((floor: any, idx) => {
         const companyUrl = floor.companyUrl || "";
         const companyName = (
-          floor.companyName ||
-          (companyUrl ? extractRootHostname(companyUrl) : `Floor #${idx + 1}`)
+          floor.companyName || (companyUrl ? extractRootHostname(companyUrl) : `Floor #${idx + 1}`)
         ).toLowerCase();
         const { userEmail, ...publicData } = floor;
         return {
@@ -109,13 +108,7 @@ export class FloorsModel {
     }
   }
 
-  /**
-   * Fetch a single floor by derived rank.
-   */
-  static async getFloorByRank(rank: number): Promise<Floor | null> {
-    const active = await FloorsModel.getActiveFloors();
-    return active[rank - 1] || null;
-  }
+
 
   /**
    * Get the current highest floor price and calculate the required price for Top Floor (#1).
@@ -212,11 +205,7 @@ export class FloorsModel {
       })
       .where(and(eq(floors.id, floorId.trim()), eq(floors.userEmail, cleanEmail)));
 
-    const updated = await db
-      .select()
-      .from(floors)
-      .where(eq(floors.id, floorId.trim()))
-      .limit(1);
+    const updated = await db.select().from(floors).where(eq(floors.id, floorId.trim())).limit(1);
 
     return updated[0] ? toPublicFloor(updated[0]) : null;
   }
@@ -301,19 +290,8 @@ export class FloorsModel {
 
       const existingClaim = existingClaims[0];
       if (existingClaim && existingClaim.status === "succeeded") {
-        let rank = 1;
-        if (existingFloor) {
-          const higherCount = await tx
-            .select({ count: sql<number>`count(*)` })
-            .from(floors)
-            .where(
-              sql`${floors.pricePaid} > ${existingFloor.pricePaid} OR (${floors.pricePaid} = ${existingFloor.pricePaid} AND ${floors.claimedAt} < ${existingFloor.claimedAt})`
-            );
-          rank = Number(higherCount[0]?.count || 0) + 1;
-        }
         return {
           success: true,
-          rank,
           id: existingFloor?.id,
           companyName: existingClaim.companyName || companyName,
           companyUrl: existingClaim.companyUrl || input.companyUrl,
@@ -373,17 +351,7 @@ export class FloorsModel {
         upsertedFloor = insertedFloor;
       }
 
-      // 4. Determine assigned rank based on pricePaid order via SQL COUNT
-      const higherCount = await tx
-        .select({ count: sql<number>`count(*)` })
-        .from(floors)
-        .where(
-          sql`${floors.pricePaid} > ${finalPrice} OR (${floors.pricePaid} = ${finalPrice} AND ${floors.claimedAt} < ${upsertedFloor.claimedAt})`
-        );
-
-      const assignedRank = Number(higherCount[0]?.count || 0) + 1;
-
-      // 5. Upsert claim record
+      // 4. Upsert claim record
       if (existingClaim) {
         await tx
           .update(claims)
@@ -429,7 +397,6 @@ export class FloorsModel {
 
       return {
         success: true,
-        rank: assignedRank,
         id: upsertedFloor.id,
         companyName: upsertedFloor.companyName,
         companyUrl: upsertedFloor.companyUrl,
@@ -440,8 +407,8 @@ export class FloorsModel {
         isUpdate,
         floor: toPublicFloor(upsertedFloor),
         message: isUpdate
-          ? `Successfully boosted floor for ${upsertedFloor.companyName} to ₹${finalPrice} (Floor #${assignedRank})!`
-          : `Successfully claimed Floor #${assignedRank} for ${upsertedFloor.companyName}!`,
+          ? `Successfully boosted floor for ${upsertedFloor.companyName} to ₹${finalPrice}!`
+          : `Successfully claimed floor for ${upsertedFloor.companyName}!`,
       };
     });
   }

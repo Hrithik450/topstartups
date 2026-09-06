@@ -190,7 +190,6 @@ export function Hero({
   }, [existingFloorOnTower, selectedCategory]);
 
   // Normal placement: all new claims and boosts can enter any price >= ₹50 (minimum cutoff)
-  const targetRank = 1;
   const minAllowedPrice = 50;
 
   // Handle browser Back / Forward navigation (bfcache restoration)
@@ -424,7 +423,6 @@ export function Hero({
           url: targetUrl,
           category: selectedCategory.name,
           price: Math.max(50, price),
-          targetRank,
           customerName: cleanName,
           customerEmail: cleanEmail,
         }),
@@ -843,7 +841,6 @@ export function Hero({
         targetUrl={validateWebsiteSyntax(url.trim()).cleanUrl || url.trim()}
         category={selectedCategory?.name || ""}
         price={price}
-        targetRank={targetRank}
       />
     </section>
   );

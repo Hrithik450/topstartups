@@ -44,7 +44,7 @@ export const useFloorsStore = create<FloorStore>()(
           (newHost && extractRootHostname(f.companyUrl || "") === newHost)
       );
 
-      let targetFloor: Floor;
+      let upsertedFloor: Floor;
       let nextFloors: Floor[];
 
       if (existingIndex !== -1) {
@@ -58,7 +58,7 @@ export const useFloorsStore = create<FloorStore>()(
             ? incomingPrice
             : Number(existing.pricePaid || 0) + incomingPrice;
 
-        targetFloor = {
+        upsertedFloor = {
           ...existing,
           companyName: newFloor.companyName || existing.companyName,
           companyUrl: newFloor.companyUrl || existing.companyUrl,
@@ -73,9 +73,9 @@ export const useFloorsStore = create<FloorStore>()(
         };
 
         nextFloors = [...currentFloors];
-        nextFloors[existingIndex] = targetFloor;
+        nextFloors[existingIndex] = upsertedFloor;
       } else {
-        targetFloor = {
+        upsertedFloor = {
           id: String(newFloor.id || "temp-" + Date.now()),
           rank: 1,
           companyName: newFloor.companyName,
@@ -90,7 +90,7 @@ export const useFloorsStore = create<FloorStore>()(
           updatedAt: new Date(),
         };
 
-        nextFloors = [targetFloor, ...currentFloors];
+        nextFloors = [upsertedFloor, ...currentFloors];
       }
 
       // 2. Re-sort dynamically by pricePaid DESC, claimedAt ASC (unlimited skyscraper)

@@ -328,7 +328,7 @@ export class FloorsModel {
       }
 
       let finalPrice = input.price;
-      let targetFloor: Floor;
+      let upsertedFloor: Floor;
       const isUpdate = Boolean(existingFloor);
 
       // 3. If existing floor found, update in-place with added price; otherwise insert new floor
@@ -352,7 +352,7 @@ export class FloorsModel {
           .where(eq(floors.id, existingFloor.id))
           .returning();
 
-        targetFloor = updatedFloor;
+        upsertedFloor = updatedFloor;
       } else {
         const [insertedFloor] = await tx
           .insert(floors)
@@ -370,7 +370,7 @@ export class FloorsModel {
           })
           .returning();
 
-        targetFloor = insertedFloor;
+        upsertedFloor = insertedFloor;
       }
 
       // 4. Determine assigned rank based on pricePaid order via SQL COUNT
@@ -378,7 +378,7 @@ export class FloorsModel {
         .select({ count: sql<number>`count(*)` })
         .from(floors)
         .where(
-          sql`${floors.pricePaid} > ${finalPrice} OR (${floors.pricePaid} = ${finalPrice} AND ${floors.claimedAt} < ${targetFloor.claimedAt})`
+          sql`${floors.pricePaid} > ${finalPrice} OR (${floors.pricePaid} = ${finalPrice} AND ${floors.claimedAt} < ${upsertedFloor.claimedAt})`
         );
 
       const assignedRank = Number(higherCount[0]?.count || 0) + 1;
@@ -430,18 +430,18 @@ export class FloorsModel {
       return {
         success: true,
         rank: assignedRank,
-        id: targetFloor.id,
-        companyName: targetFloor.companyName,
-        companyUrl: targetFloor.companyUrl,
-        logoUrl: targetFloor.logoUrl,
-        tagline: targetFloor.tagline,
-        description: targetFloor.description,
+        id: upsertedFloor.id,
+        companyName: upsertedFloor.companyName,
+        companyUrl: upsertedFloor.companyUrl,
+        logoUrl: upsertedFloor.logoUrl,
+        tagline: upsertedFloor.tagline,
+        description: upsertedFloor.description,
         pricePaid: finalPrice,
         isUpdate,
-        floor: toPublicFloor(targetFloor),
+        floor: toPublicFloor(upsertedFloor),
         message: isUpdate
-          ? `Successfully boosted floor for ${targetFloor.companyName} to ₹${finalPrice} (Floor #${assignedRank})!`
-          : `Successfully claimed Floor #${assignedRank} for ${targetFloor.companyName}!`,
+          ? `Successfully boosted floor for ${upsertedFloor.companyName} to ₹${finalPrice} (Floor #${assignedRank})!`
+          : `Successfully claimed Floor #${assignedRank} for ${upsertedFloor.companyName}!`,
       };
     });
   }

@@ -14,7 +14,6 @@ interface ClaimModalProps {
   targetUrl: string;
   category: string;
   price: number;
-  targetRank: number;
 }
 
 async function safeFetchJson(res: Response): Promise<any> {
@@ -37,7 +36,6 @@ export function ClaimModal({
   targetUrl,
   category,
   price,
-  targetRank,
 }: ClaimModalProps) {
   const [founderName, setFounderName] = useState("");
   const [founderEmail, setFounderEmail] = useState("");
@@ -146,7 +144,6 @@ export function ClaimModal({
           url: targetUrl,
           category,
           price: Math.max(50, price),
-          targetRank,
           customerName: cleanName,
           customerEmail: cleanEmail,
         }),

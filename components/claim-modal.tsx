@@ -208,12 +208,6 @@ export function ClaimModal({
         {/* Claim Placement Summary Box */}
         <div className="claim-summary-card">
           <div className="claim-summary-row">
-            <span className="claim-summary-label">Target Placement</span>
-            <span className="claim-summary-rank">
-              {targetRank === 1 ? "Top Floor #1" : `Floor #${targetRank}`} (₹{price})
-            </span>
-          </div>
-          <div className="claim-summary-row">
             <span className="claim-summary-label">Website</span>
             <span
               className="claim-summary-value"
@@ -274,15 +268,6 @@ export function ClaimModal({
               inputMode="email"
               required
             />
-            <div className="claim-hint-box">
-              <span>🔒</span>
-              <span>Verified automatically via live SMTP. No spam, OTP, or disposable emails.</span>
-            </div>
-          </div>
-
-          <div className="claim-hint-box" style={{ background: "transparent", border: "none", padding: "0 2px" }}>
-            <span>🧾</span>
-            <span>Receipts, invoice billing, and floor edit access are linked to this email.</span>
           </div>
 
           <div className="claim-actions">

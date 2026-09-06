@@ -110,7 +110,6 @@ export function Hero({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittingMessage, setSubmittingMessage] = useState<string | null>(null);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
-  const [existingFounderEmail, setExistingFounderEmail] = useState<string | null>(null);
   const [justClaimed, setJustClaimed] = useState<{
     companyName: string;
   } | null>(null);
@@ -118,18 +117,6 @@ export function Hero({
     type: "error" | "success" | "info";
     message: string;
   } | null>(null);
-
-  // Sync existing founder credentials from localStorage
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const check = getValidatedFounderCredentials();
-      if (check.valid && check.credentials) {
-        setExistingFounderEmail(check.credentials.email);
-      } else {
-        setExistingFounderEmail(null);
-      }
-    }
-  }, [isClaimModalOpen]);
 
   const storeFloors = useFloorsStore((s) => s.floors);
   const activeFloors = storeFloors.length > 0 ? storeFloors : initialFloors;
@@ -273,7 +260,6 @@ export function Hero({
             if (email && !email.includes("*")) {
               const founderName = data.customerName || email.split("@")[0];
               saveFounderCredentials(founderName, email);
-              setExistingFounderEmail(email);
             }
 
             return;
@@ -374,7 +360,6 @@ export function Hero({
       if (storageCheck.isCorrupted) {
         // Storage was tampered with or corrupted: purge immediately and open form with clean empty fields
         clearStoredFounderCredentials();
-        setExistingFounderEmail(null);
         setPaymentNotice({
           type: "error",
           message:
@@ -407,7 +392,6 @@ export function Hero({
       const emailData = await safeFetchJson(emailRes);
       if (!emailRes.ok || !emailData.valid) {
         clearStoredFounderCredentials();
-        setExistingFounderEmail(null);
         setPaymentNotice({
           type: "error",
           message:
@@ -777,45 +761,6 @@ export function Hero({
             </>
           )}
         </button>
-
-        {existingFounderEmail && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "6px",
-              fontSize: "12px",
-              color: "var(--ink-soft)",
-              marginTop: "10px",
-            }}
-          >
-            <span>
-              Verified Founder: <strong>{existingFounderEmail}</strong>
-            </span>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={() => {
-                clearStoredFounderCredentials();
-                setExistingFounderEmail(null);
-                setIsClaimModalOpen(true);
-              }}
-              style={{
-                background: "none",
-                border: "none",
-                color: "var(--brand-orange)",
-                cursor: "pointer",
-                padding: 0,
-                fontSize: "12px",
-                fontWeight: 600,
-                textDecoration: "underline",
-              }}
-            >
-              Switch Account
-            </button>
-          </div>
-        )}
       </form>
 
       <p className="subtitle">

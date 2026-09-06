@@ -8,6 +8,10 @@ import { extractDodoRedirectParams } from "@/lib/dodo";
 import { useFloorsStore } from "@/store/floors-store";
 import { useStatsStore } from "@/store/stats-store";
 import { ClaimModal } from "./claim-modal";
+import {
+  getValidatedFounderCredentials,
+  clearStoredFounderCredentials,
+} from "@/lib/validation/founder";
 
 async function safeFetchJson(res: Response): Promise<any> {
   const contentType = res.headers.get("content-type") || "";
@@ -118,11 +122,10 @@ export function Hero({
   // Sync existing founder credentials from localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const email = localStorage.getItem("getopfloor_manage_email")?.trim().toLowerCase();
-      if (email && !email.includes("*") && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        setExistingFounderEmail(email);
-      } else if (email && email.includes("*")) {
-        localStorage.removeItem("getopfloor_manage_email");
+      const check = getValidatedFounderCredentials();
+      if (check.valid && check.credentials) {
+        setExistingFounderEmail(check.credentials.email);
+      } else {
         setExistingFounderEmail(null);
       }
     }
@@ -363,61 +366,84 @@ export function Hero({
         return;
       }
 
-      // Check if user has already existed / claimed on this browser
-      const savedEmail =
-        typeof window !== "undefined"
-          ? localStorage.getItem("getopfloor_manage_email")?.trim().toLowerCase()
-          : null;
-      const savedName =
-        typeof window !== "undefined"
-          ? localStorage.getItem("getopfloor_founder_name")?.trim()
-          : null;
+      // Check if user credentials already exist in localStorage with integrity validation
+      const storageCheck = getValidatedFounderCredentials();
 
-      const hasValidSavedEmail = Boolean(
-        savedEmail &&
-          !savedEmail.includes("*") &&
-          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(savedEmail)
-      );
-
-      // If existing user with valid stored founder credentials:
-      // Fetch directly from localStorage and proceed to checkout without showing the modal!
-      if (hasValidSavedEmail && savedEmail) {
-        setSubmittingMessage("Securing checkout...");
-        const cleanName = savedName || savedEmail.split("@")[0] || "Founder";
-
-        const checkoutRes = await fetch("/api/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: targetUrl,
-            category: selectedCategory.name,
-            price: Math.max(50, price),
-            targetRank,
-            customerName: cleanName,
-            customerEmail: savedEmail,
-          }),
+      if (storageCheck.isCorrupted) {
+        // Storage was tampered with or corrupted: purge immediately and open form with clean empty fields
+        clearStoredFounderCredentials();
+        setExistingFounderEmail(null);
+        setPaymentNotice({
+          type: "error",
+          message: "Previously saved details were corrupted and have been reset. Please enter your contact details.",
         });
-
-        const checkoutData = await safeFetchJson(checkoutRes);
-        if (!checkoutRes.ok || !checkoutData.checkoutUrl) {
-          setPaymentNotice({
-            type: "error",
-            message: checkoutData.error || "Failed to create secure checkout session.",
-          });
-          setIsSubmitting(false);
-          setSubmittingMessage(null);
-          return;
-        }
-
-        // Direct redirect to Dodo Payments checkout page
-        window.location.href = checkoutData.checkoutUrl;
+        setIsSubmitting(false);
+        setSubmittingMessage(null);
+        setIsClaimModalOpen(true);
         return;
       }
 
-      // First-time founder: open founder details modal to verify contact
-      setIsSubmitting(false);
-      setSubmittingMessage(null);
-      setIsClaimModalOpen(true);
+      if (storageCheck.isMissing || !storageCheck.valid || !storageCheck.credentials) {
+        // First-time founder or fields missing: open modal to complete missing information
+        setIsSubmitting(false);
+        setSubmittingMessage(null);
+        setIsClaimModalOpen(true);
+        return;
+      }
+
+      // Valid credentials exist: live SMTP & MX email verification to ensure unmanipulated deliverability
+      const { name: cleanName, email: cleanEmail } = storageCheck.credentials;
+      setSubmittingMessage("Verifying founder credentials...");
+
+      const emailRes = await fetch("/api/validate-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail }),
+      });
+
+      const emailData = await safeFetchJson(emailRes);
+      if (!emailRes.ok || !emailData.valid) {
+        clearStoredFounderCredentials();
+        setExistingFounderEmail(null);
+        setPaymentNotice({
+          type: "error",
+          message: emailData.error || "Stored founder email could not be verified. Please enter your contact details.",
+        });
+        setIsSubmitting(false);
+        setSubmittingMessage(null);
+        setIsClaimModalOpen(true);
+        return;
+      }
+
+      setSubmittingMessage("Securing checkout...");
+
+      const checkoutRes = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: targetUrl,
+          category: selectedCategory.name,
+          price: Math.max(50, price),
+          targetRank,
+          customerName: cleanName,
+          customerEmail: cleanEmail,
+        }),
+      });
+
+      const checkoutData = await safeFetchJson(checkoutRes);
+      if (!checkoutRes.ok || !checkoutData.checkoutUrl) {
+        setPaymentNotice({
+          type: "error",
+          message: checkoutData.error || "Failed to create secure checkout session.",
+        });
+        setIsSubmitting(false);
+        setSubmittingMessage(null);
+        return;
+      }
+
+      // Direct redirect to Dodo Payments checkout page
+      window.location.href = checkoutData.checkoutUrl;
+      return;
     } catch (err: any) {
       console.error("Website verification error:", err);
       setPaymentNotice({
@@ -771,8 +797,7 @@ export function Hero({
             <button
               type="button"
               onClick={() => {
-                localStorage.removeItem("getopfloor_manage_email");
-                localStorage.removeItem("getopfloor_founder_name");
+                clearStoredFounderCredentials();
                 setExistingFounderEmail(null);
                 setIsClaimModalOpen(true);
               }}

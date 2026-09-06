@@ -2,6 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Mail, Close } from "./icons";
+import {
+  getValidatedFounderCredentials,
+  clearStoredFounderCredentials,
+  saveFounderCredentials,
+} from "@/lib/validation/founder";
 
 interface ClaimModalProps {
   isOpen: boolean;
@@ -41,20 +46,22 @@ export function ClaimModal({
 
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  // Restore saved founder details from previous sessions
+  // Restore saved founder details from previous sessions only if 100% valid & uncorrupted
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedEmail = localStorage.getItem("getopfloor_manage_email") || "";
-      const savedName = localStorage.getItem("getopfloor_founder_name") || "";
-      // Only restore valid, unmasked email addresses
-      if (savedEmail && !savedEmail.includes("*") && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(savedEmail)) {
-        setFounderEmail(savedEmail);
-      } else if (savedEmail && savedEmail.includes("*")) {
-        // Automatically purge any masked placeholder email
-        localStorage.removeItem("getopfloor_manage_email");
+    if (isOpen && typeof window !== "undefined") {
+      const check = getValidatedFounderCredentials();
+      if (check.valid && check.credentials) {
+        setFounderName(check.credentials.name);
+        setFounderEmail(check.credentials.email);
+      } else {
+        // If corrupted or invalid, fields are strictly cleared
+        setFounderName("");
         setFounderEmail("");
+        if (check.isCorrupted) {
+          clearStoredFounderCredentials();
+          setErrorMessage("Previously saved contact details were invalid and have been reset.");
+        }
       }
-      if (savedName) setFounderName(savedName);
     }
   }, [isOpen]);
 
@@ -152,11 +159,8 @@ export function ClaimModal({
         return;
       }
 
-      // Persist verified founder credentials
-      if (typeof window !== "undefined") {
-        localStorage.setItem("getopfloor_manage_email", cleanEmail);
-        localStorage.setItem("getopfloor_founder_name", cleanName);
-      }
+      // Persist verified founder credentials safely
+      saveFounderCredentials(cleanName, cleanEmail);
 
       // Redirect directly to Dodo Payments checkout page
       window.location.href = checkoutData.checkoutUrl;

@@ -1,13 +1,12 @@
 import crypto from "crypto";
+import { extractRootHostname } from "@/lib/validation/domain";
 
 export interface CreateCheckoutInput {
-  companyUrl: string;
-  url?: string;
+  url: string;
   category?: string;
-  companyName: string;
   customerName?: string;
-  price: number; // in INR
   customerEmail?: string;
+  price: number; // in INR
   returnUrl: string;
 }
 
@@ -30,7 +29,8 @@ export function getDodoApiUrl(): string {
  */
 export async function createDodoCheckout(input: CreateCheckoutInput): Promise<CheckoutResult> {
   const apiKey = process.env.DODO_PAYMENTS_API_KEY?.trim();
-  const companyUrl = input.companyUrl || input.url || "";
+  const targetUrl = (input.url || "").trim();
+  const companyDomain = extractRootHostname(targetUrl);
 
   if (!apiKey) {
     throw new Error("DODO_PAYMENTS_API_KEY is not configured");
@@ -85,10 +85,10 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
         ],
         return_url: returnUrlWithParams,
         metadata: {
-          company_url: companyUrl,
-          url: companyUrl,
+          url: targetUrl,
+          company_url: targetUrl,
+          company_name: companyDomain,
           category: input.category || "",
-          company_name: input.companyName,
           price: input.price.toString(),
         },
       }),

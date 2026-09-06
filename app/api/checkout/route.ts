@@ -41,11 +41,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const { companyUrl, url, category, companyName, price } = body;
-    const targetUrl = (companyUrl || url || "").trim();
+    const { url, category, price, customerName, customerEmail } = body;
+    const targetUrl = (url || body.companyUrl || "").trim();
 
     if (!targetUrl || typeof targetUrl !== "string") {
-      return NextResponse.json({ error: "Website URL is required" }, { status: 400 });
+      return NextResponse.json({ error: "Website URL is required." }, { status: 400 });
     }
 
     if (!category || typeof category !== "string" || !category.trim()) {
@@ -65,13 +65,13 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanUrl = verification.cleanUrl;
-    const cleanHost = extractRootHostname(verification.domain || cleanUrl);
+    // Canonical company name is the domain (e.g. "stripe.com", "linear.app") extracted directly from the verified URL
+    const companyName = extractRootHostname(verification.domain || cleanUrl).toLowerCase();
 
     // ─────────────────────────────────────────────────────────────
     // STEP 2: MANDATORY FOUNDER EMAIL VALIDATION & REACHABILITY
     // ─────────────────────────────────────────────────────────────
-    const candidateEmail = body.customerEmail;
-    if (!candidateEmail || typeof candidateEmail !== "string" || !candidateEmail.trim()) {
+    if (!customerEmail || typeof customerEmail !== "string" || !customerEmail.trim()) {
       return NextResponse.json(
         {
           error:
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const emailCheck = await verifyFounderEmail(candidateEmail);
+    const emailCheck = await verifyFounderEmail(customerEmail);
     if (!emailCheck.valid || !emailCheck.email) {
       return NextResponse.json(
         {
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     // ─────────────────────────────────────────────────────────────
     // STEP 3: DYNAMIC OUTBID PRICING CALCULATION (BY DOMAIN)
     // ─────────────────────────────────────────────────────────────
-    const { topFloorPrice } = await FloorsService.getOutbidPricing(cleanHost);
+    const { topFloorPrice } = await FloorsService.getOutbidPricing(companyName);
 
     // Bare minimum payment allowed is ₹50 (unlimited upper bound)
     const MIN_PLATFORM_PRICE = 50;
@@ -115,13 +115,6 @@ export async function POST(req: NextRequest) {
 
     // Final checkout payment amount
     const amount = Math.min(1000000, submittedPrice);
-
-    // SECURITY: Validate and sanitize company name and category
-    const rawName =
-      companyName && typeof companyName === "string" && companyName.trim()
-        ? companyName.trim().toLowerCase()
-        : cleanHost.toLowerCase();
-    const name = sanitizeText(rawName, 100);
     const cleanCategory = sanitizeText(category.trim(), 128);
 
     // Determine return origin
@@ -135,32 +128,31 @@ export async function POST(req: NextRequest) {
       : process.env.NEXT_PUBLIC_BASE_URL || "https://getopfloor.com";
 
     // Determine customer personal name for billing invoice:
-    let customerName: string | undefined = undefined;
-    const candidateName = body.customerName;
-    if (candidateName && typeof candidateName === "string" && candidateName.trim()) {
-      const cleanCandidate = candidateName.trim();
+    let cleanCustomerName: string | undefined = undefined;
+    if (customerName && typeof customerName === "string" && customerName.trim()) {
+      const cleanCandidate = customerName.trim();
       if (!cleanCandidate.includes(".") && !cleanCandidate.includes("/")) {
-        customerName = sanitizeText(cleanCandidate, 100);
+        cleanCustomerName = sanitizeText(cleanCandidate, 100);
       }
     }
 
-    if (!customerName && userEmail) {
+    if (!cleanCustomerName && userEmail) {
       const emailName = userEmail
         .split("@")[0]
         .replace(/[^a-zA-Z0-9 ]/g, " ")
         .trim();
-      customerName = emailName
+      cleanCustomerName = emailName
         ? emailName.charAt(0).toUpperCase() + emailName.slice(1)
         : "Customer";
     }
+
     // ─────────────────────────────────────────────────────────────
     // STEP 4: CREATE DODO CHECKOUT SESSION & INSERT PENDING CLAIM
     // ─────────────────────────────────────────────────────────────
     const checkout = await createDodoCheckout({
-      companyUrl: cleanUrl,
+      url: cleanUrl,
       category: cleanCategory,
-      companyName: name,
-      customerName,
+      customerName: cleanCustomerName,
       price: amount,
       customerEmail: userEmail,
       returnUrl: origin,
@@ -174,7 +166,7 @@ export async function POST(req: NextRequest) {
         checkoutSessionId,
         paymentId: null, // payment_id is created by Dodo upon payment completion
         status: "pending",
-        companyName: name,
+        companyName,
         companyUrl: cleanUrl,
         category: cleanCategory,
         amount,

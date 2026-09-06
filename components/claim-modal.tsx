@@ -30,13 +30,7 @@ async function safeFetchJson(res: Response): Promise<any> {
   return await res.json();
 }
 
-export function ClaimModal({
-  isOpen,
-  onClose,
-  targetUrl,
-  category,
-  price,
-}: ClaimModalProps) {
+export function ClaimModal({ isOpen, onClose, targetUrl, category, price }: ClaimModalProps) {
   const [founderName, setFounderName] = useState("");
   const [founderEmail, setFounderEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -107,7 +101,9 @@ export function ClaimModal({
     }
 
     if (cleanEmail.includes("*")) {
-      setErrorMessage("Please enter your full unmasked email address (e.g. founder@yourcompany.com).");
+      setErrorMessage(
+        "Please enter your full unmasked email address (e.g. founder@yourcompany.com)."
+      );
       return;
     }
 
@@ -276,11 +272,7 @@ export function ClaimModal({
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              className="claim-submit-btn"
-              disabled={isSubmitting}
-            >
+            <button type="submit" className="claim-submit-btn" disabled={isSubmitting}>
               {isSubmitting ? (
                 <span>Verifying &amp; Loading...</span>
               ) : (

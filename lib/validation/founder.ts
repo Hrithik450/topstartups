@@ -1,6 +1,6 @@
 /**
  * Client-safe Founder Credentials Validation & LocalStorage Integrity Guard
- * 
+ *
  * Protects against localStorage manipulation, corruption, incomplete records,
  * and masked/placeholder emails (e.g. 'mh***@gmail.com').
  */

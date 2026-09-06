@@ -108,8 +108,6 @@ export class FloorsModel {
     }
   }
 
-
-
   /**
    * Get the current highest floor price and calculate the required price for Top Floor (#1).
    * Runs a direct single-row query: ORDER BY price_paid DESC, claimed_at ASC LIMIT 1

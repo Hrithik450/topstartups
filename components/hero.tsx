@@ -250,7 +250,7 @@ export function Hero({
             window.history.replaceState({}, "", window.location.pathname);
 
             // 1. Immediately push the newly claimed floor into Zustand store for instant local re-render
-            const paidAmount = Number(data.price || price);
+            const paidAmount = Number(data.pricePaid || price);
             useFloorsStore.getState().addNewFloor({
               id: data.id,
               companyName: data.companyName,

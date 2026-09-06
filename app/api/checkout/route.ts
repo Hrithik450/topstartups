@@ -42,11 +42,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     const { url, category, price, customerName, customerEmail } = body;
-    const targetUrl = (url || body.companyUrl || "").trim();
 
-    if (!targetUrl || typeof targetUrl !== "string") {
+    if (!url || typeof url !== "string" || !url.trim()) {
       return NextResponse.json({ error: "Website URL is required." }, { status: 400 });
     }
+
+    const targetUrl = url.trim();
 
     if (!category || typeof category !== "string" || !category.trim()) {
       return NextResponse.json({ error: "Category is required." }, { status: 400 });

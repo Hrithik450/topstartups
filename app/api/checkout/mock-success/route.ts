@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FloorsService } from "@/actions/floors/floors.service";
 import { verifyWebsiteLive } from "@/lib/validation/domain-server";
+import { extractRootHostname } from "@/lib/validation/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +13,9 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const paymentId = searchParams.get("payment_id") || "mock_single_session";
-  const url = searchParams.get("company_url") || searchParams.get("url") || "https://example.com";
+  const url = searchParams.get("url") || searchParams.get("company_url") || "https://example.com";
   const category = searchParams.get("category") || "Developer Tools";
-  const companyName = searchParams.get("company_name") || "Mock Startup";
+  const companyName = searchParams.get("company_name") || extractRootHostname(url) || "Mock Startup";
   const price = Math.max(50, Number(searchParams.get("price")) || 50);
 
   // Server-side domain liveness & HTTPS validation

@@ -51,12 +51,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const rawUrl = body.companyUrl || body.url || body.domain || "";
-    if (!rawUrl || typeof rawUrl !== "string") {
-      return NextResponse.json({ error: "Domain or URL is required" }, { status: 400 });
+    const { url } = body;
+    if (!url || typeof url !== "string" || !url.trim()) {
+      return NextResponse.json({ error: "Website URL is required." }, { status: 400 });
     }
 
-    const cleanHost = extractRootHostname(rawUrl);
+    const cleanHost = extractRootHostname(url.trim());
     const pricing = await FloorsService.getOutbidPricing(cleanHost);
 
     return NextResponse.json({

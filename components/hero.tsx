@@ -179,7 +179,6 @@ export function Hero({
   useEffect(() => {
     const handlePageShow = () => {
       setIsSubmitting(false);
-      useFloorsStore.getState().syncFloors(true);
     };
 
     window.addEventListener("pageshow", handlePageShow);
@@ -251,10 +250,7 @@ export function Hero({
               claimedAt: new Date(),
             });
 
-            // 2. Direct authoritative sync from database
-            useFloorsStore.getState().syncFloors(true);
-
-            // 3. Direct live platform stats update (total sales & claimed floors)
+            // 2. Direct live platform stats update (total sales & claimed floors)
             useStatsStore.getState().setStats({
               totalSales: (useStatsStore.getState().stats.totalSales || 0) + paidAmount,
               claimedFloors: (useStatsStore.getState().stats.claimedFloors || 0) + 1,

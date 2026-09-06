@@ -123,27 +123,6 @@ export function Main({
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  // Periodic gentle background poll (every 45s) and tab focus so other users' new floors appear live
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        useFloorsStore.getState().syncFloors(false);
-      }
-    }, 45000);
-
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        useFloorsStore.getState().syncFloors(false);
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, []);
-
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "sunset" : "dark";
     setTheme(nextTheme);

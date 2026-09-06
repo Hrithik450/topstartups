@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Globe, Building, Arrow, Minus, Plus, Search, Check, ChevronDown } from "./icons";
+import { Globe, Building, Arrow, Minus, Plus, Search, Check, ChevronDown, Mail } from "./icons";
 import { MAIN_CATEGORIES, SPECIAL_OPTIONS, IndustryCategory } from "@/lib/categories";
 import { validateWebsiteSyntax, extractRootHostname } from "@/lib/validation/domain";
 import { extractDodoRedirectParams } from "@/lib/dodo";
 import { useFloorsStore } from "@/store/floors-store";
+import { ClaimModal } from "./claim-modal";
 
 async function safeFetchJson(res: Response): Promise<any> {
   const contentType = res.headers.get("content-type") || "";
@@ -101,6 +102,7 @@ export function Hero({
 
   const [url, setUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [justClaimed, setJustClaimed] = useState<{
     companyName: string;
     rank?: number;
@@ -217,7 +219,7 @@ export function Hero({
       });
 
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 3;
 
       const pollVerification = async () => {
         try {
@@ -233,10 +235,6 @@ export function Hero({
             setPaymentNotice(null);
             setIsSubmitting(false);
             window.history.replaceState({}, "", window.location.pathname);
-
-            if (data.customerEmail) {
-              localStorage.setItem("getopfloor_manage_email", data.customerEmail);
-            }
 
             // Immediately push the newly claimed floor into Zustand store so 3D tower and listings re-render right away!
             useFloorsStore.getState().addNewFloor({
@@ -306,6 +304,7 @@ export function Hero({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!url.trim()) {
       setPaymentNotice({
         type: "error",
@@ -339,28 +338,31 @@ export function Hero({
     try {
       const targetUrl = syntaxCheck.cleanUrl || url.trim();
 
-      const res = await fetch("/api/checkout", {
+      // Pre-flight check: Verify website reachability and inspect for adult (18+) / NSFW content
+      const valRes = await fetch("/api/validate-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: targetUrl,
-          category: selectedCategory.name,
-          price: Math.max(50, price),
-          targetRank,
-        }),
+        body: JSON.stringify({ url: targetUrl }),
       });
 
-      const data = await safeFetchJson(res);
-      if (!res.ok || !data.checkoutUrl) {
-        throw new Error(data.error || "Failed to create checkout session");
+      const valData = await safeFetchJson(valRes);
+      if (!valRes.ok || !valData.valid) {
+        setPaymentNotice({
+          type: "error",
+          message: valData.error || "Website could not be reached or is not permitted.",
+        });
+        setIsSubmitting(false);
+        return;
       }
 
-      window.location.href = data.checkoutUrl;
+      setIsSubmitting(false);
+      // Open the Founder Details pop-up modal
+      setIsClaimModalOpen(true);
     } catch (err: any) {
-      console.error("Checkout error:", err);
+      console.error("Website verification error:", err);
       setPaymentNotice({
         type: "error",
-        message: err.message || "Could not start checkout. Please try again.",
+        message: err.message || "Failed to verify website. Please try again.",
       });
       setIsSubmitting(false);
     }
@@ -408,7 +410,8 @@ export function Hero({
       {existingFloorOnTower && existingFloorOnTower.rank === 1 && (
         <div className="claimed-banner celebration" style={{ marginBottom: "16px" }} role="status">
           <span>
-            👑 <strong>{existingFloorOnTower.companyName || url}</strong> holds Top Floor #1 (₹{existingFloorOnTower.pricePaid}). Boost your placement to defend your spot!
+            👑 <strong>{existingFloorOnTower.companyName || url}</strong> holds Top Floor #1 (₹
+            {existingFloorOnTower.pricePaid}). Boost your placement to defend your spot!
           </span>
         </div>
       )}
@@ -709,6 +712,15 @@ export function Hero({
           Privacy
         </a>
       </div>
+
+      <ClaimModal
+        isOpen={isClaimModalOpen}
+        onClose={() => setIsClaimModalOpen(false)}
+        targetUrl={validateWebsiteSyntax(url.trim()).cleanUrl || url.trim()}
+        category={selectedCategory?.name || ""}
+        price={price}
+        targetRank={targetRank}
+      />
     </section>
   );
 }

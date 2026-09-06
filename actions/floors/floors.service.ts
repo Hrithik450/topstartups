@@ -7,6 +7,7 @@ import {
 import type { Floor, NewFloor } from "@/lib/db/config/schema";
 import { extractRootHostname } from "@/lib/validation/domain";
 import { verifyWebsiteLive } from "@/lib/validation/domain-server";
+import { verifyFounderEmail } from "@/lib/validation/email";
 import { scrapeWebsiteMetadata } from "@/lib/crawler/metadata";
 import { persistImageToBlob } from "@/lib/storage/blob";
 import { revalidatePath, revalidateTag } from "next/cache";
@@ -346,6 +347,19 @@ export class FloorsService {
         };
       }
       const cleanUrl = verification.cleanUrl;
+
+      // Verify founder email deliverability via live SMTP
+      if (validated.customerEmail) {
+        const emailCheck = await verifyFounderEmail(validated.customerEmail);
+        if (!emailCheck.valid) {
+          return {
+            success: false,
+            error:
+              emailCheck.error ||
+              "Invalid, unreachable, or disposable founder email address.",
+          };
+        }
+      }
 
       let finalCompanyName = validated.companyName?.trim();
       let finalTagline = validated.tagline?.trim();

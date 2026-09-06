@@ -15,6 +15,9 @@ importers:
       '@vercel/blob':
         specifier: ^2.8.0
         version: 2.8.0
+      deep-email-validator:
+        specifier: ^0.1.27
+        version: 0.1.27
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -515,9 +518,16 @@ packages:
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
 
+  deep-email-validator@0.1.27:
+    resolution: {integrity: sha512-c5byUHycJHIdno+EZpnPAxHaq1NLGf/W5Trrd5ihF7wWAaWyPKYDXW9afQP5XiVhQeGiV9kKEUlVnbksMSQ20Q==}
+    engines: {node: '>=20'}
+
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
+
+  disposable-email-domains@1.0.62:
+    resolution: {integrity: sha512-LBQvhRw7mznQTPoyZbsmYeNOZt1pN5aCsx4BAU/3siVFuiM9f2oyKzUaB8v1jbxFjE3aYqYiMo63kAL4pHgfWQ==}
 
   dotenv@17.4.2:
     resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
@@ -676,6 +686,9 @@ packages:
     resolution: {integrity: sha512-MaG+8WnOXkDWz9XeElj7TnQ890tTZUB0a36i03aRRCKGWE6e7jJpmdCvtxxuxcjjdqyN6m4sL6qlHVuSUDtYgg==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  mailcheck@1.1.1:
+    resolution: {integrity: sha512-3WjL8+ZDouZwKlyJBMp/4LeziLFXgleOdsYu87piGcMLqhBzCsy2QFdbtAwv757TFC/rtqd738fgJw1tFQCSgA==}
 
   merge-stream@2.0.0:
     resolution: {integrity: sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==}
@@ -1256,8 +1269,15 @@ snapshots:
 
   csstype@3.2.3: {}
 
+  deep-email-validator@0.1.27:
+    dependencies:
+      disposable-email-domains: 1.0.62
+      mailcheck: 1.1.1
+
   detect-libc@2.1.2:
     optional: true
+
+  disposable-email-domains@1.0.62: {}
 
   dotenv@17.4.2: {}
 
@@ -1345,6 +1365,8 @@ snapshots:
   lucide-react@1.40.0(react@19.2.8):
     dependencies:
       react: 19.2.8
+
+  mailcheck@1.1.1: {}
 
   merge-stream@2.0.0: {}
 

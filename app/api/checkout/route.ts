@@ -4,6 +4,7 @@ import { db } from "@/lib/db/config/client";
 import { claims } from "@/lib/db/config/schema";
 import { extractRootHostname } from "@/lib/validation/domain";
 import { verifyWebsiteLive } from "@/lib/validation/domain-server";
+import { verifyFounderEmail } from "@/lib/validation/email";
 import { FloorsService } from "@/actions/floors/floors.service";
 
 export const dynamic = "force-dynamic";
@@ -67,9 +68,31 @@ export async function POST(req: NextRequest) {
     const cleanHost = extractRootHostname(verification.domain || cleanUrl);
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 2: CUSTOMER EMAIL IDENTIFIER (OPTIONAL)
+    // STEP 2: MANDATORY FOUNDER EMAIL VALIDATION & REACHABILITY
     // ─────────────────────────────────────────────────────────────
-    const userEmail = body.customerEmail?.trim()?.toLowerCase() || undefined;
+    const candidateEmail = body.customerEmail;
+    if (!candidateEmail || typeof candidateEmail !== "string" || !candidateEmail.trim()) {
+      return NextResponse.json(
+        {
+          error:
+            "Founder email address is required for ownership verification and floor management.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const emailCheck = await verifyFounderEmail(candidateEmail);
+    if (!emailCheck.valid || !emailCheck.email) {
+      return NextResponse.json(
+        {
+          error:
+            emailCheck.error ||
+            "Please provide a valid, deliverable email address (e.g. founder@yourcompany.com).",
+        },
+        { status: 400 }
+      );
+    }
+    const userEmail = emailCheck.email;
 
     // ─────────────────────────────────────────────────────────────
     // STEP 3: DYNAMIC OUTBID PRICING CALCULATION (BY DOMAIN)

@@ -412,7 +412,10 @@ body.home-tower-scrolled .tower-top-fade {
   width: 220px;
 }
 .url-field input {
-  width: 240px;
+  width: 220px;
+}
+.email-field input {
+  width: 220px;
 }
 .field input::placeholder {
   color: var(--ink-faint);
@@ -1165,6 +1168,7 @@ button.chip:focus-visible {
     display: flex;
     flex-direction: row;
     align-items: center;
+    flex-wrap: wrap;
     gap: 6px;
     width: 100%;
   }
@@ -1189,6 +1193,19 @@ button.chip:focus-visible {
   .category-wrapper {
     flex: 1;
     min-width: 0;
+  }
+
+  .email-field {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    gap: 6px;
+  }
+
+  .email-field input {
+    width: 100%;
+    min-width: 0;
+    font-size: 13px;
   }
 
   .category-field {

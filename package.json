@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0",
+    "deep-email-validator": "^0.1.27",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.40.0",

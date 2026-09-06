@@ -6,6 +6,7 @@ import { MAIN_CATEGORIES, SPECIAL_OPTIONS, IndustryCategory } from "@/lib/catego
 import { validateWebsiteSyntax, extractRootHostname } from "@/lib/validation/domain";
 import { extractDodoRedirectParams } from "@/lib/dodo";
 import { useFloorsStore } from "@/store/floors-store";
+import { useStatsStore } from "@/store/stats-store";
 import { ClaimModal } from "./claim-modal";
 
 async function safeFetchJson(res: Response): Promise<any> {
@@ -236,7 +237,8 @@ export function Hero({
             setIsSubmitting(false);
             window.history.replaceState({}, "", window.location.pathname);
 
-            // Immediately push the newly claimed floor into Zustand store so 3D tower and listings re-render right away!
+            // 1. Immediately push the newly claimed floor into Zustand store for instant local re-render
+            const paidAmount = Number(data.price || price);
             useFloorsStore.getState().addNewFloor({
               id: data.id,
               companyName: data.companyName,
@@ -245,25 +247,18 @@ export function Hero({
               tagline: data.tagline || "",
               description: data.description || "",
               logoUrl: data.logoUrl || null,
-              pricePaid: Number(data.price || price),
+              pricePaid: paidAmount,
               claimedAt: new Date(),
             });
 
-            // Broadcast floor claim event for the owner (triggers syncFloors in main.tsx)
-            window.dispatchEvent(
-              new CustomEvent("floor-claimed-success", {
-                detail: {
-                  isOwner: true,
-                  rank: assignedRank || 1,
-                  companyName: data.companyName,
-                  url: data.companyUrl || data.url,
-                  logoUrl: data.logoUrl,
-                  tagline: data.tagline,
-                  description: data.description,
-                  pricePaid: data.price || price,
-                },
-              })
-            );
+            // 2. Direct authoritative sync from database
+            useFloorsStore.getState().syncFloors(true);
+
+            // 3. Direct live platform stats update (total sales & claimed floors)
+            useStatsStore.getState().setStats({
+              totalSales: (useStatsStore.getState().stats.totalSales || 0) + paidAmount,
+              claimedFloors: (useStatsStore.getState().stats.claimedFloors || 0) + 1,
+            });
 
             return;
           } else if (data.status === "failed") {

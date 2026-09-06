@@ -123,15 +123,8 @@ export function Main({
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  // Sync floors store on claim event, periodic 45s heartbeat, and tab focus
+  // Periodic gentle background poll (every 45s) and tab focus so other users' new floors appear live
   useEffect(() => {
-    const handleRefresh = () => {
-      useFloorsStore.getState().syncFloors(true);
-    };
-
-    window.addEventListener("floor-claimed-success", handleRefresh);
-
-    // Periodic gentle background poll (every 45s) so other users' new floors appear live
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") {
         useFloorsStore.getState().syncFloors(false);
@@ -148,7 +141,6 @@ export function Main({
     return () => {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("floor-claimed-success", handleRefresh);
     };
   }, []);
 

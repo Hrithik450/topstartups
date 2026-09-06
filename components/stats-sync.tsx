@@ -86,28 +86,10 @@ export function StatsSync() {
     };
     window.addEventListener("pagehide", handleLeave);
 
-    // 5. Debounced refresh when a floor is successfully claimed
-    let claimTimer: NodeJS.Timeout | null = null;
-    const handleFloorClaimed = () => {
-      if (claimTimer) clearTimeout(claimTimer);
-      claimTimer = setTimeout(() => {
-        pingAndSync({
-          sessionId,
-          countryCode: countryGuess?.code,
-          countryName: countryGuess?.name,
-          isNewSession: false,
-          force: true,
-        });
-      }, 800);
-    };
-    window.addEventListener("floor-claimed-success", handleFloorClaimed);
-
     return () => {
       clearInterval(interval);
-      if (claimTimer) clearTimeout(claimTimer);
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", handleLeave);
-      window.removeEventListener("floor-claimed-success", handleFloorClaimed);
     };
   }, [pingAndSync]);
 

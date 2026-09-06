@@ -271,7 +271,8 @@ export function Hero({
 
             // 3. Persist verified founder credentials if provided via Dodo redirect
             if (email && !email.includes("*")) {
-              saveFounderCredentials(data.companyName || email.split("@")[0], email);
+              const founderName = data.customerName || email.split("@")[0];
+              saveFounderCredentials(founderName, email);
               setExistingFounderEmail(email);
             }
 

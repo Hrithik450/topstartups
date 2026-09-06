@@ -89,6 +89,8 @@ export async function createDodoCheckout(input: CreateCheckoutInput): Promise<Ch
           company_name: companyDomain,
           category: input.category || "",
           price: input.price.toString(),
+          customer_name: cleanName,
+          customer_email: cleanEmail || "",
         },
       }),
     });

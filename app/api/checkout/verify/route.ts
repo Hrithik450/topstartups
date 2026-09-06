@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
           status: "succeeded",
           id: floor?.id,
           companyName: floor?.companyName || pendingClaim.companyName,
+          customerName: pendingClaim.customerName || null,
           companyUrl: pendingClaim.companyUrl,
           category: pendingClaim.category,
           pricePaid: floor ? Number(floor.pricePaid) : Number(pendingClaim.amount),
@@ -163,6 +164,10 @@ export async function GET(req: NextRequest) {
           metadata.customer_phone
         )?.trim() || null;
 
+      const finalCustomerName =
+        (pendingClaim?.customerName || data.customer?.name || metadata.customer_name)?.trim() ||
+        null;
+
       const rawAmount = data.total_amount ?? data.amount;
       const gatewayPaidAmount =
         rawAmount != null && !isNaN(Number(rawAmount)) ? Math.floor(Number(rawAmount) / 100) : null;
@@ -203,6 +208,7 @@ export async function GET(req: NextRequest) {
         companyUrl,
         category,
         price,
+        customerName: finalCustomerName || undefined,
         customerEmail: finalEmail || undefined,
         customerPhone: finalPhone || undefined,
       });
@@ -221,6 +227,7 @@ export async function GET(req: NextRequest) {
           .set({
             status: "succeeded",
             paymentId,
+            customerName: finalCustomerName || pendingClaim?.customerName,
             customerEmail: finalEmail || pendingClaim?.customerEmail,
             customerPhone: finalPhone || pendingClaim?.customerPhone,
             updatedAt: new Date(),
@@ -241,6 +248,7 @@ export async function GET(req: NextRequest) {
           status: "succeeded",
           id: result.id,
           companyName: result.companyName || companyName,
+          customerName: finalCustomerName || null,
           companyUrl: result.companyUrl || companyUrl,
           category,
           logoUrl: result.logoUrl,

@@ -44,6 +44,7 @@ export const claims = pgTable(
     category: varchar("category", { length: 128 }),
     amount: integer("amount").notNull(), // amount in INR
     currency: varchar("currency", { length: 10 }).notNull().default("INR"),
+    customerName: varchar("customer_name", { length: 255 }),
     customerEmail: varchar("customer_email", { length: 255 }),
     customerPhone: varchar("customer_phone", { length: 50 }),
     checkoutUrl: text("checkout_url"),

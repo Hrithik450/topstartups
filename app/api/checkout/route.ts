@@ -172,6 +172,7 @@ export async function POST(req: NextRequest) {
         category: cleanCategory,
         amount,
         currency: "INR",
+        customerName: cleanCustomerName,
         customerEmail: userEmail,
         checkoutUrl: checkout.checkoutUrl,
         updatedAt: new Date(),

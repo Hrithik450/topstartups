@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
 
       const price = actualPaidInr;
       const customerEmail = data.customer?.email || metadata.customer_email || metadata.email;
+      const customerName = data.customer?.name || metadata.customer_name || metadata.name;
       const customerPhone =
         data.customer?.phone_number || data.customer_phone || data.billing?.phone;
 
@@ -155,6 +156,7 @@ export async function POST(req: NextRequest) {
       const finalCheckoutSessionId =
         matchedClaim?.checkoutSessionId || checkoutSessionId || paymentId;
       const finalCustomerEmail = customerEmail || matchedClaim?.customerEmail;
+      const finalCustomerName = customerName || matchedClaim?.customerName;
 
       console.log(
         `Processing verified webhook payment for ${cleanCompanyUrl} (${paymentId}) at ₹${price}...`
@@ -167,6 +169,7 @@ export async function POST(req: NextRequest) {
         companyUrl: cleanCompanyUrl,
         category: category || matchedClaim?.category,
         price,
+        customerName: finalCustomerName,
         customerEmail: finalCustomerEmail,
         customerPhone,
       });
@@ -187,6 +190,7 @@ export async function POST(req: NextRequest) {
           .set({
             status: "succeeded",
             paymentId: paymentId || undefined,
+            customerName: finalCustomerName || undefined,
             customerEmail: finalCustomerEmail || undefined,
             updatedAt: new Date(),
           })

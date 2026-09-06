@@ -46,7 +46,14 @@ export function ClaimModal({
     if (typeof window !== "undefined") {
       const savedEmail = localStorage.getItem("getopfloor_manage_email") || "";
       const savedName = localStorage.getItem("getopfloor_founder_name") || "";
-      if (savedEmail) setFounderEmail(savedEmail);
+      // Only restore valid, unmasked email addresses
+      if (savedEmail && !savedEmail.includes("*") && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(savedEmail)) {
+        setFounderEmail(savedEmail);
+      } else if (savedEmail && savedEmail.includes("*")) {
+        // Automatically purge any masked placeholder email
+        localStorage.removeItem("getopfloor_manage_email");
+        setFounderEmail("");
+      }
       if (savedName) setFounderName(savedName);
     }
   }, [isOpen]);
@@ -91,6 +98,11 @@ export function ClaimModal({
     const cleanEmail = founderEmail.trim().toLowerCase();
     if (!cleanEmail) {
       setErrorMessage("Founder email address is required for ownership verification.");
+      return;
+    }
+
+    if (cleanEmail.includes("*")) {
+      setErrorMessage("Please enter your full unmasked email address (e.g. founder@yourcompany.com).");
       return;
     }
 
@@ -157,7 +169,7 @@ export function ClaimModal({
 
   return (
     <div
-      className="manage-modal-overlay"
+      className="claim-modal-overlay"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) {
           onClose();
@@ -167,14 +179,14 @@ export function ClaimModal({
       aria-modal="true"
       aria-labelledby="claim-modal-title"
     >
-      <div className="manage-modal-content" style={{ maxWidth: "460px" }}>
+      <div className="claim-modal-content">
         {/* Header */}
-        <div className="manage-modal-header">
+        <div className="claim-modal-header">
           <div>
-            <h2 id="claim-modal-title" className="manage-modal-title">
+            <h2 id="claim-modal-title" className="claim-modal-title">
               Founder Details
             </h2>
-            <p className="manage-modal-subtitle">
+            <p className="claim-modal-subtitle">
               Verify your ownership contact before proceeding to payment.
             </p>
           </div>
@@ -190,59 +202,38 @@ export function ClaimModal({
         </div>
 
         {/* Claim Placement Summary Box */}
-        <div
-          style={{
-            background: "rgba(255, 255, 255, 0.04)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: "14px",
-            padding: "12px 16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "6px",
-            fontSize: "13px",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>Placement</span>
-            <span style={{ fontWeight: 600, color: "var(--brand-orange, #ff6b1a)" }}>
+        <div className="claim-summary-card">
+          <div className="claim-summary-row">
+            <span className="claim-summary-label">Target Placement</span>
+            <span className="claim-summary-rank">
               {targetRank === 1 ? "Top Floor #1" : `Floor #${targetRank}`} (₹{price})
             </span>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>Website</span>
+          <div className="claim-summary-row">
+            <span className="claim-summary-label">Website</span>
             <span
+              className="claim-summary-value"
               style={{
-                maxWidth: "240px",
+                maxWidth: "260px",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
-                fontWeight: 500,
               }}
             >
               {targetUrl}
             </span>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>Category</span>
-            <span style={{ fontWeight: 500 }}>{category}</span>
+          <div className="claim-summary-row">
+            <span className="claim-summary-label">Category</span>
+            <span className="claim-summary-value">{category}</span>
           </div>
         </div>
 
         {/* Error Notice */}
         {errorMessage && (
-          <div
-            style={{
-              background: "rgba(239, 68, 68, 0.12)",
-              border: "1px solid rgba(239, 68, 68, 0.35)",
-              color: "#fca5a5",
-              borderRadius: "12px",
-              padding: "10px 14px",
-              fontSize: "13px",
-              lineHeight: 1.4,
-            }}
-            role="alert"
-          >
-            ⚠️ {errorMessage}
+          <div className="claim-error-banner" role="alert">
+            <span>⚠️</span>
+            <span>{errorMessage}</span>
           </div>
         )}
 
@@ -251,24 +242,12 @@ export function ClaimModal({
           onSubmit={handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: "14px" }}
         >
-          <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: "12px",
-                fontWeight: 600,
-                color: "rgba(255, 255, 255, 0.75)",
-                marginBottom: "6px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Founder / Contact Name
-            </label>
+          <div className="claim-form-group">
+            <label className="claim-label">Founder / Contact Name</label>
             <input
               ref={nameInputRef}
               type="text"
-              className="manage-input"
+              className="claim-input"
               placeholder="e.g. Elon Musk"
               value={founderName}
               onChange={(e) => setFounderName(e.target.value)}
@@ -278,23 +257,11 @@ export function ClaimModal({
             />
           </div>
 
-          <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: "12px",
-                fontWeight: 600,
-                color: "rgba(255, 255, 255, 0.75)",
-                marginBottom: "6px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Work / Founder Email
-            </label>
+          <div className="claim-form-group">
+            <label className="claim-label">Work / Founder Email</label>
             <input
               type="email"
-              className="manage-input"
+              className="claim-input"
               placeholder="founder@yourcompany.com"
               value={founderEmail}
               onChange={(e) => setFounderEmail(e.target.value)}
@@ -303,42 +270,21 @@ export function ClaimModal({
               inputMode="email"
               required
             />
-            <p
-              style={{
-                fontSize: "11.5px",
-                color: "rgba(255, 255, 255, 0.5)",
-                marginTop: "6px",
-                marginBottom: 0,
-                lineHeight: 1.4,
-              }}
-            >
-              🔒 Verified via live SMTP reachability. No disposable emails allowed.
-            </p>
+            <div className="claim-hint-box">
+              <span>🔒</span>
+              <span>Verified automatically via live SMTP. No spam, OTP, or disposable emails.</span>
+            </div>
           </div>
 
-          <p
-            style={{
-              fontSize: "11.5px",
-              color: "rgba(255, 255, 255, 0.45)",
-              margin: "0 0 4px 0",
-              lineHeight: 1.4,
-            }}
-          >
-            ℹ️ Your name and email will be pre-filled into Dodo Checkout for invoice and claim
-            security.
-          </p>
+          <div className="claim-hint-box" style={{ background: "transparent", border: "none", padding: "0 2px" }}>
+            <span>🧾</span>
+            <span>Receipts, invoice billing, and floor edit access are linked to this email.</span>
+          </div>
 
-          <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
+          <div className="claim-actions">
             <button
               type="button"
-              className="manage-load-btn"
-              style={{
-                background: "rgba(255, 255, 255, 0.08)",
-                color: "rgba(255, 255, 255, 0.8)",
-                flex: 1,
-                height: "44px",
-                padding: 0,
-              }}
+              className="claim-cancel-btn"
               onClick={onClose}
               disabled={isSubmitting}
             >
@@ -346,17 +292,7 @@ export function ClaimModal({
             </button>
             <button
               type="submit"
-              className="manage-load-btn"
-              style={{
-                flex: 2,
-                height: "44px",
-                padding: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-                fontSize: "14px",
-              }}
+              className="claim-submit-btn"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

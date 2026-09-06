@@ -2515,6 +2515,228 @@ button.chip:focus-visible {
   box-shadow: 0 4px 14px rgba(255, 107, 26, 0.4);
 }
 
+/* ---------- Founder Details Claim Modal (Theme-Adaptive) ---------- */
+.claim-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(5, 8, 17, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: cardFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+[data-theme="sunset"] .claim-modal-overlay {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.claim-modal-content {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 470px;
+  padding: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--card-border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--ink);
+  animation: cardFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+[data-theme="dark"] .claim-modal-content {
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px #1e293b;
+}
+
+.claim-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.claim-modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.claim-modal-subtitle {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+  margin-bottom: 0;
+  line-height: 1.4;
+}
+
+.claim-summary-card {
+  background: var(--brand-orange-soft);
+  border: 1px solid rgba(255, 107, 26, 0.22);
+  border-radius: 14px;
+  padding: 13px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.claim-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.claim-summary-label {
+  color: var(--ink-soft);
+  font-weight: 500;
+  font-size: 12.5px;
+}
+
+.claim-summary-value {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.claim-summary-rank {
+  color: var(--brand-orange);
+  font-weight: 700;
+  background: rgba(255, 107, 26, 0.15);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.claim-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.claim-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.claim-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--pill);
+  border: 1.5px solid var(--pill-border);
+  border-radius: 12px;
+  padding: 11px 14px;
+  color: var(--ink);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.claim-input:focus {
+  border-color: var(--brand-orange);
+  box-shadow: 0 0 0 3px rgba(255, 107, 26, 0.2);
+}
+
+.claim-input::placeholder {
+  color: var(--ink-faint);
+}
+
+.claim-hint-box {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  line-height: 1.45;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 8px 10px;
+  background: rgba(255, 107, 26, 0.05);
+  border: 1px solid rgba(255, 107, 26, 0.15);
+  border-radius: 9px;
+  margin-top: 4px;
+}
+
+.claim-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.claim-cancel-btn {
+  background: var(--pill);
+  color: var(--ink);
+  border: 1.5px solid var(--pill-border);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  flex: 1;
+  height: 44px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.claim-cancel-btn:hover:not(:disabled) {
+  background: var(--pill-border);
+}
+
+.claim-submit-btn {
+  background: linear-gradient(135deg, #ff6b1a 0%, #ea580c 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  flex: 2;
+  height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(255, 107, 26, 0.35);
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.claim-submit-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 107, 26, 0.45);
+}
+
+.claim-submit-btn:disabled,
+.claim-cancel-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.claim-error-banner {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+[data-theme="dark"] .claim-error-banner {
+  color: #fca5a5;
+}
+
 /* ─── Light / Sunset Mode Overrides for Manage Floor Modal ─── */
 /* ─── Light / Sunset Mode Overrides for Manage Floor Modal ─── */
 [data-theme="sunset"] .manage-modal-overlay {

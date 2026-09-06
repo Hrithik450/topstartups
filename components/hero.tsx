@@ -103,7 +103,9 @@ export function Hero({
 
   const [url, setUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingMessage, setSubmittingMessage] = useState<string | null>(null);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+  const [existingFounderEmail, setExistingFounderEmail] = useState<string | null>(null);
   const [justClaimed, setJustClaimed] = useState<{
     companyName: string;
     rank?: number;
@@ -112,6 +114,19 @@ export function Hero({
     type: "error" | "success" | "info";
     message: string;
   } | null>(null);
+
+  // Sync existing founder credentials from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const email = localStorage.getItem("getopfloor_manage_email")?.trim().toLowerCase();
+      if (email && !email.includes("*") && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setExistingFounderEmail(email);
+      } else if (email && email.includes("*")) {
+        localStorage.removeItem("getopfloor_manage_email");
+        setExistingFounderEmail(null);
+      }
+    }
+  }, [isClaimModalOpen]);
 
   const storeFloors = useFloorsStore((s) => s.floors);
   const activeFloors = storeFloors.length > 0 ? storeFloors : initialFloors;
@@ -324,6 +339,7 @@ export function Hero({
     }
 
     setIsSubmitting(true);
+    setSubmittingMessage("Verifying website...");
     setPaymentNotice(null);
 
     try {
@@ -343,10 +359,64 @@ export function Hero({
           message: valData.error || "Website could not be reached or is not permitted.",
         });
         setIsSubmitting(false);
+        setSubmittingMessage(null);
         return;
       }
 
+      // Check if user has already existed / claimed on this browser
+      const savedEmail =
+        typeof window !== "undefined"
+          ? localStorage.getItem("getopfloor_manage_email")?.trim().toLowerCase()
+          : null;
+      const savedName =
+        typeof window !== "undefined"
+          ? localStorage.getItem("getopfloor_founder_name")?.trim()
+          : null;
+
+      const hasValidSavedEmail = Boolean(
+        savedEmail &&
+          !savedEmail.includes("*") &&
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(savedEmail)
+      );
+
+      // If existing user with valid stored founder credentials:
+      // Fetch directly from localStorage and proceed to checkout without showing the modal!
+      if (hasValidSavedEmail && savedEmail) {
+        setSubmittingMessage("Securing checkout...");
+        const cleanName = savedName || savedEmail.split("@")[0] || "Founder";
+
+        const checkoutRes = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: targetUrl,
+            category: selectedCategory.name,
+            price: Math.max(50, price),
+            targetRank,
+            customerName: cleanName,
+            customerEmail: savedEmail,
+          }),
+        });
+
+        const checkoutData = await safeFetchJson(checkoutRes);
+        if (!checkoutRes.ok || !checkoutData.checkoutUrl) {
+          setPaymentNotice({
+            type: "error",
+            message: checkoutData.error || "Failed to create secure checkout session.",
+          });
+          setIsSubmitting(false);
+          setSubmittingMessage(null);
+          return;
+        }
+
+        // Direct redirect to Dodo Payments checkout page
+        window.location.href = checkoutData.checkoutUrl;
+        return;
+      }
+
+      // First-time founder: open founder details modal to verify contact
       setIsSubmitting(false);
+      setSubmittingMessage(null);
       setIsClaimModalOpen(true);
     } catch (err: any) {
       console.error("Website verification error:", err);
@@ -355,6 +425,7 @@ export function Hero({
         message: err.message || "Failed to verify website. Please try again.",
       });
       setIsSubmitting(false);
+      setSubmittingMessage(null);
     }
   };
 
@@ -651,7 +722,7 @@ export function Hero({
 
         <button type="submit" className="claim-btn" disabled={isSubmitting}>
           {isSubmitting ? (
-            "Verifying..."
+            submittingMessage || "Verifying..."
           ) : existingFloorOnTower && existingFloorOnTower.rank === 1 ? (
             <>
               👑 Defend & Boost Top Floor #1 for ₹{price} <Arrow />
@@ -682,6 +753,44 @@ export function Hero({
             </>
           )}
         </button>
+
+        {existingFounderEmail && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              fontSize: "12px",
+              color: "var(--ink-soft)",
+              marginTop: "10px",
+            }}
+          >
+            <span>Verified Founder: <strong>{existingFounderEmail}</strong></span>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.removeItem("getopfloor_manage_email");
+                localStorage.removeItem("getopfloor_founder_name");
+                setExistingFounderEmail(null);
+                setIsClaimModalOpen(true);
+              }}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--brand-orange)",
+                cursor: "pointer",
+                padding: 0,
+                fontSize: "12px",
+                fontWeight: 600,
+                textDecoration: "underline",
+              }}
+            >
+              Switch Account
+            </button>
+          </div>
+        )}
       </form>
 
       <p className="subtitle">

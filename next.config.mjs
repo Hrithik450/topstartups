@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: "standalone",
+  output: process.platform === "win32" && !process.env.DOCKER_BUILD ? undefined : "standalone",
   skipTrailingSlashRedirect: true,
 
   // Webpack config for direct audio & media imports

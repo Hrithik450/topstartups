@@ -63,8 +63,10 @@ export class StatsModel {
       };
 
       return stats;
-    } catch (err) {
-      console.error("Error fetching live stats:", err);
+    } catch (err: any) {
+      if (err?.code !== "ECONNREFUSED" && !err?.message?.includes("ECONNREFUSED")) {
+        console.error("Error fetching live stats:", err?.message || err);
+      }
       return (
         StatsModel.memoryCache?.data || {
           online: 1,
@@ -157,8 +159,10 @@ export class StatsModel {
           .where(sql`${sessions.lastSeenAt} < ${oneHourAgo}`)
           .catch((err) => console.warn("Background sessions prune error:", err));
       }
-    } catch (err) {
-      console.error("Failed to record visit/ping:", err);
+    } catch (err: any) {
+      if (err?.code !== "ECONNREFUSED" && !err?.message?.includes("ECONNREFUSED")) {
+        console.error("Failed to record visit/ping:", err?.message || err);
+      }
     }
   }
 

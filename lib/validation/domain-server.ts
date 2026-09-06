@@ -25,7 +25,8 @@ export async function verifyWebsiteLive(inputUrl: string): Promise<ValidationRes
     if (adultDns.isAdult) {
       return {
         valid: false,
-        error: "Adult (18+), sexually explicit, or NSFW websites are strictly prohibited on GeTopFloor.",
+        error:
+          "Adult (18+), sexually explicit, or NSFW websites are strictly prohibited on GeTopFloor.",
       };
     }
 
@@ -198,7 +199,8 @@ async function checkSecureTlsLiveness(
         if (adultInspection.isAdult) {
           return resolve({
             valid: false,
-            error: "Adult (18+), sexually explicit, or NSFW websites are strictly prohibited on GeTopFloor.",
+            error:
+              "Adult (18+), sexually explicit, or NSFW websites are strictly prohibited on GeTopFloor.",
           });
         }
 
@@ -287,7 +289,10 @@ async function checkSecureTlsLiveness(
           } else {
             bodyTimer = setTimeout(finishAndInspect, 200);
           }
-        } else if (headerParsed && (buffer.length >= 8192 || buffer.includes("</head>") || buffer.includes("</html>"))) {
+        } else if (
+          headerParsed &&
+          (buffer.length >= 8192 || buffer.includes("</head>") || buffer.includes("</html>"))
+        ) {
           if (bodyTimer) clearTimeout(bodyTimer);
           finishAndInspect();
         }
@@ -385,8 +390,7 @@ export async function checkAdultDomainClassification(
 
     const addresses = await Promise.race([lookupPromise, timeoutPromise]);
     const isBlocked =
-      Array.isArray(addresses) &&
-      addresses.some((ip) => ip === "0.0.0.0" || ip === "127.0.0.1");
+      Array.isArray(addresses) && addresses.some((ip) => ip === "0.0.0.0" || ip === "127.0.0.1");
 
     if (isBlocked) {
       return {
@@ -408,9 +412,10 @@ export async function checkAdultDomainClassification(
  * 2. ICRA / W3C rating headers & meta rating tags (adult, mature, restricted)
  * 3. Age-gate legal disclaimers ("18 years of age or older", "are you 18", "adult entertainment")
  */
-export function inspectContentForAdultCompliance(
-  content: string
-): { isAdult: boolean; reason?: string } {
+export function inspectContentForAdultCompliance(content: string): {
+  isAdult: boolean;
+  reason?: string;
+} {
   if (!content || typeof content !== "string") return { isAdult: false };
   const lower = content.toLowerCase();
 

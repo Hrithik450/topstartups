@@ -247,7 +247,10 @@ export function ClaimModal({
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: "14px" }}
+        >
           <div>
             <label
               style={{
@@ -321,7 +324,8 @@ export function ClaimModal({
               lineHeight: 1.4,
             }}
           >
-            ℹ️ Your name and email will be pre-filled into Dodo Checkout for invoice and claim security.
+            ℹ️ Your name and email will be pre-filled into Dodo Checkout for invoice and claim
+            security.
           </p>
 
           <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>

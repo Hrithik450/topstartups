@@ -273,25 +273,12 @@ export async function GET(req: NextRequest) {
         pendingClaim?.paymentId ||
         (targetId.startsWith("pay_") ? targetId : undefined);
 
-      // Enforce live website reachability before claiming
-      const verification = await verifyWebsiteLive(companyUrl);
-      if (!verification.valid || !verification.cleanUrl) {
-        console.error(
-          `Rejecting fallback verify for ${companyUrl}: unreachable or invalid domain (${verification.error})`
-        );
-        return NextResponse.json(
-          { error: verification.error || "Invalid or unreachable website URL" },
-          { status: 400 }
-        );
-      }
-      const cleanCompanyUrl = verification.cleanUrl;
-
       // Claim floor atomically based on pricePaid via FloorsService
       const result = await FloorsService.claimTopFloor({
         checkoutSessionId: finalCheckoutSessionId,
         paymentId: finalPaymentId,
         companyName,
-        companyUrl: cleanCompanyUrl,
+        companyUrl,
         category,
         price,
         customerEmail: finalEmail || undefined,
@@ -303,6 +290,30 @@ export async function GET(req: NextRequest) {
           { error: result.error || "Failed to claim floor" },
           { status: 500 }
         );
+      }
+
+      // Explicitly mark claim record status as succeeded in claims table
+      try {
+        await db
+          .update(claims)
+          .set({
+            status: "succeeded",
+            paymentId: finalPaymentId || pendingClaim?.paymentId,
+            customerEmail: finalEmail || pendingClaim?.customerEmail,
+            customerPhone: finalPhone || pendingClaim?.customerPhone,
+            updatedAt: new Date(),
+          })
+          .where(
+            or(
+              ...(pendingClaim?.id ? [eq(claims.id, pendingClaim.id)] : []),
+              ...(finalCheckoutSessionId
+                ? [eq(claims.checkoutSessionId, finalCheckoutSessionId)]
+                : []),
+              ...(finalPaymentId ? [eq(claims.paymentId, finalPaymentId)] : [])
+            )
+          );
+      } catch (claimDbErr) {
+        console.warn("Could not mark claim succeeded by ID in DB:", claimDbErr);
       }
 
       return NextResponse.json(

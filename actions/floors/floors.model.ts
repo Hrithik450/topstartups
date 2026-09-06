@@ -406,6 +406,7 @@ export class FloorsModel {
             status: "succeeded",
             companyName: companyName || cleanHost,
             amount: input.price,
+            customerEmail: input.customerEmail || undefined,
             customerPhone: input.customerPhone || undefined,
             updatedAt: new Date(),
           },

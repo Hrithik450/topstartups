@@ -347,7 +347,6 @@ export function Hero({
       }
 
       setIsSubmitting(false);
-      // Open the Founder Details pop-up modal
       setIsClaimModalOpen(true);
     } catch (err: any) {
       console.error("Website verification error:", err);

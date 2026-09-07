@@ -439,4 +439,32 @@ export class FloorsService {
       };
     }
   }
+
+  /**
+   * Vacate a floor as an authorized administrator.
+   */
+  static async adminDeleteFloor(floorId: string): Promise<DeleteFloorResponse> {
+    try {
+      if (!floorId?.trim()) {
+        return {
+          success: false,
+          error: "Floor ID is required",
+        };
+      }
+
+      const cleanFloorId = floorId.trim();
+      const result = await FloorsModel.adminDeleteFloor(cleanFloorId);
+
+      if (result.success) {
+        revalidateFloorsAndStats(cleanFloorId);
+      }
+
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to vacate floor",
+      };
+    }
+  }
 }

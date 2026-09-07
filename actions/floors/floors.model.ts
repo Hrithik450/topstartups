@@ -253,6 +253,42 @@ export class FloorsModel {
   }
 
   /**
+   * Admin-level floor deletion (override without founder email requirement).
+   * Strictly called only by verified admin routes.
+   */
+  static async adminDeleteFloor(
+    floorId: string
+  ): Promise<{ success: boolean; message: string }> {
+    if (!floorId?.trim()) {
+      return {
+        success: false,
+        message: "Floor ID is required to vacate a floor.",
+      };
+    }
+
+    const existing = await db
+      .select()
+      .from(floors)
+      .where(eq(floors.id, floorId.trim()))
+      .limit(1);
+
+    if (existing.length === 0) {
+      return {
+        success: false,
+        message: "Floor not found.",
+      };
+    }
+
+    const current = existing[0];
+    await db.delete(floors).where(eq(floors.id, floorId.trim()));
+
+    return {
+      success: true,
+      message: `Floor for ${current.companyName || current.companyUrl} has been vacated by admin.`,
+    };
+  }
+
+  /**
    * Atomic transactional floor claim based purely on pricePaid leaderboard ranking.
    */
   static async claimTopFloorTransaction(

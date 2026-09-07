@@ -9,6 +9,7 @@ export type TowerHandle = {
   reset: () => void;
   jumpToTop: () => void;
   jumpToBase: () => void;
+  focusFloor: (target: string | number) => boolean;
   nudgeRotate: (dir: 1 | -1) => void;
   moveFloors: (dir: 1 | -1) => void;
   toggleRotate: () => boolean;
@@ -3433,6 +3434,63 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     jumpToBase() {
       inIntro = false;
       travelYTarget = 1.32;
+    },
+    focusFloor(target: string | number): boolean {
+      if (!listings || listings.length === 0) return false;
+
+      let targetIdx = -1;
+      let targetRank = -1;
+      let targetListing: Floor | null = null;
+
+      const num = typeof target === "number" ? target : parseInt(String(target).trim(), 10);
+      if (!isNaN(num) && String(num) === String(target).trim() && num >= 1 && num <= floorCount) {
+        targetRank = num;
+        targetIdx = floorCount - num;
+        targetListing = listings[targetIdx] || null;
+      } else if (typeof target === "string" && target.trim()) {
+        const query = target
+          .trim()
+          .toLowerCase()
+          .replace(/^https?:\/\//i, "")
+          .replace(/^www\./i, "")
+          .split("/")[0];
+
+        for (let i = floorCount - 1; i >= 0; i--) {
+          const f = listings[i];
+          if (!f) continue;
+          const fUrl = (f.companyUrl || "")
+            .toLowerCase()
+            .replace(/^https?:\/\//i, "")
+            .replace(/^www\./i, "")
+            .split("/")[0];
+          const fName = (f.companyName || "").toLowerCase();
+          if (fUrl === query || fUrl.includes(query) || fName === query || fName.includes(query)) {
+            targetIdx = i;
+            targetRank = floorCount - i;
+            targetListing = f;
+            break;
+          }
+        }
+      }
+
+      if (targetIdx === -1 || !targetListing) return false;
+
+      inIntro = false;
+      idleTime = 0;
+      angularVelocity = 0;
+
+      if (targetIdx === floorCount - 1) {
+        travelYTarget = calculateRestingTargetY();
+      } else {
+        const fy = BASE_HEIGHT + FLOOR_PITCH * targetIdx;
+        travelYTarget = THREE.MathUtils.clamp(fy, MIN_TRAVEL_Y, MAX_TRAVEL_Y);
+      }
+
+      currentHoveredFloor = targetIdx;
+      if (options?.onFloorHover) {
+        options.onFloorHover({ listing: targetListing, rank: targetRank, pinned: true });
+      }
+      return true;
     },
     nudgeRotate(dir) {
       inIntro = false;

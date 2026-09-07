@@ -123,6 +123,22 @@ export function Main({
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
+  // Deep-linking: auto-focus on target floor when ?floor=... or ?rank=... is in the URL
+  useEffect(() => {
+    if (!isSceneReady || typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const target =
+      params.get("floor") || params.get("company") || params.get("domain") || params.get("rank");
+
+    if (target && handleRef.current?.focusFloor) {
+      const timer = setTimeout(() => {
+        handleRef.current?.focusFloor(target);
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [isSceneReady]);
+
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "sunset" : "dark";
     setTheme(nextTheme);

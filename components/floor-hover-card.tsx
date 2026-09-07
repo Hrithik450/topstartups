@@ -49,6 +49,28 @@ function ExternalLink() {
   );
 }
 
+function getCompanyLocation(domain: string): { flag: string; name: string } {
+  if (!domain) return { flag: "🌐", name: "Global" };
+  const lower = domain.toLowerCase();
+
+  if (lower.endsWith(".in") || lower.endsWith(".co.in")) return { flag: "🇮🇳", name: "India" };
+  if (lower.endsWith(".uk") || lower.endsWith(".co.uk")) return { flag: "🇬🇧", name: "United Kingdom" };
+  if (lower.endsWith(".de")) return { flag: "🇩🇪", name: "Germany" };
+  if (lower.endsWith(".ca")) return { flag: "🇨🇦", name: "Canada" };
+  if (lower.endsWith(".us")) return { flag: "🇺🇸", name: "United States" };
+  if (lower.endsWith(".fr")) return { flag: "🇫🇷", name: "France" };
+  if (lower.endsWith(".jp") || lower.endsWith(".co.jp")) return { flag: "🇯🇵", name: "Japan" };
+  if (lower.endsWith(".sg")) return { flag: "🇸🇬", name: "Singapore" };
+  if (lower.endsWith(".au") || lower.endsWith(".com.au")) return { flag: "🇦🇺", name: "Australia" };
+  if (lower.endsWith(".ae")) return { flag: "🇦🇪", name: "UAE" };
+  if (lower.endsWith(".br") || lower.endsWith(".com.br")) return { flag: "🇧🇷", name: "Brazil" };
+  if (lower.endsWith(".nl")) return { flag: "🇳🇱", name: "Netherlands" };
+  if (lower.endsWith(".se")) return { flag: "🇸🇪", name: "Sweden" };
+  if (lower.endsWith(".ch")) return { flag: "🇨🇭", name: "Switzerland" };
+
+  return { flag: "🌐", name: "Global / Remote" };
+}
+
 export function FloorHoverCard({
   data,
   onClose,
@@ -73,7 +95,7 @@ export function FloorHoverCard({
   const displayName = (rawName || cleanDomain || "startup").toLowerCase();
   const targetUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
   const customLogoUrl = listing?.logoUrl;
-  const flag = "🇮🇳";
+  const location = getCompanyLocation(cleanDomain);
   const timeAgo = getTimeAgo(listing?.claimedAt || listing?.updatedAt);
 
   return (
@@ -165,7 +187,7 @@ export function FloorHoverCard({
               <div className="floor-hover-card-meta-item">
                 <span className="meta-icon">📍</span>
                 <span className="meta-label">Location:</span>
-                <span className="meta-value">{flag} India</span>
+                <span className="meta-value">{location.flag} {location.name}</span>
               </div>
 
               <div className="floor-hover-card-meta-item">

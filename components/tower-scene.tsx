@@ -11,16 +11,21 @@ export function TowerScene({
   theme = "sunset",
   floors,
   onLoaded,
+  onIntroComplete,
 }: {
   handleRef: React.MutableRefObject<TowerHandle | null>;
   onFloorHover?: (data: HoverData | null) => void;
   theme?: "dark" | "sunset";
   floors?: Floor[];
   onLoaded?: () => void;
+  onIntroComplete?: () => void;
 }) {
   const mount = useRef<HTMLDivElement>(null);
   const onLoadedRef = useRef(onLoaded);
   onLoadedRef.current = onLoaded;
+
+  const onIntroCompleteRef = useRef(onIntroComplete);
+  onIntroCompleteRef.current = onIntroComplete;
 
   const onFloorHoverRef = useRef(onFloorHover);
   onFloorHoverRef.current = onFloorHover;
@@ -49,17 +54,25 @@ export function TowerScene({
 
     import("@/lib/three/app").then(({ createTower }) => {
       if (disposed || !mount.current) return;
-      const handle = createTower(mount.current, {
-        onFloorHover: (data) => onFloorHoverRef.current?.(data),
-        theme,
-        listings: floors,
-        onLoaded: () => onLoadedRef.current?.(),
+      requestAnimationFrame(() => {
+        if (disposed || !mount.current) return;
+        const handle = createTower(mount.current, {
+          onFloorHover: (data) => onFloorHoverRef.current?.(data),
+          theme,
+          listings: floors,
+          onLoaded: () => onLoadedRef.current?.(),
+          onIntroComplete: () => onIntroCompleteRef.current?.(),
+        });
+        handleRef.current = handle;
       });
-      handleRef.current = handle;
     });
 
     return () => {
       disposed = true;
+      if (handleRef.current) {
+        handleRef.current.dispose();
+        handleRef.current = null;
+      }
     };
   }, [floors?.length]);
 

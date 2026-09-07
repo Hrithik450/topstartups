@@ -191,39 +191,20 @@ body.is-dragging * {
   text-align: center;
   padding: 0 24px;
   z-index: 2;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+body.home-tower-scrolled .hero {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-28px);
 }
 
 /* ---------- Natural Atmospheric Cloud & Top Dissolve ---------- */
 .tower-cloud-fade {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  -webkit-mask-image: radial-gradient(ellipse 960px 400px at 50% 14%, #000 0%, #000 50%, transparent 100%);
-  mask-image: radial-gradient(ellipse 960px 400px at 50% 14%, #000 0%, #000 50%, transparent 100%);
-  background: radial-gradient(
-    ellipse 960px 400px at 50% 14%,
-    rgba(15, 23, 42, 0.96) 0%,
-    rgba(10, 16, 30, 0.88) 50%,
-    rgba(10, 16, 30, 0) 100%
-  );
-}
-
-[data-theme="sunset"] .tower-cloud-fade {
-  background: radial-gradient(
-    ellipse 960px 400px at 50% 14%,
-    rgb(255, 248, 242) 0%,
-    rgba(255, 238, 225, 0.9) 50%,
-    rgba(255, 238, 225, 0) 100%
-  );
-}
-
-body.home-tower-scrolled .tower-cloud-fade {
-  opacity: 1;
+  display: none;
 }
 
 .tower-top-fade {
@@ -3175,9 +3156,10 @@ button.chip:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.45s ease;
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 1;
   pointer-events: auto;
+  will-change: opacity;
 }
 
 [data-theme="dark"] .building-loader-overlay {

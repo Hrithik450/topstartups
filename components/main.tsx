@@ -123,13 +123,33 @@ export function Main({
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
+  const hasFocusedRef = useRef(false);
+  const displayFloors = floors && floors.length > 0 ? floors : initialFloors;
+
+  // Deep-linking: auto-focus on target floor when ?floor=... or ?rank=... is in the URL
+  useEffect(() => {
+    if (!isSceneReady || typeof window === "undefined" || hasFocusedRef.current) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const target =
+      params.get("floor") || params.get("company") || params.get("domain") || params.get("rank");
+
+    if (target && handleRef.current?.focusFloor) {
+      const timer = setTimeout(() => {
+        const ok = handleRef.current?.focusFloor(target);
+        if (ok) {
+          hasFocusedRef.current = true;
+        }
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [isSceneReady, displayFloors]);
+
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "sunset" : "dark";
     setTheme(nextTheme);
     handleRef.current?.setTheme(nextTheme);
   };
-
-  const displayFloors = floors && floors.length > 0 ? floors : initialFloors;
 
   return (
     <div className="stage" data-theme={theme}>

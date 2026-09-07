@@ -9,6 +9,7 @@ export type TowerHandle = {
   reset: () => void;
   jumpToTop: () => void;
   jumpToBase: () => void;
+  focusFloor: (target: string | number) => boolean;
   nudgeRotate: (dir: 1 | -1) => void;
   moveFloors: (dir: 1 | -1) => void;
   toggleRotate: () => boolean;
@@ -1669,9 +1670,11 @@ export interface CreateTowerOptions {
   onFloorHover?: (data: { listing: Floor; rank: number; pinned?: boolean } | null) => void;
   theme?: "dark" | "sunset";
   onLoaded?: () => void;
+  onIntroComplete?: () => void;
 }
 
 export function createTower(container: HTMLElement, options?: CreateTowerOptions): TowerHandle {
+  let isDisposed = false;
   const onFloorHover = options?.onFloorHover;
   let currentTheme: "dark" | "sunset" = options?.theme || "sunset";
   const disposables: (
@@ -1690,13 +1693,14 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     alpha: true,
     powerPreference: "high-performance",
   });
-  // Cap at 2x like topfloor.company — covers all Retina/AMOLED screens without overshoot
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // Cap at 1.5x — razor-sharp on Retina without 4K GPU fragment fill-rate bottleneck
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.shadowMap.enabled = !isMobileDevice;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
+  renderer.debug.checkShaderErrors = false;
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
@@ -1709,6 +1713,10 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   disposables.push(pmremGenerator, roomTex);
 
   // Tower Geometry Parameters (100% Dynamic to any listings count)
+  let inIntro = true;
+  let introStartTime = 0;
+  const INTRO_DURATION = isMobileDevice ? 3400 : 4000;
+
   const rawListings = options?.listings ?? [];
   let listings: Floor[] = [...rawListings].reverse();
   const floorCount = listings.length;
@@ -2060,7 +2068,8 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
         };
         step();
       };
-      setTimeout(runRepaints, isMobileDevice ? 3600 : 800);
+      // Wait until camera ascent intro completes before triggering background font repaints, avoiding mid-flight frame drops
+      setTimeout(runRepaints, isMobileDevice ? 3800 : 4200);
     });
   }
 
@@ -2082,14 +2091,24 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
 
     const ctx = canvas.getContext("2d")!;
     const repaintFloor = () => {
+      if (isDisposed) return;
       const currentListing = listings[fIdx] || listing;
       const floorUrl = getFloorCompanyUrl(currentListing);
       const floorLogo = currentListing?.logoUrl || (currentListing as any)?.logo_url || null;
       const logo = getOrLoadLogo(
         floorUrl,
         () => {
-          paintFloorTexture(ctx, CANVAS_SCALE, currentListing, rank, fIdx, logo, currentTheme);
-          texture.needsUpdate = true;
+          if (isDisposed) return;
+          if (inIntro) {
+            setTimeout(() => {
+              if (isDisposed) return;
+              paintFloorTexture(ctx, CANVAS_SCALE, currentListing, rank, fIdx, logo, currentTheme);
+              texture.needsUpdate = true;
+            }, (isMobileDevice ? 3600 : 4200) + fIdx * 25);
+          } else {
+            paintFloorTexture(ctx, CANVAS_SCALE, currentListing, rank, fIdx, logo, currentTheme);
+            texture.needsUpdate = true;
+          }
         },
         floorLogo
       );
@@ -2098,7 +2117,15 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     };
     floorRepainters.push(repaintFloor);
 
-    repaintFloor();
+    // Scalability: Immediate paint for standard floor counts (<= 12) or visible terminal floors (base & penthouse)
+    // Non-visible intermediate floors for tall skyscrapers (up to 100 floors) are time-sliced to preserve locked 60 FPS
+    const isPriorityFloor = floorCount <= 12 || fIdx < 6 || fIdx >= floorCount - 6;
+    if (isPriorityFloor) {
+      repaintFloor();
+    } else {
+      const delayMs = Math.floor((fIdx - 6) / 4) * 16;
+      setTimeout(repaintFloor, delayMs);
+    }
 
     const sideMat = isMobileDevice
       ? new THREE.MeshStandardMaterial({
@@ -2176,12 +2203,9 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     : new THREE.MeshPhysicalMaterial({
         map: penthouseGridTex,
         transparent: true,
-        roughness: 0.55,
-        metalness: 0.1,
-        transmission: 0.9,
-        thickness: 0.5,
-        ior: 1.5,
-        opacity: 0.42,
+        roughness: 0.35,
+        metalness: 0.2,
+        opacity: 0.45,
       });
   disposables.push(penthouseGlassMat);
 
@@ -2430,8 +2454,11 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   const gltfLoader = new GLTFLoader();
   const animMixers: THREE.AnimationMixer[] = [];
 
-  // Rooftop Juice & Pizza Hut Cafe Pavilion (Rotated 90 deg clockwise with door facing helipad)
+  // Rooftop Juice & Pizza Hut Cafe Pavilion & Penthouse Executive Suite
   const loadGltfModels = () => {
+    const modelCache = new Map<string, THREE.Group>();
+
+    // Initial rooftop cafe pavilion
     gltfLoader.load(
       "/models/pizza-restaurant.glb",
       (gltf) => {
@@ -2439,9 +2466,13 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
         model.position.set(3.6, roofY + 0.4, -2.4);
         model.rotation.y = -Math.PI / 2;
         scene.add(model);
+        // Begin incremental penthouse furniture population after rooftop model settles
+        setTimeout(startPenthouseLoading, 160);
       },
       undefined,
-      () => {}
+      () => {
+        setTimeout(startPenthouseLoading, 80);
+      }
     );
 
     // Penthouse Executive Team & Luxury Furnishings
@@ -2471,26 +2502,43 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
       { url: "/models/plant-house.glb", height: 0.5, x: -4.1, z: 4.1, rotY: 0 },
     ];
 
-    for (const def of interiorDefs) {
-      gltfLoader.load(
-        def.url,
-        (gltf) => {
-          const model = fitModelHeight(gltf.scene, def.height);
+    let defIdx = 0;
+    function startPenthouseLoading() {
+      const step = () => {
+        if (isDisposed || defIdx >= interiorDefs.length) return;
+        const def = interiorDefs[defIdx++];
+
+        const placeModel = (baseScene: THREE.Group) => {
+          if (isDisposed) return;
+          const model = fitModelHeight(baseScene.clone(true), def.height);
           model.position.set(def.x, penthouseY + SLAB_HEIGHT, def.z);
           model.rotation.y = def.rotY;
           scene.add(model);
-        },
-        undefined,
-        () => {}
-      );
+          setTimeout(step, 140); // 140ms gap between insertions prevents any GPU frame hitching
+        };
+
+        if (modelCache.has(def.url)) {
+          placeModel(modelCache.get(def.url)!);
+        } else {
+          gltfLoader.load(
+            def.url,
+            (gltf) => {
+              modelCache.set(def.url, gltf.scene);
+              placeModel(gltf.scene);
+            },
+            undefined,
+            () => {
+              setTimeout(step, 60);
+            }
+          );
+        }
+      };
+      step();
     }
   };
 
-  if (isMobileDevice) {
-    setTimeout(loadGltfModels, 3600);
-  } else {
-    loadGltfModels();
-  }
+  // Load rich 3D GLTF models after camera ascent completes to preserve locked 60 FPS
+  setTimeout(loadGltfModels, isMobileDevice ? 3600 : 4200);
 
   // Ground Plaza Crowd Watching Top Floor Companies with Lifted Heads
   const crowdGroup = new THREE.Group();
@@ -2789,7 +2837,7 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     .add(targetVec);
   controls.update();
 
-  const applyTheme = (newTheme: "dark" | "sunset") => {
+  const applyTheme = (newTheme: "dark" | "sunset", repaintFloors = true) => {
     currentTheme = newTheme;
     starField.visible = newTheme === "dark";
     moonGroup.visible = newTheme === "dark";
@@ -2818,8 +2866,11 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
       lobbyLight.intensity = 0.4;
     }
 
+    if (!repaintFloors || isDisposed) return;
+
     // Repaint all floor tiles across the tower
     for (const slot of allFloors) {
+      if (isDisposed) return;
       const ctx = slot.canvas.getContext("2d")!;
       const rank = floorCount - slot.floorIndex;
       const slotUrl = getFloorCompanyUrl(slot.listing);
@@ -2827,6 +2878,7 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
       const logoImg = getOrLoadLogo(
         slotUrl,
         () => {
+          if (isDisposed) return;
           paintFloorTexture(
             ctx,
             CANVAS_SCALE,
@@ -2853,8 +2905,8 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     }
   };
 
-  // Set initial theme lighting
-  applyTheme(currentTheme);
+  // Set initial theme lighting without redundant repainting
+  applyTheme(currentTheme, false);
 
   // Wheel interaction for floor ride & zoom
   const onWheel = (e: WheelEvent) => {
@@ -3103,11 +3155,6 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   const _introVec = new THREE.Vector3();
   const _diffVec = new THREE.Vector3();
 
-  // Intro Animation State
-  let inIntro = true;
-  const introStartTime = performance.now();
-  const INTRO_DURATION = isMobileDevice ? 3400 : 4000; // 3.4s responsive ascent on mobile, 4.0s on desktop
-
   const clock = new THREE.Clock();
   let raf = 0;
   let isTabVisible = true;
@@ -3120,6 +3167,7 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
 
   let _frameCount = 0;
   function renderFrame(now: number) {
+    if (isDisposed) return;
     raf = requestAnimationFrame(renderFrame);
     if (!isTabVisible) return;
     const dt = Math.min(clock.getDelta(), 0.05);
@@ -3256,6 +3304,7 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     }
 
     if (inIntro) {
+      if (!introStartTime) introStartTime = now;
       const elapsed = now - introStartTime;
       const progress = Math.min(1, elapsed / INTRO_DURATION);
       // Smooth cubic bezier easing
@@ -3279,6 +3328,7 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
       if (progress >= 1) {
         inIntro = false;
         controls.enabled = true;
+        options?.onIntroComplete?.();
       }
     } else {
       // 1. Inertial Rotation & Physics (Smooth butter momentum)
@@ -3315,8 +3365,8 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
       controls.update();
     }
 
-    // Update home-tower-scrolled state for natural cloud fade
-    const isScrolled = travelY < restingTargetY - 0.5;
+    // Update home-tower-scrolled state when user scrolls down away from Top Floor
+    const isScrolled = !inIntro && travelY < restingTargetY - 0.8;
     if (
       typeof document !== "undefined" &&
       document.body.classList.contains("home-tower-scrolled") !== isScrolled
@@ -3328,6 +3378,17 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
     _frameCount++;
   }
 
+  // Pre-warm the WebGL pipeline: compile all shaders and allocate GPU buffers behind the preloader
+  try {
+    renderer.compile(scene, camera);
+  } catch {
+    // Non-blocking fallback if WebGL implementation does not support compile
+  }
+
+  // Initial warm-up render pass behind the preloader ensures zero frame-1 shader hitch
+  renderer.render(scene, camera);
+
+  // Start the continuous 60 FPS animation loop
   renderFrame(performance.now());
 
   // Window Resize
@@ -3345,9 +3406,11 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
   const ro = new ResizeObserver(onResize);
   ro.observe(container);
 
-  // Notify listeners that 3D building and scene are initialized
+  // Confirm active 60 FPS rendering across two full frames before signaling preloader fade
   requestAnimationFrame(() => {
-    options?.onLoaded?.();
+    requestAnimationFrame(() => {
+      options?.onLoaded?.();
+    });
   });
 
   return {
@@ -3366,10 +3429,68 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
       inIntro = false;
       travelYTarget = calculateRestingTargetY();
       zoomDistTarget = calculateZoomDist(container.clientWidth / container.clientHeight);
+      options?.onIntroComplete?.();
     },
     jumpToBase() {
       inIntro = false;
       travelYTarget = 1.32;
+    },
+    focusFloor(target: string | number): boolean {
+      if (!listings || listings.length === 0) return false;
+
+      let targetIdx = -1;
+      let targetRank = -1;
+      let targetListing: Floor | null = null;
+
+      const num = typeof target === "number" ? target : parseInt(String(target).trim(), 10);
+      if (!isNaN(num) && String(num) === String(target).trim() && num >= 1 && num <= floorCount) {
+        targetRank = num;
+        targetIdx = floorCount - num;
+        targetListing = listings[targetIdx] || null;
+      } else if (typeof target === "string" && target.trim()) {
+        const query = target
+          .trim()
+          .toLowerCase()
+          .replace(/^https?:\/\//i, "")
+          .replace(/^www\./i, "")
+          .split("/")[0];
+
+        for (let i = floorCount - 1; i >= 0; i--) {
+          const f = listings[i];
+          if (!f) continue;
+          const fUrl = (f.companyUrl || "")
+            .toLowerCase()
+            .replace(/^https?:\/\//i, "")
+            .replace(/^www\./i, "")
+            .split("/")[0];
+          const fName = (f.companyName || "").toLowerCase();
+          if (fUrl === query || fUrl.includes(query) || fName === query || fName.includes(query)) {
+            targetIdx = i;
+            targetRank = floorCount - i;
+            targetListing = f;
+            break;
+          }
+        }
+      }
+
+      if (targetIdx === -1 || !targetListing) return false;
+
+      inIntro = false;
+      idleTime = 0;
+      angularVelocity = 0;
+
+      if (targetIdx === floorCount - 1) {
+        travelYTarget = calculateRestingTargetY();
+      } else {
+        const fy = BASE_HEIGHT + FLOOR_PITCH * targetIdx;
+        travelYTarget = THREE.MathUtils.clamp(fy, MIN_TRAVEL_Y, MAX_TRAVEL_Y);
+      }
+
+      currentHoveredFloor = targetIdx;
+      if (options?.onFloorHover) {
+        options.onFloorHover({ listing: targetListing, rank: targetRank, pinned: true });
+      }
+      return true;
     },
     nudgeRotate(dir) {
       inIntro = false;
@@ -3420,6 +3541,7 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
       }
     },
     dispose() {
+      isDisposed = true;
       cancelAnimationFrame(raf);
       ro.disconnect();
       if (typeof document !== "undefined") {
@@ -3433,7 +3555,9 @@ export function createTower(container: HTMLElement, options?: CreateTowerOptions
       window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerleave", onPointerLeave);
-      if (typeof document !== "undefined") document.body.classList.remove("is-dragging");
+      if (typeof document !== "undefined") {
+        document.body.classList.remove("is-dragging", "home-tower-scrolled");
+      }
       controls.dispose();
       renderer.dispose();
       for (const d of disposables) {

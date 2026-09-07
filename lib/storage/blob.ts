@@ -1,14 +1,13 @@
 import { put } from "@vercel/blob";
+import { isPrivateIpAddress } from "@/lib/validation/domain";
 
 /**
- * Checks if Vercel Blob Storage environment is active.
+ * Checks if Vercel Blob Storage environment is active and has valid credentials.
  */
 function isBlobConfigured(): boolean {
   return Boolean(
-    process.env.BLOB_READ_WRITE_TOKEN ||
-    process.env.BLOB_STORE_ID ||
-    process.env.BLOB_WEBHOOK_PUBLIC_KEY ||
-    process.env.VERCEL
+    process.env.BLOB_READ_WRITE_TOKEN?.trim() ||
+    process.env.BLOB_STORE_ID?.trim()
   );
 }
 
@@ -76,7 +75,27 @@ export async function persistImageToBlob(
   prefixName: string
 ): Promise<string> {
   const token = process.env.BLOB_READ_WRITE_TOKEN?.trim() || undefined;
-  if ((!token && !isBlobConfigured()) || !externalUrl || isVercelBlobUrl(externalUrl)) {
+  if ((!token && !isBlobConfigured()) || !externalUrl || typeof externalUrl !== "string" || isVercelBlobUrl(externalUrl)) {
+    return externalUrl;
+  }
+
+  // SSRF Protection: strictly validate URL scheme and block private/internal/cloud metadata IP ranges
+  try {
+    const parsed = new URL(externalUrl);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      return externalUrl;
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname.endsWith(".local") ||
+      hostname.endsWith(".internal") ||
+      isPrivateIpAddress(hostname)
+    ) {
+      console.warn(`SSRF attempt blocked in persistImageToBlob: ${externalUrl}`);
+      return externalUrl;
+    }
+  } catch {
     return externalUrl;
   }
 

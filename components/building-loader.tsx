@@ -8,7 +8,7 @@ export function BuildingLoader({ isLoading }: { isLoading: boolean }) {
   // When 3D assets & building finish loading, immediately fade out and unmount smoothly
   useEffect(() => {
     if (!isLoading) {
-      const timer = setTimeout(() => setShouldRender(false), 300);
+      const timer = setTimeout(() => setShouldRender(false), 450);
       return () => clearTimeout(timer);
     }
   }, [isLoading]);

@@ -90,12 +90,20 @@ export function Hero({
 
   const filteredMain = useMemo(() => {
     if (!query) return MAIN_CATEGORIES;
-    return MAIN_CATEGORIES.filter((c) => c.name.toLowerCase().includes(query));
+    return MAIN_CATEGORIES.filter(
+      (c) =>
+        c.name.toLowerCase().includes(query) ||
+        c.keywords?.some((k) => k.toLowerCase().includes(query))
+    );
   }, [query]);
 
   const filteredSpecial = useMemo(() => {
     if (!query) return SPECIAL_OPTIONS;
-    return SPECIAL_OPTIONS.filter((c) => c.name.toLowerCase().includes(query));
+    return SPECIAL_OPTIONS.filter(
+      (c) =>
+        c.name.toLowerCase().includes(query) ||
+        c.keywords?.some((k) => k.toLowerCase().includes(query))
+    );
   }, [query]);
 
   const hasAnyMatches = filteredMain.length > 0 || filteredSpecial.length > 0;

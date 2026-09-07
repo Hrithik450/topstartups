@@ -80,13 +80,25 @@ const getCachedActiveFloors = unstable_cache(
   }
 );
 
+// Module-level in-flight promise memoizer to coalesce concurrent requests (anti-stampede)
+let inFlightActiveFloorsPromise: Promise<Floor[]> | null = null;
+
 export class FloorsModel {
   /**
    * Fetch active claimed skyscraper floors sorted by pricePaid DESC, claimedAt ASC.
    * Uses module-level on-demand cache (0ms latency, purged via revalidateTag("floors")).
+   * Coalesces concurrent in-flight calls to eliminate database connection pool spikes.
    */
   static async getActiveFloors(): Promise<Floor[]> {
-    return await getCachedActiveFloors();
+    if (inFlightActiveFloorsPromise) {
+      return inFlightActiveFloorsPromise;
+    }
+
+    inFlightActiveFloorsPromise = getCachedActiveFloors().finally(() => {
+      inFlightActiveFloorsPromise = null;
+    });
+
+    return inFlightActiveFloorsPromise;
   }
 
   /**

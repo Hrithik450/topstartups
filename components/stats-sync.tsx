@@ -54,6 +54,9 @@ export function StatsSync() {
 
     // 2. Regular heartbeat every 35 seconds to maintain active presence (< 120s server cutoff)
     const interval = setInterval(() => {
+      // Pause background requests when tab is hidden or minimized
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+
       pingAndSync({
         sessionId,
         countryCode: countryGuess?.code,

@@ -103,6 +103,29 @@ export default function AdminPage() {
     setStats(null);
   };
 
+  const handleVacateFloor = async (floorId: string, companyName: string) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to permanently vacate the floor for "${companyName}"? This will immediately remove it from the live skyscraper.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/floors/${encodeURIComponent(floorId)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to vacate floor");
+      }
+      fetchUsers();
+    } catch (err: any) {
+      alert(err.message || "Failed to vacate floor");
+    }
+  };
+
   // Filtered users by search query
   const filteredUsers = users.filter((u) => {
     const q = searchQuery.toLowerCase().trim();
@@ -455,11 +478,8 @@ export default function AdminPage() {
                         ) : (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                             {u.products.map((p) => (
-                              <a
+                              <span
                                 key={p.id}
-                                href={p.companyUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
                                 style={{
                                   display: "inline-flex",
                                   alignItems: "center",
@@ -468,16 +488,45 @@ export default function AdminPage() {
                                   border: "1px solid rgba(255, 107, 26, 0.3)",
                                   padding: "4px 8px",
                                   borderRadius: "6px",
-                                  color: "#ffedd5",
-                                  textDecoration: "none",
                                   fontSize: "12px",
                                   fontWeight: 500,
                                 }}
                               >
-                                {p.rank && <span style={{ color: "#ff6b1a", fontWeight: 700 }}>#{p.rank}</span>}
-                                <span>{p.companyName || p.companyUrl}</span>
-                                <span style={{ color: "#9ca3af", fontSize: "11px" }}>(₹{p.pricePaid})</span>
-                              </a>
+                                <a
+                                  href={p.companyUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    color: "#ffedd5",
+                                    textDecoration: "none",
+                                  }}
+                                >
+                                  {p.rank && <span style={{ color: "#ff6b1a", fontWeight: 700 }}>#{p.rank}</span>}
+                                  <span>{p.companyName || p.companyUrl}</span>
+                                  <span style={{ color: "#9ca3af", fontSize: "11px" }}>(₹{p.pricePaid})</span>
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleVacateFloor(String(p.id), p.companyName || p.companyUrl)}
+                                  title={`Vacate Floor #${p.rank} (${p.companyName || p.companyUrl})`}
+                                  style={{
+                                    background: "transparent",
+                                    border: "none",
+                                    color: "#f87171",
+                                    cursor: "pointer",
+                                    padding: "0 2px",
+                                    fontSize: "12px",
+                                    fontWeight: 700,
+                                    lineHeight: 1,
+                                  }}
+                                  aria-label="Vacate floor"
+                                >
+                                  ✕
+                                </button>
+                              </span>
                             ))}
                           </div>
                         )}

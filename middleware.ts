@@ -41,6 +41,8 @@ const ROUTE_LIMITS: { pattern: string; method?: string; max: number; windowMs: n
   { pattern: "/api/admin/login", method: "POST", max: 5, windowMs: 15 * 60_000 },
   // URL live validator: max 30 requests per minute
   { pattern: "/api/validate-url", method: "POST", max: 30, windowMs: 60_000 },
+  // Email live validator: max 12 requests per minute to protect SMTP socket limits
+  { pattern: "/api/validate-email", method: "POST", max: 12, windowMs: 60_000 },
   // Checkout creation: max 30 checkouts per minute per IP
   { pattern: "/api/checkout", method: "POST", max: 30, windowMs: 60_000 },
   // Checkout verification polling: max 120 requests per minute

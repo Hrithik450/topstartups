@@ -113,16 +113,20 @@ export class FloorsModel {
    * Runs a direct single-row query: ORDER BY price_paid DESC, claimed_at ASC LIMIT 1
    */
   static async getTopFloorPrice(): Promise<{ maxPrice: number; topFloorPrice: number }> {
-    const topFloor = await db.query.floors.findFirst({
-      orderBy: (f, { desc, asc }) => [desc(f.pricePaid), asc(f.claimedAt)],
-      columns: {
-        pricePaid: true,
-      },
-    });
+    try {
+      const topFloor = await db.query.floors.findFirst({
+        orderBy: (f, { desc, asc }) => [desc(f.pricePaid), asc(f.claimedAt)],
+        columns: {
+          pricePaid: true,
+        },
+      });
 
-    const maxPrice = Number(topFloor?.pricePaid || 0);
-    const topFloorPrice = maxPrice > 0 ? maxPrice + 1 : 99;
-    return { maxPrice, topFloorPrice };
+      const maxPrice = Number(topFloor?.pricePaid || 0);
+      const topFloorPrice = maxPrice > 0 ? maxPrice + 1 : 99;
+      return { maxPrice, topFloorPrice };
+    } catch {
+      return { maxPrice: 0, topFloorPrice: 99 };
+    }
   }
 
   /**
